@@ -529,6 +529,12 @@
       .songRow.placeholder {
         opacity: 0;
       }
+      .songRow.dropBefore {
+        box-shadow: inset 0 3px 0 0 var(--blue);
+      }
+      .songRow.dropAfter {
+        box-shadow: inset 0 -3px 0 0 var(--blue);
+      }
       .rowGhost {
         position: fixed;
         z-index: 120;
@@ -2047,6 +2053,11 @@
       .lottieBtn {
         margin-right: 5px;
       }
+      .lottieLg {
+        width: 30px;
+        height: 30px;
+        filter: drop-shadow(0 0 3px rgba(47, 128, 237, 0.55));
+      }
       .lottieH2 {
         width: 30px;
         height: 30px;
@@ -2102,7 +2113,7 @@
         }
       }
       .actionBtn.tapping {
-        animation: tapBounce 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+        animation: tapBounce 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
         background: rgba(47, 128, 237, 0.14) !important;
         border-color: #2f80ed !important;
       }
@@ -28412,7 +28423,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v1.8</span>
+            <span class="verTag" id="appVer">v1.9</span>
           </p>
         </div>
         <button class="menuBtn no-print" id="menuBtn" type="button" aria-label="Menu">
@@ -28747,13 +28758,14 @@
         <section class="menuSec">
           <p class="label">Bantu saran</p>
           <button class="actionBtn secondary" id="openSaranBtn" type="button" style="width: 100%">
-            <span class="lottieIco lottieBtn" data-anim="talking"></span>Beri Saran &amp; lapor bug
+            <span class="lottieIco lottieBtn lottieLg" data-anim="talking"></span>Beri Saran &amp;
+            lapor bug
           </button>
         </section>
         <section class="menuSec">
           <p class="label">Info &amp; pembaruan</p>
           <button class="actionBtn secondary" id="openInfoBtn" type="button" style="width: 100%">
-            <span class="lottieIco lottieBtn" data-anim="layer"></span>Lihat pembaruan
+            <span class="lottieIco lottieBtn lottieLg" data-anim="layer"></span>Lihat pembaruan
           </button>
         </section>
         <section class="menuSec">
@@ -29445,7 +29457,7 @@
             likesRef = firebase.database().ref("pujianYouth/noteLikes");
             likesRef.on("value", function (s) {
               noteLikes = s.val() || {};
-              renderInfoList();
+              updateLikeCounts();
             });
           } catch (e) {}
         }
@@ -30043,76 +30055,248 @@
             toast("Hanya admin yang bisa membuat jadwal.", "error");
             return;
           }
-          if (!confirm("Buat ulang jadwal otomatis? Ini menimpa jadwal saat ini.")) return;
-          sched.assign = {};
-          var load = {};
-          var roleCount = {}; // pid+"|"+roleKey -> berapa kali dapat role itu
-          var lastWeekRole = {}; // pid -> role terakhir (hindari beruntun)
-          sched.roster.forEach(function (p) {
-            load[p.id] = 0;
-          });
-          function shuffled(list) {
-            var a = list.slice();
-            for (var i = a.length - 1; i > 0; i--) {
-              var j = Math.floor(Math.random() * (i + 1));
-              var t = a[i];
-              a[i] = a[j];
-              a[j] = t;
-            }
-            return a;
-          }
-          var W_LOAD = 10; // ratakan beban total
-          var W_REPEAT = 60; // penalti role yang sama berulang sebulan
-          var W_LASTWEEK = 25; // penalti role sama beruntun minggu lalu
-          for (var w = 1; w <= sched.weeks; w++) {
-            // acak urutan role tiap minggu supaya variatif
-            var roles = shuffled(allSchedRoles());
+          if (
+            !confirm(
+              "Buat ulang jadwal otomatis dengan algoritma cerdas? Ini menimpa jadwal saat ini.",
+            )
+          )
+            return;
+
+          var weeks = sched.weeks;
+          var roles = allSchedRoles();
+
+          // 1) Pelajari data jadwal saat ini (histori) supaya bisa menyesuaikan
+          var histCount = {};
+          for (var hw = 1; hw <= weeks; hw++) {
             roles.forEach(function (role) {
-              var slots = role.slots || 1;
-              for (var s = 0; s < slots; s++) {
-                var cur = getAssign(w, role.key);
-                var cands = eligible(role.key, w, false).filter(function (p) {
-                  if (cur.indexOf(p.id) >= 0) return false;
-                  var er = rolesOfPersonInWeek(p.id, w);
-                  if (!er.length) return true;
-                  if (sched.allowDouble) return true;
-                  if (!canDouble(role.key)) return false;
-                  var ok = true;
-                  er.forEach(function (rk) {
-                    if (!canDouble(rk)) ok = false;
-                  });
-                  return ok;
-                });
-                if (!cands.length) continue;
-                var scoreMap = {};
-                cands.forEach(function (p) {
-                  var rc = roleCount[p.id + "|" + role.key] || 0;
-                  var sameLast = lastWeekRole[p.id] === role.key ? 1 : 0;
-                  scoreMap[p.id] =
-                    (load[p.id] || 0) * W_LOAD +
-                    rc * W_REPEAT +
-                    sameLast * W_LASTWEEK +
-                    Math.random() * 8; // jitter agar tidak selalu sama
-                });
-                cands.sort(function (a, b) {
-                  return scoreMap[a.id] - scoreMap[b.id];
-                });
-                var pick = cands[0];
-                var arr = getAssign(w, role.key);
-                arr.push(pick.id);
-                setAssign(w, role.key, arr);
-                load[pick.id] = (load[pick.id] || 0) + 1;
-                roleCount[pick.id + "|" + role.key] =
-                  (roleCount[pick.id + "|" + role.key] || 0) + 1;
-                lastWeekRole[pick.id] = role.key;
+              getAssign(hw, role.key).forEach(function (pid) {
+                if (!pid) return;
+                var k = pid + "|" + role.key;
+                histCount[k] = (histCount[k] || 0) + 1;
+              });
+            });
+          }
+
+          // 2) Susun daftar slot + kandidat tiap slot
+          var slots = [];
+          for (var w = 1; w <= weeks; w++) {
+            roles.forEach(function (role) {
+              var nslot = role.slots || 1;
+              var cands = eligible(role.key, w, false).map(function (p) {
+                return p.id;
+              });
+              for (var s = 0; s < nslot; s++) {
+                slots.push({ w: w, key: role.key, cands: cands });
               }
             });
           }
+          var S = slots.length;
+
+          function randOf(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+          }
+
+          // pilih kandidat untuk slot i (hindari duplikat di role+minggu yang sama)
+          function pickForSlot(i, genome, avoidBusy) {
+            var slot = slots[i];
+            if (!slot.cands.length) return null;
+            var usedSameRole = {};
+            var busyThisWeek = {};
+            for (var j = 0; j < S; j++) {
+              if (genome[j] == null || j === i) continue;
+              if (slots[j].w === slot.w && slots[j].key === slot.key)
+                usedSameRole[genome[j]] = true;
+              if (slots[j].w === slot.w) busyThisWeek[genome[j]] = true;
+            }
+            var pool = slot.cands.filter(function (pid) {
+              return !usedSameRole[pid];
+            });
+            if (!pool.length) pool = slot.cands.slice();
+            if (avoidBusy && !sched.allowDouble) {
+              var free = pool.filter(function (pid) {
+                if (!busyThisWeek[pid]) return true;
+                return canDouble(slot.key);
+              });
+              if (free.length) pool = free;
+            }
+            return randOf(pool);
+          }
+
+          // 3) Fitness (makin kecil makin baik)
+          var W_EMPTY = 100000; // WAJIB terisi
+          var W_DUP = 8000; // orang sama 2x di role+minggu yg sama
+          var W_DOUBLE = 500; // orang sama di >1 role pada minggu yg sama
+          var W_LOAD = 12; // ratakan beban
+          var W_REPEAT = 55; // role sama berulang sebulan
+          var W_LASTWEEK = 30; // role sama beruntun antar minggu
+          var W_HIST = 18; // belajar dari histori -> lebih variatif
+
+          function fitness(genome) {
+            var pen = 0;
+            var load = {};
+            var roleCount = {};
+            var weekRole = {};
+            var weekPerson = {};
+            for (var i = 0; i < S; i++) {
+              var slot = slots[i];
+              var pid = genome[i];
+              if (pid == null) {
+                if (slot.cands.length) pen += W_EMPTY;
+                continue;
+              }
+              load[pid] = (load[pid] || 0) + 1;
+              var rk = pid + "|" + slot.key;
+              roleCount[rk] = (roleCount[rk] || 0) + 1;
+              var wrk = slot.w + "|" + slot.key;
+              (weekRole[wrk] = weekRole[wrk] || []).push(pid);
+              var wpk = slot.w + "|" + pid;
+              weekPerson[wpk] = (weekPerson[wpk] || 0) + 1;
+              pen += (histCount[rk] || 0) * W_HIST;
+            }
+            Object.keys(weekRole).forEach(function (k) {
+              var seen = {};
+              weekRole[k].forEach(function (pid) {
+                if (seen[pid]) pen += W_DUP;
+                seen[pid] = true;
+              });
+            });
+            Object.keys(roleCount).forEach(function (k) {
+              if (roleCount[k] > 1) pen += (roleCount[k] - 1) * W_REPEAT;
+            });
+            if (!sched.allowDouble) {
+              Object.keys(weekPerson).forEach(function (k) {
+                if (weekPerson[k] > 1) pen += (weekPerson[k] - 1) * W_DOUBLE;
+              });
+            }
+            for (var ww = 1; ww < weeks; ww++) {
+              roles.forEach(function (role) {
+                var a = {},
+                  bb = {};
+                for (var i2 = 0; i2 < S; i2++) {
+                  if (slots[i2].key !== role.key || genome[i2] == null) continue;
+                  if (slots[i2].w === ww) a[genome[i2]] = true;
+                  if (slots[i2].w === ww + 1) bb[genome[i2]] = true;
+                }
+                Object.keys(a).forEach(function (pid) {
+                  if (bb[pid]) pen += W_LASTWEEK;
+                });
+              });
+            }
+            var vals = sched.roster.map(function (p) {
+              return load[p.id] || 0;
+            });
+            if (vals.length) {
+              var mean =
+                vals.reduce(function (x, y) {
+                  return x + y;
+                }, 0) / vals.length;
+              var varc =
+                vals.reduce(function (x, y) {
+                  return x + (y - mean) * (y - mean);
+                }, 0) / vals.length;
+              pen += varc * W_LOAD;
+            }
+            return pen;
+          }
+
+          // 4) Genome awal (selalu isi kalau ada kandidat)
+          function seedGenome() {
+            var g = new Array(S).fill(null);
+            var order = [];
+            for (var i = 0; i < S; i++) order.push(i);
+            for (var i = order.length - 1; i > 0; i--) {
+              var j = Math.floor(Math.random() * (i + 1));
+              var t = order[i];
+              order[i] = order[j];
+              order[j] = t;
+            }
+            order.forEach(function (i) {
+              g[i] = pickForSlot(i, g, true);
+            });
+            return g;
+          }
+
+          // 5) Evolusi (Genetic Algorithm)
+          var POP = 40,
+            GEN = 60,
+            ELITE = 4,
+            MUT = 0.18;
+          var pop = [];
+          for (var p0 = 0; p0 < POP; p0++) pop.push(seedGenome());
+          function scored(list) {
+            return list
+              .map(function (g) {
+                return { g: g, f: fitness(g) };
+              })
+              .sort(function (a, b) {
+                return a.f - b.f;
+              });
+          }
+          function tournament(sc) {
+            var best = null;
+            for (var t = 0; t < 3; t++) {
+              var cc = sc[Math.floor(Math.random() * sc.length)];
+              if (!best || cc.f < best.f) best = cc;
+            }
+            return best.g;
+          }
+          var bestEver = null;
+          for (var gen = 0; gen < GEN; gen++) {
+            var sc = scored(pop);
+            if (!bestEver || sc[0].f < bestEver.f) bestEver = { g: sc[0].g.slice(), f: sc[0].f };
+            if (bestEver.f === 0) break;
+            var next = [];
+            for (var e = 0; e < ELITE && e < sc.length; e++) next.push(sc[e].g.slice());
+            while (next.length < POP) {
+              var pa = tournament(sc),
+                pb = tournament(sc);
+              var child = new Array(S);
+              for (var i = 0; i < S; i++) child[i] = Math.random() < 0.5 ? pa[i] : pb[i];
+              for (var i = 0; i < S; i++) {
+                if (Math.random() < MUT) child[i] = pickForSlot(i, child, true);
+              }
+              next.push(child);
+            }
+            pop = next;
+          }
+          var best = (bestEver && bestEver.g) || seedGenome();
+
+          // 6) Jaminan tidak ada role kosong (selama ada kandidat)
+          var unfilled = [];
+          for (var i = 0; i < S; i++) {
+            if (best[i] == null && slots[i].cands.length) best[i] = pickForSlot(i, best, false);
+            if (best[i] == null && slots[i].cands.length) best[i] = randOf(slots[i].cands);
+            if (best[i] == null) unfilled.push(slots[i]);
+          }
+
+          // 7) Tulis ke jadwal
+          sched.assign = {};
+          for (var i = 0; i < S; i++) {
+            if (best[i] == null) continue;
+            var arr = getAssign(slots[i].w, slots[i].key);
+            if (arr.indexOf(best[i]) < 0) {
+              arr.push(best[i]);
+              setAssign(slots[i].w, slots[i].key, arr);
+            }
+          }
+
           sched.auto = true;
           schedAutoWarned = false;
           saveSched();
           renderSchedule();
-          toast("Jadwal otomatis dibuat (lebih variatif). Anda bisa sesuaikan manual.", "success");
+          if (unfilled.length) {
+            var names = {};
+            unfilled.forEach(function (s) {
+              var r = schedRole(s.key);
+              names[(r && r.label) || s.key] = true;
+            });
+            toast(
+              "Jadwal dibuat, tapi role tanpa kandidat: " + Object.keys(names).join(", ") + ".",
+              "info",
+            );
+          } else {
+            toast("Jadwal otomatis dibuat (algoritma cerdas, semua role terisi).", "success");
+          }
         }
         function schedTeamPrintClass(key) {
           if (key === "hosp") return "hosp";
@@ -31330,12 +31514,13 @@
             autoplay: false,
             animationData: data,
           });
+          anim._times = el.classList.contains("lkIco") ? 1 : 2;
           try {
             anim.setSpeed(0.75);
           } catch (e) {}
           anim.addEventListener("loopComplete", function () {
             anim._loops = (anim._loops || 0) + 1;
-            if (anim._loops >= 2) anim.loop = false;
+            if (anim._loops >= (anim._times || 2)) anim.loop = false;
           });
           el._lottie = anim;
           playLottieTwice(anim);
@@ -31583,6 +31768,17 @@
         // --- Info & pembaruan (release notes) ---
         var SEED_NOTES = [
           {
+            v: "1.9",
+            d: "28 Jul 2026",
+            items: [
+              "Drag daftar lagu stabil: lagu lain tidak bergeser sampai lagu dilepas.",
+              "Jadwal otomatis pakai algoritma genetik (belajar dari data, semua role terisi).",
+              "Like pembaruan: animasi sekali, jumlah update real-time.",
+              "Ikon saran & pembaruan diperbesar dan sedikit bersinar.",
+              "Efek tap tombol dipercepat.",
+            ],
+          },
+          {
             v: "1.8",
             d: "28 Jul 2026",
             items: [
@@ -31680,14 +31876,30 @@
           try {
             localStorage.setItem(lk, liked ? "0" : "1");
           } catch (e) {}
+          noteLikes[key] = Math.max(0, (noteLikes[key] || 0) + delta);
+          updateLikeCounts();
           if (likesRef) {
             likesRef.child(key).transaction(function (cur) {
               return Math.max(0, (cur || 0) + delta);
             });
-          } else {
-            noteLikes[key] = Math.max(0, (noteLikes[key] || 0) + delta);
-            renderInfoList();
           }
+        }
+        function updateLikeCounts() {
+          var host = document.getElementById("infoList");
+          if (!host) return;
+          var btns = host.querySelectorAll(".noteLike");
+          Array.prototype.forEach.call(btns, function (btn) {
+            var key = btn.dataset.lkey;
+            if (!key) return;
+            var cnt = (noteLikes && noteLikes[key]) || 0;
+            var nEl = btn.querySelector(".lkN");
+            if (nEl) nEl.textContent = cnt;
+            var liked = false;
+            try {
+              liked = localStorage.getItem("ptLike_" + key) === "1";
+            } catch (e) {}
+            btn.classList.toggle("liked", liked);
+          });
         }
         function renderInfoList() {
           var host = document.getElementById("infoList");
@@ -31714,6 +31926,7 @@
             } catch (e) {}
             if (_liked) likeWrap.classList.add("liked");
             var _cnt = (noteLikes && noteLikes[_lkey]) || 0;
+            likeWrap.dataset.lkey = _lkey;
             likeWrap.innerHTML =
               '<span class="lottieIco lkIco" data-anim="like"></span><span class="lkN">' +
               _cnt +
@@ -32592,7 +32805,9 @@
           ghostOX = 0,
           ghostOY = 0,
           rowRaf = 0,
-          activePid = null;
+          activePid = null,
+          dropTargetRow = null,
+          dropAfter = false;
         function enableRowDrag(handle, row) {
           handle.addEventListener("pointerdown", (e) => {
             if (e.button && e.button !== 0) return;
@@ -32652,7 +32867,7 @@
           window.addEventListener("pointerup", onRowUp);
           window.addEventListener("pointercancel", onRowUp);
           positionGhost(e.clientX, e.clientY);
-          reorderPreview(e.clientX, e.clientY);
+          updateDropIndicator(e.clientX, e.clientY);
         }
         function positionGhost(x, y) {
           if (!dragGhostEl) return;
@@ -32673,10 +32888,15 @@
           rowRaf = requestAnimationFrame(() => {
             rowRaf = 0;
             positionGhost(x, y);
-            reorderPreview(x, y);
+            updateDropIndicator(x, y);
           });
         }
-        function reorderPreview(x, y) {
+        function clearDropIndicator() {
+          Array.from(songButtons.children).forEach((r) => {
+            r.classList.remove("dropBefore", "dropAfter");
+          });
+        }
+        function updateDropIndicator(x, y) {
           if (!dragRow) return;
           const rows = Array.from(songButtons.children).filter((r) => r !== dragRow);
           let best = null,
@@ -32684,24 +32904,18 @@
             after = false;
           rows.forEach((r) => {
             const rect = r.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2,
-              cy = rect.top + rect.height / 2;
-            const d = Math.hypot(x - cx, y - cy);
+            const cy = rect.top + rect.height / 2;
+            const d = Math.abs(y - cy);
             if (d < bestDist) {
               bestDist = d;
               best = r;
-              after = y > cy || (Math.abs(y - cy) < 6 && x > cx);
+              after = y > cy;
             }
           });
-          if (!best) return;
-          const already = after
-            ? best.nextElementSibling === dragRow
-            : best.previousElementSibling === dragRow;
-          if (already) return;
-          flipMove(() => {
-            if (after) best.after(dragRow);
-            else best.before(dragRow);
-          });
+          clearDropIndicator();
+          dropTargetRow = best;
+          dropAfter = after;
+          if (best) best.classList.add(after ? "dropAfter" : "dropBefore");
         }
         function flipMove(mutate) {
           const rows = Array.from(songButtons.children);
@@ -32742,6 +32956,12 @@
           dragRow = null;
           dragGhostEl = null;
           row.classList.remove("placeholder");
+          clearDropIndicator();
+          if (dropTargetRow && dropTargetRow !== row) {
+            if (dropAfter) dropTargetRow.after(row);
+            else dropTargetRow.before(row);
+          }
+          dropTargetRow = null;
           const slot = row.getBoundingClientRect();
           if (ghost) {
             ghost.classList.add("landing");
@@ -33090,7 +33310,7 @@
               btn.classList.add("tapping");
               setTimeout(function () {
                 btn.classList.remove("tapping");
-              }, 460);
+              }, 200);
             }
             document.addEventListener(
               "pointerdown",
