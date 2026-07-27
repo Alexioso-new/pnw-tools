@@ -1980,6 +1980,18 @@
           max-width: 118px;
         }
       }
+      .verTag {
+        display: inline-block;
+        margin-left: 6px;
+        padding: 1px 7px;
+        border-radius: 999px;
+        background: var(--blueSoft);
+        color: var(--blue);
+        font-size: 11px;
+        font-weight: 700;
+        font-style: normal;
+        vertical-align: middle;
+      }
     </style>
   </head>
   <body>
@@ -1994,7 +2006,10 @@
         />
         <div>
           <h1>PNW TOOLS</h1>
-          <p class="sub">Let your worship speak louder than your worries</p>
+          <p class="sub">
+            Let your worship speak louder than your worries
+            <span class="verTag" id="appVer">v1.4</span>
+          </p>
         </div>
         <button class="menuBtn no-print" id="menuBtn" type="button" aria-label="Menu">
           <span class="menuDot" id="menuDot"></span>
@@ -4710,6 +4725,17 @@
         // --- Info & pembaruan (release notes) ---
         var SEED_NOTES = [
           {
+            v: "1.4",
+            d: "28 Jul 2026",
+            items: [
+              "Izin member langsung masuk matriks jadwal (Firebase).",
+              "Jadwal otomatis lebih variatif + hindari role sama berulang.",
+              "Semua nama tampil saat menambah pelayan (termasuk Persembahan).",
+              "Chip kuning untuk double role + opsi izinkan double role.",
+              "Kotak cari pelayan, tampilan HP lebih pas, font Inter.",
+            ],
+          },
+          {
             v: "1.3",
             d: "26 Jul 2026",
             items: [
@@ -5948,7 +5974,38 @@
               if (typeof broadcastLive === "function") broadcastLive();
             });
           if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("sw.js").catch(function () {});
+            navigator.serviceWorker
+              .register("sw.js")
+              .then(function (reg) {
+                reg.update();
+                setInterval(function () {
+                  reg.update();
+                }, 60000);
+                reg.addEventListener("updatefound", function () {
+                  var nw = reg.installing;
+                  if (!nw) return;
+                  nw.addEventListener("statechange", function () {
+                    if (nw.state === "installed" && navigator.serviceWorker.controller) {
+                      if (!window.__swReloaded) {
+                        window.__swReloaded = true;
+                        try {
+                          toast("Versi baru dimuat, menyegarkan...", "info", 1400);
+                        } catch (e) {}
+                        setTimeout(function () {
+                          window.location.reload();
+                        }, 700);
+                      }
+                    }
+                  });
+                });
+              })
+              .catch(function () {});
+            var swRefreshing = false;
+            navigator.serviceWorker.addEventListener("controllerchange", function () {
+              if (swRefreshing) return;
+              swRefreshing = true;
+              window.location.reload();
+            });
           }
           document.getElementById("noteClose").onclick = closeNoteModal;
           var lgm = document.getElementById("loginModal");

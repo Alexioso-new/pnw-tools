@@ -1,61 +1,75 @@
-// PNW TOOLS service worker - offline app shell (network-first for same-origin)
-const CACHE = "pnw-tools-v2";
-const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+/* HOSANA YOUTH TOOLS - service worker
+   PENTING: naikkan angka versi CACHE setiap deploy index.html baru
+   supaya cache lama dibuang dan file terbaru dipakai. */
+const CACHE = "pnw-tools-v5";
+const APP_SHELL = [
+  "./",
+  "./index.html",
+  "./manifest.json",
+  "./icon-192.png",
+];
 
-self.addEventListener("install", function (e) {
-  e.waitUntil(
-    caches
-      .open(CACHE)
-      .then(function (c) {
-        return c.addAll(ASSETS);
-      })
-      .then(function () {
-        return self.skipWaiting();
-      })
-      .catch(function () {}),
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE).then((cache) =>
+      Promise.all(
+        APP_SHELL.map((url) => cache.add(url).catch(() => {})),
+      ),
+    ),
   );
 });
 
-self.addEventListener("activate", function (e) {
-  e.waitUntil(
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
     caches
       .keys()
-      .then(function (keys) {
-        return Promise.all(
-          keys
-            .filter(function (k) {
-              return k !== CACHE;
-            })
-            .map(function (k) {
-              return caches.delete(k);
-            }),
-        );
-      })
-      .then(function () {
-        return self.clients.claim();
-      }),
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))),
+      )
+      .then(() => self.clients.claim()),
   );
 });
 
-self.addEventListener("fetch", function (e) {
-  var req = e.request;
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
   if (req.method !== "GET") return;
-  var url = new URL(req.url);
-  // Only handle same-origin requests; Firebase, fonts, YouTube go straight to network.
-  if (url.origin !== self.location.origin) return;
-  e.respondWith(
-    fetch(req)
-      .then(function (res) {
-        var copy = res.clone();
-        caches.open(CACHE).then(function (c) {
-          c.put(req, copy);
-        });
-        return res;
-      })
-      .catch(function () {
-        return caches.match(req).then(function (r) {
-          return r || caches.match("./index.html");
-        });
-      }),
+  const url = new URL(req.url);
+  const isHTML =
+    req.mode === "navigate" ||
+    req.destination === "document" ||
+    url.pathname.endsWith("/") ||
+    url.pathname.endsWith("index.html");
+
+  // index.html / navigasi -> NETWORK-FIRST supaya update langsung terpakai
+  if (isHTML) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put("./index.html", copy)).catch(() => {});
+          return res;
+        })
+        .catch(() =>
+          caches.match("./index.html").then((r) => r || caches.match("./")),
+        ),
+    );
+    return;
+  }
+
+  // aset lain -> cache-first dengan revalidasi di belakang
+  event.respondWith(
+    caches.match(req).then((cached) => {
+      const network = fetch(req)
+        .then((res) => {
+          if (res && res.status === 200 && url.origin === self.location.origin) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+          }
+          return res;
+        })
+        .catch(() => cached);
+      return cached || network;
+    }),
   );
 });
