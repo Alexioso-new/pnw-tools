@@ -35,7 +35,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;800&family=Roboto+Mono:wght@500;700&display=optional"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -57,7 +57,7 @@
         -webkit-tap-highlight-color: transparent;
       }
       @font-face {
-        font-family: "Poppins-fallback";
+        font-family: "Inter-fallback";
         src: local("Arial");
         ascent-override: 92%;
         descent-override: 31%;
@@ -66,7 +66,15 @@
       }
       body {
         margin: 0;
-        font-family: "Poppins", "Poppins-fallback", system-ui, "Segoe UI", Arial, sans-serif;
+        font-family:
+          "Inter",
+          "Inter-fallback",
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          Arial,
+          sans-serif;
         color: var(--text);
         background: #fff;
         line-height: 1.42;
@@ -1907,6 +1915,71 @@
         background: #22303f;
         color: #ececec;
       }
+      .cell .chip.dbl {
+        background: #fbe6c9;
+        color: #8a5a00;
+      }
+      body.dark .cell .chip.dbl {
+        background: #4a3a12;
+        color: #f2d79a;
+      }
+      .dblToggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+      .bankGrid {
+        min-width: 0;
+      }
+      .songCard {
+        flex-wrap: wrap;
+        min-width: 0;
+      }
+      @media (max-width: 600px) {
+        body {
+          overflow-x: hidden;
+        }
+        .app {
+          padding: 16px 12px 40px;
+        }
+        .bankPageInner {
+          padding: 12px 12px 60px;
+        }
+        .songCard {
+          gap: 8px;
+        }
+        .songCard .scInfo {
+          flex: 1 1 100%;
+        }
+        .scBtns {
+          width: 100%;
+        }
+        .scBtns .scBtn {
+          flex: 1;
+        }
+        .schedTabBtn {
+          padding: 8px 4px;
+          font-size: 13px;
+        }
+        table.schedGrid {
+          font-size: 12px;
+        }
+        table.schedGrid th,
+        table.schedGrid td {
+          padding: 5px 6px;
+        }
+        .cellSel {
+          max-width: 118px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -3060,7 +3133,13 @@
             ico.className = "tSpin";
           } else {
             ico.className = "tIco";
-            ico.textContent = type === "success" ? "✅" : type === "error" ? "⚠️" : "ℹ️";
+            // ICON LOCATION #1 (toast): ganti SVG di bawah untuk icon success/error/info.
+            ico.innerHTML =
+              type === "success"
+                ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+                : type === "error"
+                  ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>'
+                  : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>';
           }
           var tx = document.createElement("span");
           tx.textContent = msg;
@@ -3234,6 +3313,7 @@
             izin: izin,
             assign: {},
             auto: false,
+            allowDouble: false,
             weekLabels: {},
           };
         }
@@ -3339,23 +3419,6 @@
           return (wa[roleKey] || []).slice();
         }
         function assignPerson(wk, roleKey, pid) {
-          var existingRoles = rolesOfPersonInWeek(pid, wk);
-          if (existingRoles.length) {
-            var conflict = false;
-            if (!canDouble(roleKey)) conflict = true;
-            existingRoles.forEach(function (rk) {
-              if (!canDouble(rk)) conflict = true;
-            });
-            if (conflict) {
-              toast(
-                personName(pid) +
-                  " sudah punya tugas lain minggu ini (rangkap hanya untuk Usher/Doa/Pengumuman).",
-                "error",
-                3800,
-              );
-              return false;
-            }
-          }
           var arr = getAssign(wk, roleKey);
           if (arr.indexOf(pid) >= 0) return false;
           var role = schedRole(roleKey);
@@ -3366,6 +3429,23 @@
               "info",
             );
             return false;
+          }
+          // Double role: beri PERINGATAN saja (tidak memblokir). Bisa dimatikan
+          // lewat opsi "Izinkan double role" (sched.allowDouble).
+          var existingRoles = rolesOfPersonInWeek(pid, wk);
+          if (existingRoles.length && !sched.allowDouble) {
+            var whitelisted = canDouble(roleKey);
+            existingRoles.forEach(function (rk) {
+              if (!canDouble(rk)) whitelisted = false;
+            });
+            toast(
+              personName(pid) +
+                " sudah punya tugas lain minggu ini" +
+                (whitelisted ? "" : " (di luar whitelist rangkap)") +
+                ". Ditandai rangkap (kuning).",
+              "info",
+              3600,
+            );
           }
           arr.push(pid);
           setAssign(wk, roleKey, arr);
@@ -3395,16 +3475,36 @@
           if (!confirm("Buat ulang jadwal otomatis? Ini menimpa jadwal saat ini.")) return;
           sched.assign = {};
           var load = {};
+          var roleCount = {}; // pid+"|"+roleKey -> berapa kali dapat role itu
+          var lastWeekRole = {}; // pid -> role terakhir (hindari beruntun)
           sched.roster.forEach(function (p) {
             load[p.id] = 0;
           });
+          function shuffled(list) {
+            var a = list.slice();
+            for (var i = a.length - 1; i > 0; i--) {
+              var j = Math.floor(Math.random() * (i + 1));
+              var t = a[i];
+              a[i] = a[j];
+              a[j] = t;
+            }
+            return a;
+          }
+          var W_LOAD = 10; // ratakan beban total
+          var W_REPEAT = 60; // penalti role yang sama berulang sebulan
+          var W_LASTWEEK = 25; // penalti role sama beruntun minggu lalu
           for (var w = 1; w <= sched.weeks; w++) {
-            allSchedRoles().forEach(function (role) {
+            // acak urutan role tiap minggu supaya variatif
+            var roles = shuffled(allSchedRoles());
+            roles.forEach(function (role) {
               var slots = role.slots || 1;
               for (var s = 0; s < slots; s++) {
+                var cur = getAssign(w, role.key);
                 var cands = eligible(role.key, w, false).filter(function (p) {
+                  if (cur.indexOf(p.id) >= 0) return false;
                   var er = rolesOfPersonInWeek(p.id, w);
                   if (!er.length) return true;
+                  if (sched.allowDouble) return true;
                   if (!canDouble(role.key)) return false;
                   var ok = true;
                   er.forEach(function (rk) {
@@ -3412,19 +3512,28 @@
                   });
                   return ok;
                 });
-                var cur = getAssign(w, role.key);
-                cands = cands.filter(function (p) {
-                  return cur.indexOf(p.id) < 0;
-                });
                 if (!cands.length) continue;
+                var scoreMap = {};
+                cands.forEach(function (p) {
+                  var rc = roleCount[p.id + "|" + role.key] || 0;
+                  var sameLast = lastWeekRole[p.id] === role.key ? 1 : 0;
+                  scoreMap[p.id] =
+                    (load[p.id] || 0) * W_LOAD +
+                    rc * W_REPEAT +
+                    sameLast * W_LASTWEEK +
+                    Math.random() * 8; // jitter agar tidak selalu sama
+                });
                 cands.sort(function (a, b) {
-                  return (load[a.id] || 0) - (load[b.id] || 0);
+                  return scoreMap[a.id] - scoreMap[b.id];
                 });
                 var pick = cands[0];
                 var arr = getAssign(w, role.key);
                 arr.push(pick.id);
                 setAssign(w, role.key, arr);
                 load[pick.id] = (load[pick.id] || 0) + 1;
+                roleCount[pick.id + "|" + role.key] =
+                  (roleCount[pick.id + "|" + role.key] || 0) + 1;
+                lastWeekRole[pick.id] = role.key;
               }
             });
           }
@@ -3432,7 +3541,7 @@
           schedAutoWarned = false;
           saveSched();
           renderSchedule();
-          toast("Jadwal otomatis dibuat. Anda bisa sesuaikan manual.", "success");
+          toast("Jadwal otomatis dibuat (lebih variatif). Anda bisa sesuaikan manual.", "success");
         }
         function schedTeamPrintClass(key) {
           if (key === "hosp") return "hosp";
@@ -3557,6 +3666,25 @@
               }
             };
             toolbar.appendChild(clearBtn);
+            var dblLab = document.createElement("label");
+            dblLab.className = "dblToggle";
+            var dblCb = document.createElement("input");
+            dblCb.type = "checkbox";
+            dblCb.checked = !!sched.allowDouble;
+            dblCb.onchange = function () {
+              sched.allowDouble = dblCb.checked;
+              saveSched(true);
+              toast(
+                dblCb.checked
+                  ? "Double role diizinkan (tanpa peringatan)."
+                  : "Double role akan diberi peringatan.",
+                "info",
+              );
+              renderSchedule();
+            };
+            dblLab.appendChild(dblCb);
+            dblLab.appendChild(document.createTextNode(" Izinkan double role"));
+            toolbar.appendChild(dblLab);
           } else {
             var note = document.createElement("span");
             note.className = "small";
@@ -3628,7 +3756,11 @@
                   var arr = getAssign(wk, role.key);
                   arr.forEach(function (pid) {
                     var chip = document.createElement("span");
-                    chip.className = "chip" + (isIzin(pid, wk) ? " warn" : "");
+                    var isDbl = rolesOfPersonInWeek(pid, wk).length >= 2;
+                    chip.className =
+                      "chip" + (isIzin(pid, wk) ? " warn" : "") + (isDbl ? " dbl" : "");
+                    if (isDbl)
+                      chip.title = personName(pid) + " punya lebih dari satu tugas minggu ini";
                     chip.textContent = personName(pid);
                     if (admin) {
                       var x = document.createElement("b");
@@ -3650,11 +3782,14 @@
                     opt0.textContent = "+ tambah";
                     sel.appendChild(opt0);
                     sched.roster.forEach(function (p) {
-                      if (p.roles.indexOf(role.key) < 0) return;
-                      if (arr.indexOf(p.id) >= 0) return;
+                      if (arr.indexOf(p.id) >= 0) return; // sudah di role ini
                       var o = document.createElement("option");
                       o.value = p.id;
-                      o.textContent = (isIzin(p.id, wk) ? "(IZIN) " : "") + p.name;
+                      var marks = [];
+                      if (isIzin(p.id, wk)) marks.push("IZIN");
+                      if (p.roles.indexOf(role.key) < 0) marks.push("di luar kemampuan");
+                      if (rolesOfPersonInWeek(p.id, wk).length) marks.push("sudah bertugas");
+                      o.textContent = p.name + (marks.length ? " - " + marks.join(", ") : "");
                       sel.appendChild(o);
                     });
                     sel.onchange = function () {
@@ -3694,6 +3829,14 @@
           info.textContent =
             "Centang pelayanan yang bisa dilakukan tiap orang. Kemampuan awal diisi dari jadwal Juli - silakan verifikasi & sesuaikan.";
           body.appendChild(info);
+          var searchRow = document.createElement("div");
+          searchRow.className = "schedToolbar";
+          var searchInp = document.createElement("input");
+          searchInp.type = "search";
+          searchInp.placeholder = "Cari nama pelayan...";
+          searchInp.id = "rosterSearch";
+          searchRow.appendChild(searchInp);
+          body.appendChild(searchRow);
           if (admin) {
             var addRow = document.createElement("div");
             addRow.className = "schedToolbar";
@@ -3717,9 +3860,12 @@
             addRow.appendChild(addBtn);
             body.appendChild(addRow);
           }
+          var listWrap = document.createElement("div");
+          listWrap.className = "rosterList";
           sched.roster.forEach(function (p) {
             var card = document.createElement("div");
             card.className = "rosterCard";
+            card.setAttribute("data-name", (p.name || "").toLowerCase());
             var head = document.createElement("div");
             head.className = "rosterHead";
             var nm = document.createElement("b");
@@ -3766,7 +3912,15 @@
               rolesWrap.appendChild(lab);
             });
             card.appendChild(rolesWrap);
-            body.appendChild(card);
+            listWrap.appendChild(card);
+          });
+          body.appendChild(listWrap);
+          searchInp.addEventListener("input", function () {
+            var q = (searchInp.value || "").trim().toLowerCase();
+            listWrap.querySelectorAll(".rosterCard").forEach(function (cd) {
+              var nm = cd.getAttribute("data-name") || "";
+              cd.style.display = !q || nm.indexOf(q) >= 0 ? "" : "none";
+            });
           });
         }
         function renderSchedIzin(body, admin) {
@@ -4647,6 +4801,80 @@
           });
           return out;
         }
+        function findRosterByName(name) {
+          var q = (name || "").trim().toLowerCase();
+          var found = null;
+          sched.roster.forEach(function (p) {
+            if ((p.name || "").trim().toLowerCase() === q) found = p;
+          });
+          return found;
+        }
+        function mergeIzinWeeks(target, weeks) {
+          weeks.forEach(function (wStr) {
+            var wk = parseInt(wStr, 10);
+            if (!wk) return;
+            if (target.indexOf(wk) < 0) target.push(wk);
+          });
+          target.sort(function (a, b) {
+            return a - b;
+          });
+        }
+        // Simpan izin member langsung ke matriks penjadwalan (Firebase
+        // pujianYouth/schedule2). Membaca data terbaru lebih dulu agar tidak
+        // menimpa jadwal/roster admin.
+        function saveIzinToCloud(nama, weeks, cb) {
+          var online =
+            cloudReady && typeof firebase !== "undefined" && firebase.apps && firebase.apps.length;
+          if (online) {
+            var ref = firebase.database().ref("pujianYouth/schedule2");
+            ref
+              .once("value")
+              .then(function (snap) {
+                var cloud = snap.val();
+                if (!cloud || !cloud.roster) cloud = sched;
+                if (!cloud.izin) cloud.izin = {};
+                var q = (nama || "").trim().toLowerCase();
+                var person = null;
+                cloud.roster.forEach(function (p) {
+                  if ((p.name || "").trim().toLowerCase() === q) person = p;
+                });
+                if (!person) {
+                  person = {
+                    id: "p-" + Date.now() + "-" + Math.floor(Math.random() * 10000),
+                    name: nama,
+                    roles: [],
+                  };
+                  cloud.roster.push(person);
+                }
+                if (!cloud.izin[person.id]) cloud.izin[person.id] = [];
+                mergeIzinWeeks(cloud.izin[person.id], weeks);
+                return ref.set(cloud);
+              })
+              .then(function () {
+                cb(true);
+              })
+              .catch(function () {
+                cb(false);
+              });
+          } else {
+            // Offline: simpan ke matriks lokal, akan tersinkron saat online.
+            try {
+              var person2 = findRosterByName(nama);
+              if (!person2) {
+                person2 = {
+                  id: "p-" + Date.now() + "-" + Math.floor(Math.random() * 10000),
+                  name: nama,
+                  roles: [],
+                };
+                sched.roster.push(person2);
+              }
+              if (!sched.izin[person2.id]) sched.izin[person2.id] = [];
+              mergeIzinWeeks(sched.izin[person2.id], weeks);
+              localStorage.setItem(SCHED_KEY, JSON.stringify(sched));
+            } catch (e) {}
+            cb(false);
+          }
+        }
         function submitIzin() {
           var nama = (document.getElementById("izinNama").value || "").trim();
           var weeks = izinSelectedWeeks();
@@ -4662,43 +4890,46 @@
             st.textContent = "Pilih minggu ke berapa kamu izin.";
             return;
           }
-          if (!IZIN_ENDPOINT) {
-            st.style.color = "var(--red)";
-            st.textContent = "Form belum dikonfigurasi (URL Google Script masih kosong).";
-            return;
-          }
-          var payload = {
-            nama: nama,
-            minggu: weeks.join(", "),
-            keterangan: ket,
-            waktu: new Date().toLocaleString("id-ID"),
-          };
-          st.style.color = "var(--muted)";
-          st.textContent = "Mengirim...";
           var btn = document.getElementById("sendIzinBtn");
           btn.disabled = true;
-          fetch(IZIN_ENDPOINT, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(payload),
-          })
-            .then(function () {
-              st.style.color = "var(--green)";
-              st.textContent = "Terima kasih! Izin kamu sudah terkirim.";
-              document.getElementById("izinNama").value = "";
-              document.getElementById("izinKet").value = "";
-              document.querySelectorAll("#izinWeeks .weekChip.on").forEach(function (b) {
-                b.classList.remove("on");
-              });
-              btn.disabled = false;
-              setTimeout(closeIzin, 1400);
-            })
-            .catch(function () {
-              st.style.color = "var(--red)";
-              st.textContent = "Gagal mengirim. Cek koneksi internet lalu coba lagi.";
-              btn.disabled = false;
+          st.style.color = "var(--muted)";
+          st.textContent = "Menyimpan izin ke jadwal...";
+          initScheduleCloud();
+          var resetForm = function () {
+            document.getElementById("izinNama").value = "";
+            document.getElementById("izinKet").value = "";
+            document.querySelectorAll("#izinWeeks .weekChip.on").forEach(function (b) {
+              b.classList.remove("on");
             });
+          };
+          saveIzinToCloud(nama, weeks, function () {
+            var finish = function () {
+              st.style.color = "var(--green)";
+              st.textContent = "Terima kasih! Izin kamu sudah tercatat di matriks jadwal.";
+              resetForm();
+              btn.disabled = false;
+              setTimeout(closeIzin, 1500);
+            };
+            // Opsional: kirim juga ke Google Sheet sebagai log bila dikonfigurasi.
+            if (!IZIN_ENDPOINT) {
+              finish();
+              return;
+            }
+            var payload = {
+              nama: nama,
+              minggu: weeks.join(", "),
+              keterangan: ket,
+              waktu: new Date().toLocaleString("id-ID"),
+            };
+            fetch(IZIN_ENDPOINT, {
+              method: "POST",
+              mode: "no-cors",
+              headers: { "Content-Type": "text/plain;charset=utf-8" },
+              body: JSON.stringify(payload),
+            })
+              .then(finish)
+              .catch(finish);
+          });
         }
         function ytId(url) {
           if (!url) return "";
