@@ -1,5 +1,5 @@
 // PNW TOOLS service worker - offline app shell (network-first for same-origin)
-const CACHE = "pnw-tools-v1";
+const CACHE = "pnw-tools-v2";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", function (e) {
