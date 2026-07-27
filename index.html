@@ -1670,7 +1670,9 @@
         border-left-color: #2783de;
       }
       .toast.loading {
-        border-left-color: #d5803b;
+        border: none;
+        border-left: none;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
       }
       .toast .tIco {
         font-size: 16px;
@@ -1694,6 +1696,75 @@
         background: #1f2429;
         color: #ececec;
         border-color: #333b44;
+      }
+      .wkLabel {
+        display: block;
+        width: 100%;
+        margin-top: 4px;
+        font-size: 11px;
+        padding: 2px 4px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        box-sizing: border-box;
+        font-weight: 500;
+      }
+      .wkLabelText {
+        font-size: 11px;
+        font-weight: 400;
+        opacity: 0.75;
+        margin-top: 2px;
+      }
+      #schedPrintArea {
+        display: none;
+      }
+      @media print {
+        body.printing-sched .app {
+          display: none !important;
+        }
+        body.printing-sched #schedPrintArea {
+          display: block !important;
+        }
+        #schedPrintArea .spTitle {
+          font-size: 18pt;
+          margin: 0 0 8px;
+        }
+        #schedPrintArea .spTable {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 9pt;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        #schedPrintArea .spTable th,
+        #schedPrintArea .spTable td {
+          border: 1px solid #999;
+          padding: 4px 6px;
+          vertical-align: top;
+          text-align: left;
+        }
+        #schedPrintArea .spHead th {
+          background: #111 !important;
+          color: #f5c542 !important;
+          text-align: center;
+          font-size: 10pt;
+        }
+        #schedPrintArea .spBand td {
+          font-weight: 700;
+          text-align: center;
+        }
+        #schedPrintArea .spBand.hosp td {
+          background: #f2cccc !important;
+        }
+        #schedPrintArea .spBand.mm td {
+          background: #cfe0f5 !important;
+        }
+        #schedPrintArea .spBand.wor td {
+          background: #f6e6ad !important;
+        }
+        #schedPrintArea .spRole {
+          font-weight: 600;
+          width: 130px;
+        }
       }
       .scBtn.danger {
         background: #e56458;
@@ -3014,7 +3085,7 @@
           return handle;
         }
         // ===== FASE C: Penjadwal Pelayanan =====
-        var SCHED_KEY = "pujianYouthSchedule.v1";
+        var SCHED_KEY = "pujianYouthSchedule.v2";
         var scheduleRef = null;
         var schedInited = false;
         var schedTab = "jadwal";
@@ -3080,57 +3151,91 @@
           });
           return f;
         }
-        var DEFAULT_ROSTER_NAMES = [
-          "Alesandro",
-          "Christian",
-          "Dini",
-          "Geby",
-          "Sherina",
-          "Bill Stephen",
-          "Florie",
-          "Natha",
-          "Yemima",
-          "Gilberto",
-          "Chintya",
-          "Mishael",
-          "Adit",
-          "Joshua",
-          "Amos",
-          "Mia",
-          "Tesa",
-          "Yessica",
-          "Gilbert",
-        ];
+        var SCHED_CAP = {
+          doaBuka: ["Martin", "Yesika", "Anugrah"],
+          usher: ["Martin", "Ibrani", "Adit", "Yesika", "Anugrah", "Amos"],
+          pengumuman: ["Adit", "Ibrani"],
+          doaTutup: ["Mia", "Alex", "Tessa"],
+          presenter: ["Yesika", "Fingken", "Yemima"],
+          streaming: ["Alex", "Florie", "Shinta"],
+          soundTech: ["Alex", "George"],
+          camera: ["Florie", "Chyntia", "Grace"],
+          liveReport: ["Mia", "Billy"],
+          wlPNW: ["Natha", "Tessa", "Yemima", "Joshua", "Gilberth"],
+          singPNW: ["Grace", "Florie", "Ester", "Martin", "Tessa", "Mia"],
+          musPNW: ["Billy", "Jamie", "Mishael", "George", "Ebenhaezer", "Sadrian", "Alex", "Natha"],
+          tambPNW: ["Ressa", "Cahya", "Bunga", "Aurel", "Raisa", "Anggi", "Kethrin"],
+          banPNW: ["Aurel", "Amos", "Daniel", "Gio", "Ressa", "Samuel"],
+          wlPsb: ["Florie", "Martin", "Gilbert"],
+          singPsb: ["Natha", "Tessa", "Grace", "Yemima", "Ester", "Mia"],
+          musPsb: [
+            "Billy",
+            "Martin",
+            "Jamie",
+            "Samuel",
+            "Joshua",
+            "Gilberth",
+            "Natha",
+            "Alex",
+            "Ebenhaezer",
+          ],
+          tambPsb: ["Ressa", "Cahya", "Bunga", "Aurel", "Raisa", "Anggi", "Kethrin"],
+          banPsb: ["Aurel", "Amos", "Daniel", "Gio", "Ressa", "Samuel"],
+        };
+        var EXTRA_ROSTER = ["Alesandro", "Christian", "Dini", "Geby", "Sherina"];
         var DEFAULT_IZIN = {
-          "Bill Stephen": [1, 2, 3],
+          Billy: [1, 2, 3],
           Florie: [1, 4, 5],
           Natha: [4],
           Yemima: [1, 2, 3, 4, 5],
-          Gilberto: [1, 4, 5],
-          Chintya: [1, 2, 3, 4, 5],
+          Gilberth: [1, 4, 5],
+          Chyntia: [1, 2, 3, 4, 5],
           Mishael: [1, 4, 5],
           Adit: [1, 2, 3, 4, 5],
           Joshua: [1, 4],
           Amos: [1, 2],
           Mia: [1, 2, 3, 4],
-          Tesa: [2],
-          Yessica: [1],
+          Tessa: [2],
+          Yesika: [1],
           Gilbert: [1, 2, 3, 4, 5],
         };
         function defaultSched() {
-          var general = ["doaBuka", "usher", "pengumuman", "doaTutup"];
-          var roster = DEFAULT_ROSTER_NAMES.map(function (nm, i) {
+          var order = [];
+          var caps = {};
+          Object.keys(SCHED_CAP).forEach(function (rk) {
+            SCHED_CAP[rk].forEach(function (nm) {
+              if (!caps[nm]) {
+                caps[nm] = [];
+                order.push(nm);
+              }
+              if (caps[nm].indexOf(rk) < 0) caps[nm].push(rk);
+            });
+          });
+          EXTRA_ROSTER.forEach(function (nm) {
+            if (!caps[nm]) {
+              caps[nm] = [];
+              order.push(nm);
+            }
+          });
+          var roster = order.map(function (nm, i) {
             return {
-              id: "p-" + i + "-" + Math.floor(Math.random() * 10000),
+              id: "p-" + i + "-" + Math.floor(Math.random() * 100000),
               name: nm,
-              roles: general.slice(),
+              roles: caps[nm].slice(),
             };
           });
           var izin = {};
           roster.forEach(function (p) {
             if (DEFAULT_IZIN[p.name]) izin[p.id] = DEFAULT_IZIN[p.name].slice();
           });
-          return { weeks: 5, roster: roster, izin: izin, assign: {}, auto: false };
+          return {
+            weeks: 5,
+            roster: roster,
+            izin: izin,
+            assign: {},
+            auto: false,
+            weekLabels: {},
+          };
         }
         function loadSched() {
           try {
@@ -3172,7 +3277,7 @@
           )
             return;
           try {
-            scheduleRef = firebase.database().ref("pujianYouth/schedule");
+            scheduleRef = firebase.database().ref("pujianYouth/schedule2");
             schedInited = true;
             scheduleRef.on("value", function (snap) {
               var v = snap.val();
@@ -3329,6 +3434,77 @@
           renderSchedule();
           toast("Jadwal otomatis dibuat. Anda bisa sesuaikan manual.", "success");
         }
+        function schedTeamPrintClass(key) {
+          if (key === "hosp") return "hosp";
+          if (key === "mm") return "mm";
+          return "wor";
+        }
+        function buildSchedPrint() {
+          var area = document.getElementById("schedPrintArea");
+          if (!area) {
+            area = document.createElement("div");
+            area.id = "schedPrintArea";
+            document.body.appendChild(area);
+          }
+          area.innerHTML = "";
+          var h1 = document.createElement("h1");
+          h1.className = "spTitle";
+          h1.textContent = "HOSANA YOUTH";
+          area.appendChild(h1);
+          var table = document.createElement("table");
+          table.className = "spTable";
+          var thead = document.createElement("thead");
+          var htr = document.createElement("tr");
+          htr.className = "spHead";
+          var c0 = document.createElement("th");
+          c0.textContent = "SYNERGY";
+          htr.appendChild(c0);
+          for (var w = 1; w <= sched.weeks; w++) {
+            var th = document.createElement("th");
+            th.textContent = (sched.weekLabels && sched.weekLabels[w]) || "Minggu " + w;
+            htr.appendChild(th);
+          }
+          thead.appendChild(htr);
+          table.appendChild(thead);
+          var tb = document.createElement("tbody");
+          SCHED_TEAMS.forEach(function (team) {
+            var band = document.createElement("tr");
+            band.className = "spBand " + schedTeamPrintClass(team.key);
+            var bc = document.createElement("td");
+            bc.colSpan = sched.weeks + 1;
+            bc.textContent = team.label;
+            band.appendChild(bc);
+            tb.appendChild(band);
+            team.roles.forEach(function (role) {
+              var tr = document.createElement("tr");
+              var rl = document.createElement("td");
+              rl.className = "spRole";
+              rl.textContent = role.label;
+              tr.appendChild(rl);
+              for (var w2 = 1; w2 <= sched.weeks; w2++) {
+                var td = document.createElement("td");
+                td.textContent = getAssign(w2, role.key).map(personName).join(", ");
+                tr.appendChild(td);
+              }
+              tb.appendChild(tr);
+            });
+          });
+          table.appendChild(tb);
+          area.appendChild(table);
+        }
+        function printSchedule() {
+          buildSchedPrint();
+          document.body.classList.add("printing-sched");
+          var done = function () {
+            document.body.classList.remove("printing-sched");
+            window.removeEventListener("afterprint", done);
+          };
+          window.addEventListener("afterprint", done);
+          setTimeout(function () {
+            window.print();
+          }, 60);
+          setTimeout(done, 60000);
+        }
         function openSchedulePage() {
           closeMenu();
           initScheduleCloud();
@@ -3387,6 +3563,11 @@
             note.textContent = "Mode lihat. Login admin untuk mengubah jadwal.";
             toolbar.appendChild(note);
           }
+          var printBtn = document.createElement("button");
+          printBtn.className = "actionBtn secondary";
+          printBtn.textContent = "Cetak / PDF";
+          printBtn.onclick = printSchedule;
+          toolbar.appendChild(printBtn);
           body.appendChild(toolbar);
           var wrap = document.createElement("div");
           wrap.className = "schedScroll";
@@ -3398,9 +3579,30 @@
           corner.textContent = "Pelayanan";
           htr.appendChild(corner);
           for (var w = 1; w <= sched.weeks; w++) {
-            var th = document.createElement("th");
-            th.textContent = "Minggu " + w;
-            htr.appendChild(th);
+            (function (wk) {
+              var th = document.createElement("th");
+              var cap = document.createElement("div");
+              cap.textContent = "Minggu " + wk;
+              th.appendChild(cap);
+              if (admin) {
+                var wi = document.createElement("input");
+                wi.className = "wkLabel";
+                wi.placeholder = "tanggal";
+                wi.value = (sched.weekLabels && sched.weekLabels[wk]) || "";
+                wi.onchange = function () {
+                  if (!sched.weekLabels) sched.weekLabels = {};
+                  sched.weekLabels[wk] = wi.value;
+                  saveSched(true);
+                };
+                th.appendChild(wi);
+              } else if (sched.weekLabels && sched.weekLabels[wk]) {
+                var wl = document.createElement("div");
+                wl.className = "wkLabelText";
+                wl.textContent = sched.weekLabels[wk];
+                th.appendChild(wl);
+              }
+              htr.appendChild(th);
+            })(w);
           }
           thead.appendChild(htr);
           table.appendChild(thead);
@@ -3490,7 +3692,7 @@
           var info = document.createElement("p");
           info.className = "small";
           info.textContent =
-            "Centang pelayanan yang bisa dilakukan tiap orang. Seed awal mencentang Usher/Doa/Pengumuman - silakan sesuaikan sesuai data.";
+            "Centang pelayanan yang bisa dilakukan tiap orang. Kemampuan awal diisi dari jadwal Juli - silakan verifikasi & sesuaikan.";
           body.appendChild(info);
           if (admin) {
             var addRow = document.createElement("div");
