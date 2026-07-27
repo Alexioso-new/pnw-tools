@@ -1,0 +1,4691 @@
+<!doctype html>
+<!--
+  Chord Pujian Youth Hosana
+  Aplikasi transpose chord untuk tim pujian (satu berkas, tanpa framework).
+
+  Teknologi:
+    - HTML + CSS + JavaScript murni (vanilla), tanpa build tool.
+    - Firebase Realtime Database untuk sinkronisasi online real-time,
+      dengan fallback ke localStorage saat konfigurasi kosong/offline.
+
+  Susunan berkas:
+    1) <style>  : seluruh tampilan (layout, tombol, gaya cetak).
+    2) <body>   : kerangka antarmuka (daftar lagu, pemilih nada, editor).
+    3) <script> : data lagu + logika transpose + editor + sinkronisasi.
+
+  Cara transpose: setiap chord digeser sejumlah semitone yang sama sesuai
+  selisih nada dasar tujuan dengan nada dasar asli lagu.
+-->
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>PNW TOOLS</title>
+    <meta
+      name="description"
+      content="PNW TOOLS - alat transpose chord untuk tim pujian. Pilih lagu dan nada dasar, chord langsung menyesuaikan."
+    />
+    <meta name="theme-color" content="#2783de" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="PNW TOOLS" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;800&family=Roboto+Mono:wght@500;700&display=optional"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --text: #2c2c2b;
+        --muted: #7d7a75;
+        --line: #e6e5e3;
+        --soft: #f9f8f7;
+        --blue: #2783de;
+        --blueSoft: #e5f2fc;
+        --orange: #d5803b;
+        --green: #46a171;
+        --greenSoft: #e8f1ec;
+        --red: #e56458;
+        --redSoft: #fce9e7;
+      }
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      @font-face {
+        font-family: "Poppins-fallback";
+        src: local("Arial");
+        ascent-override: 92%;
+        descent-override: 31%;
+        line-gap-override: 9%;
+        size-adjust: 112%;
+      }
+      body {
+        margin: 0;
+        font-family: "Poppins", "Poppins-fallback", system-ui, "Segoe UI", Arial, sans-serif;
+        color: var(--text);
+        background: #fff;
+        line-height: 1.42;
+        font-size: 15px;
+      }
+      .app {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 20px 16px 40px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 0 0 14px;
+        padding-right: 52px;
+      }
+      .brand img {
+        width: 74px;
+        height: 74px;
+        border-radius: 50%;
+        flex: none;
+      }
+      h1 {
+        font-size: 23px;
+        line-height: 1.15;
+        margin: 0 0 4px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .sub {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        font-style: italic;
+        font-weight: 300;
+      }
+      .control {
+        background: var(--soft);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px;
+        margin: 12px 0;
+      }
+      .label {
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin: 0 0 8px;
+      }
+      .songGrid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .songBtn,
+      .keyBtn,
+      .actionBtn {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--text);
+        border-radius: 10px;
+        padding: 12px 12px;
+        font: inherit;
+        font-weight: 700;
+        text-align: left;
+        cursor: pointer;
+        min-height: 44px;
+      }
+      .songBtn.active,
+      .keyBtn.active {
+        background: var(--blue);
+        border-color: var(--blue);
+        color: white;
+      }
+      .keyGrid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+      .keyBtn {
+        text-align: center;
+        padding: 11px 4px;
+      }
+      .status {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 12px 0 14px;
+      }
+      .pill {
+        border-radius: 999px;
+        background: var(--blueSoft);
+        color: #0b5797;
+        font-size: 13px;
+        padding: 7px 10px;
+        font-weight: 800;
+      }
+      .pill.green {
+        background: var(--greenSoft);
+        color: #245f42;
+      }
+      .help {
+        margin: 10px 0 16px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .help summary {
+        cursor: pointer;
+        font-weight: 700;
+        color: var(--blue);
+      }
+      .help p {
+        margin: 8px 0 0;
+      }
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin: 12px 0 14px;
+      }
+      .actionBtn {
+        text-align: center;
+        background: var(--blue);
+        border-color: var(--blue);
+        color: #fff;
+      }
+      .actionBtn.secondary {
+        background: #fff;
+        color: var(--text);
+        border-color: var(--line);
+      }
+      .actionBtn.green {
+        background: var(--green);
+        border-color: var(--green);
+      }
+      .actionBtn.orange {
+        background: var(--orange);
+        border-color: var(--orange);
+      }
+      .actionBtn.red {
+        background: var(--red);
+        border-color: var(--red);
+      }
+      .sheet {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+        background: white;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      }
+      #songTitle {
+        font-size: 22px;
+        line-height: 1.2;
+        margin: 0 0 4px;
+        font-weight: 800;
+      }
+      #keyLine,
+      #sourceLine {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 0 0 8px;
+      }
+      .line {
+        margin: 3px 0;
+        min-height: 1.25em;
+        white-space: pre-wrap;
+      }
+      .chord {
+        font-family: "Roboto Mono", Consolas, "Courier New", monospace;
+        font-weight: 800;
+        color: var(--blue);
+        font-size: 15px;
+        line-height: 1.65;
+        white-space: pre-wrap;
+        margin-top: 8px;
+        margin-bottom: 2px;
+        overflow-wrap: anywhere;
+        letter-spacing: 0.01em;
+      }
+      .section {
+        font-weight: 800;
+        margin-top: 12px;
+      }
+      .editor {
+        display: none;
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 14px;
+        padding: 14px;
+        margin: 12px 0;
+      }
+      .editor.open {
+        display: block;
+      }
+      .field {
+        margin: 10px 0;
+      }
+      .field label {
+        display: block;
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      .field input,
+      .field textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        font: inherit;
+      }
+      .field textarea {
+        min-height: 300px;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+      .chordSuggest {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding: 8px 2px;
+        margin-top: 8px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .chordSuggest[hidden] {
+        display: none;
+      }
+      .chordSuggest .csChip {
+        flex: 0 0 auto;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--text);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .chordSuggest .csChip:first-child {
+        border-color: var(--blue);
+        color: var(--blue);
+        background: rgba(39, 131, 222, 0.08);
+      }
+      .chordSuggest .csChip:active {
+        transform: scale(0.96);
+      }
+      body.dark .chordSuggest .csChip {
+        background: #1f2429;
+      }
+      body.dark .chordSuggest .csChip:first-child {
+        background: rgba(104, 176, 240, 0.14);
+      }
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 6px 0 0;
+      }
+      .editorActions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .deleteRow {
+        margin-top: 10px;
+        border-top: 1px dashed var(--line);
+        padding-top: 10px;
+      }
+      .backupActions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .modalBackdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.36);
+        z-index: 50;
+        padding: 18px;
+        overflow: auto;
+      }
+      .modalBackdrop.open {
+        display: block;
+      }
+      .modal {
+        max-width: 720px;
+        margin: 30px auto;
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        padding: 16px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+      }
+      .modal h2 {
+        margin: 0 0 8px;
+        font-size: 20px;
+      }
+      .modal textarea {
+        width: 100%;
+        min-height: 260px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 13px;
+      }
+      .dangerText {
+        background: var(--redSoft);
+        border-left: 4px solid var(--red);
+        padding: 10px;
+        border-radius: 8px;
+        color: #8f211a;
+      }
+      .footer {
+        margin-top: 30px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 13px;
+        text-align: center;
+      }
+      .footer b {
+        color: var(--text);
+      }
+      @media (min-width: 760px) {
+        .songGrid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .keyGrid {
+          grid-template-columns: repeat(12, 1fr);
+        }
+        .app {
+          padding: 28px 24px 40px;
+        }
+        h1 {
+          font-size: 26px;
+        }
+        .sheet {
+          padding: 22px;
+        }
+        .chord {
+          font-size: 15px;
+          overflow-wrap: normal;
+        }
+        .actions,
+        .editorActions,
+        .backupActions {
+          max-width: 560px;
+          grid-template-columns: repeat(4, 1fr);
+        }
+        .deleteRow {
+          max-width: 560px;
+        }
+      }
+      @media print {
+        body {
+          background: white;
+        }
+        .app {
+          max-width: none;
+          padding: 0;
+        }
+        .control,
+        .help,
+        .actions,
+        .status,
+        .sub,
+        .no-print,
+        .editor,
+        .modalBackdrop {
+          display: none !important;
+        }
+        .brand img {
+          display: none;
+        }
+        .sheet {
+          border: 0;
+          box-shadow: none;
+          padding: 0;
+        }
+        .chord {
+          color: #000;
+          overflow-wrap: normal;
+        }
+        #songTitle {
+          font-size: 18pt;
+        }
+        .line {
+          font-size: 10.5pt;
+        }
+        .chord {
+          font-size: 10pt;
+        }
+        .footer {
+          border: 0;
+          text-align: left;
+          margin-top: 16px;
+        }
+        @page {
+          margin: 12mm;
+        }
+      }
+      .menuBtn {
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        z-index: 55;
+        width: 44px;
+        height: 44px;
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 10px;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+        color: var(--text);
+        flex: none;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+      }
+      .songRow {
+        display: flex;
+        align-items: stretch;
+        gap: 6px;
+      }
+      .songRow .songBtn {
+        flex: 1;
+      }
+      .dragHandle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--soft);
+        color: var(--muted);
+        cursor: grab;
+        touch-action: none;
+        font-size: 18px;
+        user-select: none;
+        flex: none;
+      }
+      .songRow.placeholder {
+        opacity: 0;
+      }
+      .rowGhost {
+        position: fixed;
+        z-index: 120;
+        pointer-events: none;
+        margin: 0;
+        box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+        border-radius: 12px;
+        transform-origin: center;
+        transition: none;
+      }
+      .rowGhost.landing {
+        transition:
+          transform 0.2s cubic-bezier(0.2, 0.9, 0.25, 1.15),
+          box-shadow 0.2s;
+      }
+      .rowGhost .dragHandle {
+        cursor: grabbing;
+      }
+      .drawerBackdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 60;
+      }
+      .drawerBackdrop.open {
+        display: block;
+      }
+      .drawerBackdrop.dragging-bank {
+        background: transparent;
+      }
+      .drawerBackdrop.dragging-bank .drawer {
+        opacity: 0.2;
+      }
+      .drawer {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: min(360px, 90vw);
+        background: #fff;
+        box-shadow: -6px 0 24px rgba(0, 0, 0, 0.18);
+        padding: 16px;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .drawerHead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .drawerHead b {
+        font-size: 18px;
+      }
+      .xBtn {
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 8px;
+        width: 34px;
+        height: 34px;
+        font-size: 15px;
+        cursor: pointer;
+        color: var(--text);
+      }
+      .menuSec {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px;
+        background: var(--soft);
+      }
+      .menuSec .label {
+        margin-bottom: 10px;
+      }
+      .menuDot {
+        position: absolute;
+        top: -3px;
+        right: -3px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--red);
+        border: 2px solid #fff;
+        display: none;
+      }
+      .menuDot.on {
+        display: block;
+      }
+      .infoList {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin: 10px 0 4px;
+        max-height: 50vh;
+        overflow: auto;
+      }
+      .infoItem {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--soft);
+        padding: 10px 12px;
+      }
+      .infoItem .iv {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+      .infoItem .iv b {
+        font-size: 14px;
+        color: var(--blue);
+      }
+      .infoItem .iv span {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .infoItem ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .infoItem li {
+        font-size: 13px;
+        margin: 3px 0;
+      }
+      .rowBtns {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .rowBtns .actionBtn {
+        flex: 1;
+        min-width: 64px;
+      }
+      .bankList {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 6px;
+      }
+      .bankItem {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        padding: 10px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .bankGrip {
+        color: var(--muted);
+        cursor: grab;
+        touch-action: none;
+        font-size: 18px;
+        flex: none;
+      }
+      .bankInfo {
+        flex: 1;
+        min-width: 0;
+      }
+      .bankInfo b {
+        display: block;
+        font-size: 14px;
+      }
+      .bankInfo span {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .bankInfo a {
+        font-size: 12px;
+        color: var(--blue);
+        word-break: break-all;
+      }
+      .bankAdd {
+        border: 1px solid var(--green);
+        background: var(--green);
+        color: #fff;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-weight: 700;
+        cursor: pointer;
+        flex: none;
+      }
+      .dropHint {
+        outline: 3px dashed var(--blue);
+        outline-offset: 3px;
+      }
+      .dragGhost {
+        position: fixed;
+        z-index: 99;
+        pointer-events: none;
+        background: var(--blue);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 13px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        opacity: 0.95;
+      }
+      body.big .chord {
+        font-size: 19px;
+      }
+      body.big .line {
+        font-size: 17px;
+      }
+      body.xl .chord {
+        font-size: 23px;
+      }
+      body.xl .line {
+        font-size: 21px;
+      }
+      body.dark {
+        --text: #ececec;
+        --muted: #9da0a6;
+        --line: #333b44;
+        --soft: #1a1d21;
+        --blue: #68b0f0;
+        --blueSoft: #12314a;
+        background: #111417;
+      }
+      body.dark .sheet {
+        background: #181b1f;
+      }
+      body.dark .songBtn,
+      body.dark .keyBtn,
+      body.dark .actionBtn.secondary,
+      body.dark .menuBtn,
+      body.dark .xBtn,
+      body.dark .bankItem,
+      body.dark .dragHandle,
+      body.dark .field input,
+      body.dark .field textarea,
+      body.dark .modal textarea {
+        background: #1f2429;
+        color: var(--text);
+      }
+      body.dark .drawer,
+      body.dark .modal {
+        background: #181b1f;
+      }
+      body.dark .pill {
+        background: #12314a;
+        color: #bbd9f5;
+      }
+      .sheet {
+        position: relative;
+      }
+      .scrollDock {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        background: var(--soft);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 5px;
+        z-index: 5;
+      }
+      .sdBtn {
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--text);
+        font-size: 16px;
+        font-weight: 800;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+        transition:
+          transform 0.08s ease,
+          background 0.15s;
+      }
+      .sdBtn.sdSmall {
+        width: 36px;
+        height: 36px;
+        font-size: 20px;
+      }
+      .sdBtn.active {
+        background: var(--green);
+        border-color: var(--green);
+        color: #fff;
+      }
+      .sdBtn:active {
+        transform: scale(0.88);
+      }
+      #songTitle {
+        padding-right: 110px;
+      }
+      .textSize {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 6px;
+      }
+      .touchBtn {
+        flex: 1;
+        min-height: 58px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--text);
+        font-size: 23px;
+        font-weight: 800;
+        cursor: pointer;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+        transition:
+          transform 0.08s ease,
+          background 0.15s;
+      }
+      .touchBtn:active {
+        transform: scale(0.9);
+        background: var(--blueSoft);
+      }
+      #textSizeLabel {
+        min-width: 70px;
+        text-align: center;
+        font-weight: 800;
+        color: var(--muted);
+      }
+      body.sm .chord {
+        font-size: 13px;
+      }
+      body.sm .line {
+        font-size: 13px;
+      }
+      body.xs .chord {
+        font-size: 11px;
+        line-height: 1.4;
+        margin-top: 4px;
+      }
+      body.xs .line {
+        font-size: 11px;
+      }
+      body.compact .line {
+        margin: 1px 0;
+        min-height: 1em;
+      }
+      body.compact .chord {
+        line-height: 1.35;
+        margin-top: 3px;
+        margin-bottom: 0;
+      }
+      body.compact #songTitle {
+        margin: 0 0 2px;
+      }
+      .secBlock {
+        border-radius: 10px;
+        margin: 6px 0;
+        padding: 6px 10px;
+      }
+      .secBlock.sec-none {
+        background: transparent;
+        margin: 0;
+        padding: 0;
+      }
+      body.compact .secBlock {
+        margin: 3px 0;
+        padding: 3px 7px;
+      }
+      .sec-intro {
+        background: rgba(39, 131, 222, 0.06);
+      }
+      .sec-verse {
+        background: rgba(70, 161, 113, 0.06);
+      }
+      .sec-pre {
+        background: rgba(213, 128, 59, 0.07);
+      }
+      .sec-chorus {
+        background: rgba(229, 100, 88, 0.08);
+      }
+      .sec-post {
+        background: rgba(213, 128, 59, 0.05);
+      }
+      .sec-bridge {
+        background: rgba(120, 90, 200, 0.08);
+      }
+      .sec-inst {
+        background: rgba(125, 122, 117, 0.08);
+      }
+      .sec-inter {
+        background: rgba(39, 131, 222, 0.05);
+      }
+      .sec-break {
+        background: rgba(125, 122, 117, 0.11);
+      }
+      .sec-mod {
+        background: rgba(229, 100, 88, 0.11);
+      }
+      .sec-outro {
+        background: rgba(70, 161, 113, 0.09);
+      }
+      .modBadge {
+        color: var(--orange);
+        font-weight: 800;
+        font-size: 0.85em;
+      }
+      .structPalette {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .palChip {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        user-select: none;
+      }
+      .palChip:active {
+        transform: scale(0.96);
+      }
+      .structCanvas {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 40px;
+      }
+      .structBlock {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 8px;
+      }
+      .sbHead {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .sbHandle {
+        cursor: grab;
+        color: var(--muted);
+        font-size: 18px;
+        touch-action: none;
+        padding: 0 2px;
+      }
+      .sbName {
+        font-weight: 800;
+        flex: 1;
+      }
+      .sbDesc {
+        font-size: 11px;
+        color: var(--muted);
+        margin: 0 0 6px;
+      }
+      .sbMod {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        font-size: 12px;
+      }
+      .sbMod button,
+      .sbDel {
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--text);
+        border-radius: 8px;
+        width: 26px;
+        height: 26px;
+        font-weight: 800;
+        cursor: pointer;
+        line-height: 1;
+      }
+      .sbModVal {
+        min-width: 26px;
+        text-align: center;
+        font-weight: 800;
+        color: var(--text);
+      }
+      .structBlock textarea {
+        width: 100%;
+        min-height: 60px;
+        resize: vertical;
+        font-family: "Roboto Mono", Consolas, monospace;
+        font-size: 13px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px;
+        background: transparent;
+        color: var(--text);
+      }
+      .structBlock.dragging {
+        opacity: 0.5;
+      }
+      #adminPanel {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 6px;
+      }
+      #adminPanel[hidden] {
+        display: none;
+      }
+      .lockRow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #lockStatus {
+        margin-top: 4px;
+      }
+      body.noEdit #addBtn,
+      body.noEdit #editBtn,
+      body.noEdit #duplicateBtn,
+      body.noEdit #deleteSongBtn,
+      body.noEdit .dragHandle,
+      body.noEdit #bankAddBtn {
+        display: none !important;
+      }
+      .liveBanner {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: var(--red);
+        color: #fff;
+        font-weight: 800;
+        text-align: center;
+        padding: 7px 10px;
+        border-radius: 0 0 10px 10px;
+        font-size: 13px;
+        letter-spacing: 0.3px;
+      }
+      body.spectating .control,
+      body.spectating #editor {
+        display: none !important;
+      }
+      body.dark .sdBtn,
+      body.dark .touchBtn {
+        background: #1f2429;
+        color: var(--text);
+      }
+      .ytBtn {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--red);
+        border: 1px solid var(--red);
+        color: #fff;
+        border-radius: 999px;
+        padding: 9px 14px;
+        font-weight: 800;
+        font-size: 14px;
+        cursor: pointer;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+        z-index: 5;
+        box-shadow: 0 3px 10px rgba(229, 100, 88, 0.35);
+        transition:
+          transform 0.08s ease,
+          filter 0.15s;
+      }
+      .ytBtn:active {
+        transform: scale(0.93);
+      }
+      .ytBtn:hover {
+        filter: brightness(1.05);
+      }
+      .ytFrame {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16/9;
+        background: #000;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-top: 6px;
+      }
+      .ytFrame iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+      @media print {
+        #songTitle {
+          padding-right: 0;
+        }
+        .scrollDock {
+          display: none !important;
+        }
+      }
+      .capoHint {
+        font-size: 12px;
+        color: var(--green);
+        font-weight: 700;
+        margin: 0 0 8px;
+      }
+      .ytBar {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        margin: 4px 0 10px;
+        padding: 7px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--soft);
+      }
+      .ytBar.open {
+        display: flex;
+      }
+      .ytPP {
+        flex: none;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 1px solid var(--red);
+        background: var(--red);
+        color: #fff;
+        font-size: 12px;
+        cursor: pointer;
+        touch-action: manipulation;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .ytPP:active {
+        transform: scale(0.9);
+      }
+      .ytTrack {
+        position: relative;
+        flex: 1;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--line);
+        cursor: pointer;
+      }
+      .ytFill {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 0;
+        border-radius: 999px;
+        background: var(--red);
+      }
+      .ytDot {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        border: 3px solid var(--red);
+        transform: translate(-50%, -50%);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      }
+      .ytTime {
+        flex: none;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--muted);
+        min-width: 74px;
+        text-align: right;
+      }
+      .ytX {
+        flex: none;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 11px;
+      }
+      #ytHost {
+        position: fixed;
+        left: -10000px;
+        top: 0;
+        width: 320px;
+        height: 180px;
+        pointer-events: none;
+        opacity: 0;
+      }
+      .bankFind {
+        display: flex;
+        gap: 8px;
+      }
+      .bankFind input {
+        flex: 1;
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 9px 10px;
+        font: inherit;
+      }
+      .bankFind select {
+        flex: none;
+        max-width: 44%;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 9px 8px;
+        font: inherit;
+        background: #fff;
+        color: var(--text);
+      }
+      .searchResults {
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .searchResults:empty {
+        display: none;
+      }
+      .srItem {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 9px 10px;
+        background: #fff;
+        cursor: pointer;
+      }
+      .srItem b {
+        flex: 1;
+        font-size: 14px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .srItem .srTag {
+        font-size: 11px;
+        color: var(--blue);
+        font-weight: 700;
+        flex: none;
+      }
+      .metroRow {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 6px 0;
+      }
+      .metroToggle {
+        flex: 1;
+      }
+      .touchBtn.active {
+        background: var(--green);
+        border-color: var(--green);
+        color: #fff;
+      }
+      .metroBpm {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .mBtn {
+        width: 40px;
+        height: 44px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #fff;
+        font-size: 20px;
+        font-weight: 800;
+        cursor: pointer;
+        color: var(--text);
+      }
+      #bpmVal {
+        min-width: 46px;
+        text-align: center;
+        font-weight: 800;
+        font-size: 18px;
+      }
+      .bankPage {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 70;
+        background: var(--soft);
+        overflow: auto;
+      }
+      .bankPage.open {
+        display: block;
+      }
+      .bankPageInner {
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 16px 16px 60px;
+      }
+      .bankPageHead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        background: var(--soft);
+        padding: 8px 0 12px;
+        z-index: 2;
+      }
+      .bankPageHead b {
+        font-size: 22px;
+        font-weight: 800;
+      }
+      .bankSearch2 {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+        font: inherit;
+        margin-bottom: 14px;
+      }
+      .bankGrid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .songCard {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .songCard .scInfo {
+        flex: 1;
+        min-width: 0;
+      }
+      .songCard .scInfo b {
+        display: block;
+        font-size: 15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .songCard .scInfo span {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .scBtns {
+        display: flex;
+        gap: 6px;
+        flex: none;
+      }
+      .scBtn {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--text);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .scBtn.primary {
+        background: var(--blue);
+        border-color: var(--blue);
+        color: #fff;
+      }
+      .bankPresets {
+        margin-top: 22px;
+      }
+      .bankPresets summary {
+        cursor: pointer;
+        font-weight: 700;
+        color: var(--blue);
+      }
+      @media (min-width: 680px) {
+        .bankGrid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      body.dark .bankFind input,
+      body.dark .bankFind select,
+      body.dark .bankSearch2,
+      body.dark .songCard,
+      body.dark .scBtn,
+      body.dark .srItem,
+      body.dark .mBtn,
+      body.dark .ytX {
+        background: #1f2429;
+        color: var(--text);
+      }
+      @media print {
+        .ytBar,
+        .bankPage,
+        #ytHost {
+          display: none !important;
+        }
+      }
+      .line.inlineChord {
+        white-space: normal;
+        line-height: 1.18;
+        margin: 3px 0 8px;
+      }
+      .ic {
+        display: inline-flex;
+        flex-direction: column;
+        vertical-align: bottom;
+      }
+      .ic-ch {
+        font-family: "Roboto Mono", Consolas, monospace;
+        font-weight: 700;
+        color: var(--blue);
+        font-size: 0.85em;
+        min-height: 1.3em;
+        line-height: 1.3;
+        letter-spacing: 0.3px;
+        padding-right: 2px;
+      }
+      .ic-tx {
+        white-space: pre;
+      }
+      .editPreview {
+        margin-top: 12px;
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        padding: 10px 14px;
+        background: var(--soft);
+        max-height: 340px;
+        overflow: auto;
+      }
+      .editPreview .pvHead {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+      }
+      body.dark .editPreview {
+        background: #1f2429;
+      }
+      #bankAddBtn {
+        flex: none;
+        border: 1px solid var(--green);
+        background: var(--green);
+        color: #fff;
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .help ul {
+        margin: 8px 0 0;
+        padding-left: 18px;
+      }
+      .help li {
+        margin: 4px 0;
+      }
+      .labelRow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .infoI {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 1px solid var(--muted);
+        background: transparent;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        font-style: italic;
+        line-height: 1;
+        padding: 0;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+      }
+      .dragTip {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.45;
+        margin: 8px 0 0;
+      }
+      button {
+        transition: transform 0.08s ease;
+      }
+      button:active {
+        transform: scale(0.92);
+      }
+      .izinField {
+        margin: 12px 0;
+      }
+      .izinField label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--muted);
+        margin: 0 0 6px;
+      }
+      .izinField input,
+      .izinField textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 11px;
+        font: inherit;
+        background: #fff;
+        color: var(--text);
+        box-sizing: border-box;
+      }
+      .izinField textarea {
+        min-height: 80px;
+        resize: vertical;
+      }
+      .weekChips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .weekChip {
+        width: 46px;
+        height: 46px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--text);
+        font-weight: 800;
+        font-size: 17px;
+        cursor: pointer;
+      }
+      .weekChip.on {
+        background: var(--blue);
+        border-color: var(--blue);
+        color: #fff;
+      }
+      body.dark .izinField input,
+      body.dark .izinField textarea,
+      body.dark .weekChip {
+        background: #1f2429;
+        color: var(--text);
+      }
+      #bpmVal {
+        cursor: pointer;
+        border-bottom: 1px dashed var(--muted);
+      }
+      .stepRow {
+        gap: 8px;
+      }
+      .stepBtn {
+        padding: 6px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--text);
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .stepBtn.on {
+        background: var(--blue);
+        border-color: var(--blue);
+        color: #fff;
+      }
+      body.dark .stepBtn {
+        background: #1f2429;
+        color: var(--text);
+      }
+      body.dark .stepBtn.on {
+        background: var(--blue);
+        color: #fff;
+      }
+      body.eye::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(255, 168, 60, 0.2);
+        mix-blend-mode: multiply;
+        pointer-events: none;
+        z-index: 2147483000;
+      }
+      .actionBtn.active {
+        background: var(--blue);
+        border-color: var(--blue);
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="brand no-print">
+        <img
+          src="data:image/png;base64,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"
+          alt="Logo Youth Hosana Bandung"
+          width="74"
+          height="74"
+        />
+        <div>
+          <h1>PNW TOOLS</h1>
+          <p class="sub">Let your worship speak louder than your worries</p>
+        </div>
+        <button class="menuBtn no-print" id="menuBtn" type="button" aria-label="Menu">
+          <span class="menuDot" id="menuDot"></span>
+          &#9776;
+        </button>
+      </header>
+      <div class="liveBanner no-print" id="liveBanner" hidden>
+        &#128225; Mode spectate: layar mengikuti admin
+      </div>
+      <section class="control no-print">
+        <p class="label labelRow">
+          Daftar lagu<button
+            class="infoI no-print"
+            id="dragInfoBtn"
+            type="button"
+            title="Cara mengubah urutan lagu"
+            aria-label="Cara mengubah urutan lagu"
+          >
+            i
+          </button>
+        </p>
+        <p class="dragTip no-print" id="dragTip" style="display: none">
+          Tahan ikon &#8942; di kiri sebuah lagu, lalu geser ke atas / bawah untuk mengubah
+          urutannya.
+        </p>
+        <div class="songGrid" id="songButtons"></div>
+      </section>
+      <section class="control no-print">
+        <p class="label">Nada dasar</p>
+        <div class="keyGrid" id="keyButtons"></div>
+      </section>
+      <div class="status no-print">
+        <span class="pill" id="currentSongPill">Lagu</span
+        ><span class="pill" id="currentKeyPill">Nada</span
+        ><span class="pill" id="cloudPill">Mode lokal</span
+        ><span class="pill green" id="savePill" style="display: none"></span>
+      </div>
+      <div class="actions no-print">
+        <button class="actionBtn" id="copyBtn" type="button">Salin</button
+        ><button class="actionBtn secondary" id="printBtn" type="button">Cetak</button
+        ><button class="actionBtn green" id="editBtn" type="button">Ubah lagu ini</button
+        ><button class="actionBtn green" id="addBtn" type="button">Tambah lagu</button
+        ><button class="actionBtn orange" id="backupBtn" type="button">Cadangkan</button>
+      </div>
+      <details class="help no-print">
+        <summary>Cara pakai</summary>
+        <ul>
+          <li>Pilih lagu &rarr; pilih nada dasar. Chord langsung berpindah.</li>
+          <li><b>Ubah lagu ini</b> &rarr; sunting chord/lirik &rarr; <b>Simpan</b>.</li>
+          <li><b>Tambah lagu</b> untuk membuat lagu baru.</li>
+          <li>Hapus: <b>Ubah lagu ini</b> &rarr; <b>Hapus lagu ini</b>.</li>
+          <li>Ubah urutan: tahan ikon &#8942; lalu geser.</li>
+          <li>Menu &#9776; (kanan atas): Song Bank, metronome, mode gelap.</li>
+          <li>Online: perubahan tampil di semua perangkat.</li>
+        </ul>
+      </details>
+      <section class="editor no-print" id="editor">
+        <p class="label">Ubah lagu ini</p>
+        <div class="field"><label>Judul lagu</label><input id="editTitle" /></div>
+        <div class="field">
+          <label>Nada dasar asli</label
+          ><input id="editOriginalKey" placeholder="Contoh: F / G / D" />
+        </div>
+        <div class="field"><label>Sumber / catatan</label><input id="editSource" /></div>
+        <div class="field">
+          <label>Link YouTube (opsional)</label
+          ><input id="editYoutube" placeholder="Tempel link YouTube lagu ini" />
+        </div>
+        <div class="field">
+          <label>Chord &amp; lirik</label>
+          <div class="rowBtns" style="margin-bottom: 8px">
+            <button class="actionBtn secondary" id="structToggleBtn" type="button">
+              &#129513; Mode struktur
+            </button>
+          </div>
+          <textarea id="editLines" spellcheck="false"></textarea>
+          <div class="chordSuggest" id="chordSuggest" hidden></div>
+          <div class="structWrap" id="structWrap" hidden>
+            <p class="small">
+              Ketuk bagian untuk menambah (atau seret ke kanvas). Seret ikon &#8942; untuk
+              mengurutkan. Modulasi per-bagian dengan &#9650;/&#9660;.
+            </p>
+            <div class="structPalette" id="structPalette"></div>
+            <div class="structCanvas" id="structCanvas"></div>
+          </div>
+          <p class="small" id="editHint">
+            Tulis chord dalam kurung siku sebelum suku kata, mis.
+            <b>[G]Na-ma-Nya Tu[D]hanku</b>. Hasil langsung tampil di <b>Pratinjau</b>.
+          </p>
+          <div class="editPreview" id="editPreview">
+            <div class="pvHead">Pratinjau</div>
+            <div id="editPreviewBody"></div>
+          </div>
+        </div>
+        <div class="editorActions">
+          <button class="actionBtn green" id="saveEditBtn">Simpan</button
+          ><button class="actionBtn secondary" id="cancelEditBtn">Tutup</button
+          ><button class="actionBtn orange" id="duplicateBtn">Duplikat lagu</button>
+        </div>
+        <div class="deleteRow">
+          <button class="actionBtn red" id="deleteSongBtn" style="width: 100%">
+            Hapus lagu ini
+          </button>
+        </div>
+      </section>
+      <main class="sheet" id="sheet">
+        <button
+          class="ytBtn no-print"
+          id="ytPlay"
+          type="button"
+          title="Putar lagu dari YouTube"
+          aria-label="Putar lagu dari YouTube"
+        >
+          &#9654; Putar
+        </button>
+        <h2 id="songTitle"></h2>
+        <p id="keyLine"></p>
+        <p id="sourceLine"></p>
+        <div class="ytBar no-print" id="ytBar">
+          <button class="ytPP" id="ytPP" type="button" aria-label="Putar atau jeda">
+            &#10074;&#10074;
+          </button>
+          <div class="ytTrack" id="ytTrack">
+            <div class="ytFill" id="ytFill"></div>
+            <div class="ytDot" id="ytDot"></div>
+          </div>
+          <span class="ytTime" id="ytTime">0:00</span>
+          <button class="ytX" id="ytStop" type="button" aria-label="Tutup pemutar">&#10005;</button>
+        </div>
+        <div id="ytHost"></div>
+        <div id="content"></div>
+      </main>
+      <footer class="footer">
+        &copy; 2026 <b>Alex</b> &mdash; Youth Hosana Bandung.<br />Dibuat untuk pelayanan pujian
+        &amp; penyembahan.
+      </footer>
+    </div>
+    <div class="modalBackdrop no-print" id="backupModal">
+      <div class="modal">
+        <h2>Cadangkan / Pindahkan Lagu</h2>
+        <p class="small">
+          Pakai ini kalau ingin memindahkan lagu ke HP atau laptop lain, atau menyimpan salinan
+          sebelum mengganti file di server.
+        </p>
+        <textarea id="backupText" spellcheck="false"></textarea>
+        <div class="backupActions">
+          <button class="actionBtn green" id="copyBackupBtn">Salin cadangan</button
+          ><button class="actionBtn orange" id="importBackupBtn">Muat dari kotak</button
+          ><button class="actionBtn secondary" id="downloadBackupBtn">Unduh JSON</button
+          ><button class="actionBtn red" id="closeBackupBtn">Tutup</button>
+        </div>
+        <p class="dangerText">
+          Kalau menekan Muat, semua lagu di perangkat ini akan diganti dengan isi kotak cadangan.
+        </p>
+      </div>
+    </div>
+    <div class="modalBackdrop no-print" id="izinModal">
+      <div class="modal">
+        <h2>Form Izin</h2>
+        <div class="izinField">
+          <label for="izinNama">Nama</label>
+          <input id="izinNama" type="text" placeholder="Nama kamu" />
+        </div>
+        <div class="izinField">
+          <label>Izin minggu ke- (boleh pilih lebih dari satu)</label>
+          <div class="weekChips" id="izinWeeks">
+            <button type="button" class="weekChip" data-week="1">1</button>
+            <button type="button" class="weekChip" data-week="2">2</button>
+            <button type="button" class="weekChip" data-week="3">3</button>
+            <button type="button" class="weekChip" data-week="4">4</button>
+            <button type="button" class="weekChip" data-week="5">5</button>
+          </div>
+        </div>
+        <div class="izinField">
+          <label for="izinKet">Keterangan</label>
+          <textarea
+            id="izinKet"
+            spellcheck="false"
+            placeholder="Contoh: ada acara keluarga"
+          ></textarea>
+        </div>
+        <p class="small" id="izinStatus"></p>
+        <div class="backupActions">
+          <button class="actionBtn green" id="sendIzinBtn" type="button">Kirim izin</button
+          ><button class="actionBtn secondary" id="closeIzinBtn" type="button">Tutup</button>
+        </div>
+      </div>
+    </div>
+    <div class="bankPage no-print" id="bankPage">
+      <div class="bankPageInner">
+        <div class="bankPageHead">
+          <b>Song Bank</b>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <button id="bankAddBtn" type="button">+ Tambah lagu</button>
+            <button class="xBtn" id="bankPageClose" type="button">&#10005;</button>
+          </div>
+        </div>
+        <input
+          class="bankSearch2"
+          id="bankPageSearch"
+          type="search"
+          placeholder="Cari di database lagu..."
+        />
+        <div class="bankGrid" id="bankPageList"></div>
+        <details class="bankPresets">
+          <summary>Tambah lagu dari koleksi populer</summary>
+          <div class="bankList" id="songBank" style="margin-top: 10px"></div>
+        </details>
+      </div>
+    </div>
+    <div class="modalBackdrop no-print" id="saranModal">
+      <div class="modal">
+        <h2>Bantu saran</h2>
+        <p class="small">Ada ide fitur baru atau ada yang perlu diperbaiki? Tulis di sini ya.</p>
+        <div class="izinField">
+          <label for="saranNama">Nama (opsional)</label>
+          <input id="saranNama" type="text" placeholder="Nama kamu" />
+        </div>
+        <div class="izinField">
+          <label for="saranTeks">Saran / masukan</label>
+          <textarea
+            id="saranTeks"
+            spellcheck="false"
+            placeholder="Contoh: tolong tambahkan pilihan transpose khusus untuk medley"
+          ></textarea>
+        </div>
+        <p class="small" id="saranStatus"></p>
+        <div class="backupActions">
+          <button class="actionBtn green" id="sendSaranBtn" type="button">Kirim saran</button
+          ><button class="actionBtn secondary" id="closeSaranBtn" type="button">Tutup</button>
+        </div>
+      </div>
+    </div>
+    <div class="modalBackdrop no-print" id="infoModal">
+      <div class="modal">
+        <h2>Info &amp; pembaruan</h2>
+        <p class="small">Fitur terbaru dan perubahan pada aplikasi.</p>
+        <div id="infoList" class="infoList"></div>
+        <div class="backupActions">
+          <button class="actionBtn secondary" id="closeInfoBtn" type="button">Tutup</button>
+        </div>
+      </div>
+    </div>
+    <div class="drawerBackdrop no-print" id="menuBackdrop">
+      <aside class="drawer">
+        <div class="drawerHead">
+          <b>Menu</b><button class="xBtn" id="closeMenuBtn" type="button">&#10005;</button>
+        </div>
+        <section class="menuSec">
+          <p class="label">Song Bank</p>
+          <div class="bankFind">
+            <input id="songSearch" type="search" placeholder="Cari lagu..." />
+            <select id="songJump">
+              <option value="">Pilih lagu…</option>
+            </select>
+          </div>
+          <div class="searchResults" id="searchResults"></div>
+          <button
+            class="actionBtn"
+            id="openBankBtn"
+            type="button"
+            style="width: 100%; margin-top: 10px"
+          >
+            Buka Song Bank
+          </button>
+        </section>
+        <section class="menuSec">
+          <p class="label">Izin</p>
+          <button class="actionBtn orange" id="openIzinBtn" type="button" style="width: 100%">
+            Kirim izin
+          </button>
+        </section>
+        <section class="menuSec">
+          <p class="label">Metronome</p>
+          <div class="metroRow">
+            <button class="touchBtn metroToggle" id="metroToggle" type="button">Mulai</button>
+            <div class="metroBpm">
+              <button class="mBtn" id="bpmDown" type="button">&minus;</button
+              ><span id="bpmVal">80</span><button class="mBtn" id="bpmUp" type="button">+</button>
+            </div>
+          </div>
+          <div class="metroRow stepRow">
+            <span class="small">Langkah &plusmn;</span>
+            <button class="stepBtn" id="step1" type="button">1</button>
+            <button class="stepBtn on" id="step5" type="button">5</button>
+          </div>
+          <div class="metroRow">
+            <button class="actionBtn secondary" id="tapTempo" type="button" style="flex: 1">
+              Ketuk tempo
+            </button>
+          </div>
+        </section>
+        <section class="menuSec">
+          <p class="label">Tampilan</p>
+          <div class="rowBtns">
+            <button class="actionBtn secondary" id="darkToggle" type="button">Mode gelap</button>
+            <button class="actionBtn secondary" id="eyeToggle" type="button">Eye saver</button>
+          </div>
+          <div class="rowBtns">
+            <button class="actionBtn secondary" id="numToggle" type="button">
+              Chord jadi angka (1-7)
+            </button>
+          </div>
+          <div class="rowBtns">
+            <button class="actionBtn secondary" id="compactToggle" type="button">Mode rapat</button>
+          </div>
+          <p class="small">Ukuran huruf chord &amp; lirik:</p>
+          <div class="textSize">
+            <button class="touchBtn" id="textSmaller" type="button">A&minus;</button
+            ><span id="textSizeLabel">Sedang</span
+            ><button class="touchBtn" id="textBigger" type="button">A+</button>
+          </div>
+        </section>
+        <section class="menuSec">
+          <p class="label">Bantu saran</p>
+          <button class="actionBtn secondary" id="openSaranBtn" type="button" style="width: 100%">
+            &#128172; Beri saran fitur
+          </button>
+        </section>
+        <section class="menuSec">
+          <p class="label">Info &amp; pembaruan</p>
+          <button class="actionBtn secondary" id="openInfoBtn" type="button" style="width: 100%">
+            &#127881; Lihat pembaruan
+          </button>
+        </section>
+        <section class="menuSec">
+          <p class="label">Admin</p>
+          <button class="actionBtn secondary" id="adminLoginBtn" type="button" style="width: 100%">
+            &#128273; Login admin
+          </button>
+          <div id="adminPanel" hidden>
+            <label class="lockRow"
+              ><input type="checkbox" id="lockToggle" /> Kunci daftar lagu (member tak bisa
+              mengubah)</label
+            >
+            <label class="lockRow"
+              ><input type="checkbox" id="spectateToggle" /> Mode spectate (layar member ikuti
+              admin)</label
+            >
+            <p class="small" id="spectateStatus"></p>
+            <button class="actionBtn secondary" id="addNoteBtn" type="button" style="width: 100%">
+              &#128221; Tambah catatan rilis
+            </button>
+            <button
+              class="actionBtn secondary"
+              id="adminLogoutBtn"
+              type="button"
+              style="width: 100%"
+            >
+              Keluar admin
+            </button>
+          </div>
+          <p class="small" id="lockStatus"></p>
+        </section>
+      </aside>
+    </div>
+    <div class="modalBackdrop no-print" id="loginModal">
+      <div class="modal">
+        <h2>&#128273; Login Admin</h2>
+        <div class="field">
+          <label>Email</label><input id="loginEmail" type="email" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label>Password</label
+          ><input id="loginPass" type="password" autocomplete="current-password" />
+        </div>
+        <p class="small" id="loginMsg"></p>
+        <div class="rowBtns">
+          <button class="actionBtn" id="loginSubmit" type="button">Masuk</button>
+          <button class="actionBtn secondary" id="loginClose" type="button">Batal</button>
+        </div>
+      </div>
+    </div>
+    <div class="modalBackdrop no-print" id="noteModal">
+      <div class="modal">
+        <h2>&#128221; Tambah catatan rilis</h2>
+        <div class="field"><label>Versi</label><input id="noteVer" placeholder="mis. 1.4" /></div>
+        <div class="field">
+          <label>Perubahan (satu per baris)</label
+          ><textarea id="noteItems" spellcheck="false"></textarea>
+        </div>
+        <p class="small" id="noteMsg"></p>
+        <div class="rowBtns">
+          <button class="actionBtn" id="noteSubmit" type="button">Publikasikan</button>
+          <button class="actionBtn secondary" id="noteClose" type="button">Batal</button>
+        </div>
+      </div>
+    </div>
+    <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"
+    ></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script>
+      (function () {
+        // ================= KONFIGURASI ONLINE (FIREBASE) =================
+        // Biarkan KOSONG = mode lokal (edit hanya tersimpan di perangkat ini).
+        // Isi dari Firebase Console (Project settings) + aktifkan Realtime Database
+        // agar semua perubahan tampil real-time di semua perangkat.
+        const firebaseConfig = {
+          apiKey: "AIzaSyAj9FTRA3y_ZJQ3si-VU6doIV7OttTOpeM",
+          authDomain: "chord-youth-hosana.firebaseapp.com",
+          databaseURL:
+            "https://chord-youth-hosana-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "chord-youth-hosana",
+          storageBucket: "chord-youth-hosana.firebasestorage.app",
+          messagingSenderId: "692806682904",
+          appId: "1:692806682904:web:dc50c1c97ea5c72797f66d",
+        };
+        // ==== FORM IZIN (Google Sheet) ==============================
+        // Tempel URL Web App dari Google Apps Script kamu di antara tanda kutip.
+        // Kalau kosong, form Izin akan meminta agar dikonfigurasi dulu.
+        const IZIN_ENDPOINT =
+          "https://script.google.com/macros/s/AKfycbxybNV64J0u8VrzeACTyAAB-KAbx67fKlzCY0fIXowsJyfp1gCKSUETKy9r3bVaPCIV/exec";
+        // ================================================================
+        // Data lagu bawaan (dipakai saat pertama kali dibuka / belum ada data tersimpan).
+        const defaultSongs = [
+          {
+            id: "ada-kuasa",
+            num: 1,
+            title: "Ada Kuasa (Symphony Worship)",
+            originalKey: "F",
+            source: "Revisi PDF JRChord - Key F",
+            lines: [
+              "Intro :",
+              "Bb F C Dm",
+              "Bb F C",
+              "Bb F C Dm",
+              "Bb F C",
+              "Bait :",
+              "Bb F C Dm",
+              "Nama-Nya Tuhanku, Menara Yang Teguh",
+              "Bb F C",
+              "Kota Benteng Perlindunganku",
+              "Bb F C Dm",
+              "Allah Yang Perkasa, Dia Bapa Yang Kekal",
+              "Bb F C",
+              "Gunung Batu Kes'lamatanku",
+              "Reff :",
+              "F F/A Bb F",
+              "Engkau Yang Termulia Di Bumi Di Surga",
+              "Dm Bb F",
+              "Termahsyur, Perkasa Selamanya",
+              "Dm C/E F Bb F/A",
+              "Engkau Yang Berkua - sa Di Dalam S'gala Hal",
+              "Gm C F",
+              "Ada Kuasa Dalam Nama Yesusku",
+              "Musik :",
+              "Cm F Cm F",
+              "Cm F Cm F",
+              "Bridge :",
+              "Cm F",
+              "Nama Di Atas Segala Nama",
+              "Cm F",
+              "Nama Yang T'lah Membebaskanku",
+              "Bb F/A Bb Dm",
+              "S'gala Kuasa Tunduk Pada Nama Itu",
+              "Bb Gm C",
+              "Yesus Tuhan Segala Tuhan",
+              "Cm F",
+              "Nama Di Atas Segala Nama",
+              "Cm F",
+              "Nama Yang T'lah Membebaskanku",
+              "Bb F/A Bb Dm",
+              "S'gala Kuasa Tunduk, Pada Nama Itu",
+              "Bb Gm C",
+              "Yesus Raja Segala Raja",
+            ],
+          },
+          {
+            id: "di-badai",
+            num: 2,
+            title: "Di Badai Topan Dunia",
+            originalKey: "G",
+            source: "Chordify: Key G, chords D G C Bm. Susunan lirik dibuat ringkas untuk bacaan.",
+            lines: [
+              "Bait 1 :",
+              "G",
+              "Di badai topan dunia",
+              "D",
+              "Tuhanlah Perlindunganmu",
+              "G",
+              "Kendati goncang semesta",
+              "D G",
+              "Tuhanlah Perlindunganmu",
+              "Reff :",
+              "C G Bm",
+              "Ya, Yesus Gunung Batu di dunia",
+              "C D G",
+              "Di dunia, di dunia",
+              "C G Bm",
+              "Ya, Yesus Gunung Batu di dunia",
+              "C D G",
+              "Tempat berlindung yang teguh",
+              "Bait 2 :",
+              "G",
+              "Baik siang maupun malam g'lap",
+              "D",
+              "Tuhanlah Perlindunganmu",
+              "G",
+              "Niscaya takutmu lenyap",
+              "D G",
+              "Tuhanlah Perlindunganmu",
+              "Reff :",
+              "C G Bm",
+              "Ya, Yesus Gunung Batu di dunia",
+              "C D G",
+              "Di dunia, di dunia",
+              "C G Bm",
+              "Ya, Yesus Gunung Batu di dunia",
+              "C D G",
+              "Tempat berlindung yang teguh",
+            ],
+          },
+          {
+            id: "tiada-terukur",
+            num: 3,
+            title: "Tiada Terukur (Welyar Kauntu)",
+            originalKey: "D",
+            source:
+              "Chordify GSJS Worship Glady Febe: Key D, chords A D G Bm. Progression disusun dari chart umum dan ditranspose ke D.",
+            lines: [
+              "Bait :",
+              "D G",
+              "Tiada Terukur Besar",
+              "A D G A",
+              "Kasih SetiaMu Tuhan",
+              "D",
+              "Panjang Dan Lebarnya",
+              "G A Bm",
+              "Melebihi Lautan",
+              "Em A",
+              "Jauh Tinggi Mengatasi Langit",
+              "Em A",
+              "Dalamnya Tak Dapat Kuselami",
+              "Em D/F#",
+              "Kasih SetiaMu",
+              "G A Bm",
+              "Besar Selamanya",
+              "Em D/F#",
+              "Kasih SetiaMu",
+              "G A D",
+              "Besar Selamanya",
+              "Reff :",
+              "A D A D",
+              "Hatiku Bersyukur Jiwaku Memuji",
+              "A D",
+              "Mulutku Pun Bersorak",
+              "A G D/F# Em",
+              "Memuji Engkau Yesus",
+              "A D A D",
+              "Ajaib PerbuatanMu Besar AnugrahMu",
+              "A",
+              "Tak Kan Berhenti",
+              "D A G D/F# Em",
+              "Ku Memuji NamaMu",
+            ],
+          },
+          {
+            id: "kami-perlu",
+            num: 4,
+            title: "Kami Perlu Kau Tuhan (Nikita)",
+            originalKey: "G",
+            source: "Revisi PDF JRChord - Key G",
+            lines: [
+              "Bait :",
+              "G C/G",
+              "Ke Manakah Kami Mencari",
+              "D/F# C/G G",
+              "Kasih Seja - ti",
+              "G C/G",
+              "Ke Manakah Kami Berseru",
+              "B Em",
+              "Saat Badai Datang Menderu",
+              "C",
+              "Yang Kami Tahu",
+              "Bm Em",
+              "Hanya Kau Yang Mampu",
+              "Am D",
+              "Pulihkan S’gala Sesuatu",
+              "G C/G",
+              "Ke Manakah Kami Mencari",
+              "D/F# C/G G",
+              "Kasih Seja - ti",
+              "G C/G",
+              "Ke Manakah Kami Berseru",
+              "B Em",
+              "Saat Badai Datang Menderu",
+              "C",
+              "Yang Kami Tahu",
+              "Bm Em",
+              "Hanya Kau Yang Mampu",
+              "F C/E D",
+              "Pulihkan S’gala Sesuatu",
+              "Reff :",
+              "G G/B C",
+              "Kami Perlukan KeajaibanMu",
+              "G/B Am A/C# D",
+              "Kami Butuhkan Sentuhan TanganMu",
+              "G G/B C G/B",
+              "Kami Tak Dapat Berjalan Sendiri",
+              "Am D G",
+              "Kami Perlu Kau Tuhan",
+            ],
+          },
+          {
+            id: "ku-tak-akan-menyerah",
+            num: 5,
+            title: "Ku Tak Akan Menyerah (Medley)",
+            originalKey: "F",
+            source: "Chart user - Key F, modulasi ke G di Chorus 2",
+            lines: [
+              "Intro :",
+              "F C Gm D | Bb F Bb C | F Bb F .",
+              "Verse 1 :",
+              "F Am",
+              "Dalam s'gala perkara",
+              "A Dm C",
+              "Tuhan punya rencana",
+              "Bb C/Bb Am",
+              "yang lebih besar dari",
+              "A Dm G C",
+              "semua yang terpikirkan.",
+              "Verse 2 :",
+              "F C/E",
+              "Apapun yang kau perbuat",
+              "A C Dm C",
+              "tak ada maksud jahat",
+              "Bb C/Bb Am",
+              "s'bab itu kulaku-kan",
+              "A Dm G C",
+              "semua denganMu Tuhan.",
+              "Chorus :",
+              "F C/E Gm Dm C Bb",
+              "Ku tak akan menyerah, pada apapun ju-ga",
+              "Am Gm C",
+              "sebelum kucoba semua yang kubisa",
+              "F C Gm Dm C Bb",
+              "Tetapi ku berserah kepada kehen-dakMu",
+              "F/A Gm C F",
+              "hatiku percaya Tuhan punya rencana.",
+              "Instrumen :",
+              "Bb Dm F Gm | Am . Bb .",
+              "Verse 2 :",
+              "(ulang Verse 2)",
+              "Chorus :",
+              "(ulang Chorus)",
+              "Interlude :",
+              "Bb C Am Dm | Eb . Bb . | F . C .",
+              "Chorus :",
+              "(ulang Chorus)",
+              "Transition :",
+              "Dm D",
+              "Chorus 2 (Modulasi ke G) :",
+              "G D Am Em D C",
+              "Ku tak akan menyerah, pada apapun ju-ga",
+              "Bm Am D",
+              "sebelum kucoba semua yang kubisa",
+              "G D Am Em F C",
+              "Tetapi ku berserah kepada kehen-dakMu",
+              "G/B Am D G",
+              "Hatiku percaya Tuhan punya rencana.",
+              "Ending :",
+              "C G/B Am D G",
+              "Hatiku percaya Tuhan punya rencana.",
+              "Outro :",
+              "C Bm Am G",
+            ],
+          },
+        ];
+        const storageKey = "pujianYouthChordSongs.v3";
+        let songs = loadSongs();
+        // --- Tabel nada & util untuk transpose chord ---
+        const keyList = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+        const noteToIndex = {
+          C: 0,
+          "C#": 1,
+          Db: 1,
+          D: 2,
+          "D#": 3,
+          Eb: 3,
+          E: 4,
+          F: 5,
+          "F#": 6,
+          Gb: 6,
+          G: 7,
+          "G#": 8,
+          Ab: 8,
+          A: 9,
+          "A#": 10,
+          Bb: 10,
+          B: 11,
+        };
+        const sharpNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        const flatNames = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+        const sharpKeys = new Set(["G", "D", "A", "E", "B", "F#", "C#"]);
+        const sectionWords =
+          /^(Intro|Bait|Verse|Reff|Refrain|Chorus|Pre-?Chorus|Bridge|Musik|Instrumen(tal)?|Interlude|Transition|Transisi|Solo|Ending|Outro|Outtro|Coda)(\s|:|$)/i;
+        let selectedSongId = songs[0]?.id || "song1";
+        let selectedKey = songs[0]?.originalKey || "C";
+        let numberMode = false;
+        const degreeNames = ["1", "b2", "2", "b3", "3", "4", "b5", "5", "b6", "6", "b7", "7"];
+        const songButtons = document.getElementById("songButtons"),
+          keyButtons = document.getElementById("keyButtons"),
+          content = document.getElementById("content");
+        function loadSongs() {
+          try {
+            const raw = localStorage.getItem(storageKey);
+            if (raw) return JSON.parse(raw);
+          } catch (e) {}
+          return JSON.parse(JSON.stringify(defaultSongs));
+        }
+        // --- Sinkronisasi online (Firebase) + penyimpanan lokal ---
+        let dbRef = null,
+          cloudReady = false,
+          applyingRemote = false;
+        function setCloudPill(t) {
+          const p = document.getElementById("cloudPill");
+          if (p) p.textContent = t;
+        }
+        function initCloud() {
+          if (!firebaseConfig.databaseURL || typeof firebase === "undefined") {
+            setCloudPill("Mode lokal (perangkat ini)");
+            return;
+          }
+          try {
+            firebase.initializeApp(firebaseConfig);
+            dbRef = firebase.database().ref("pujianYouth/songs");
+            initAuthLock();
+            initSpectate();
+            cloudReady = true;
+            setCloudPill("Menghubungkan...");
+            dbRef.on(
+              "value",
+              (snap) => {
+                const val = snap.val();
+                if (val) {
+                  const arr = Array.isArray(val) ? val.filter(Boolean) : Object.values(val);
+                  if (arr.length) {
+                    applyingRemote = true;
+                    songs = arr;
+                    try {
+                      localStorage.setItem(storageKey, JSON.stringify(songs));
+                    } catch (e) {}
+                    if (!songs.find((s) => s.id === selectedSongId)) {
+                      selectedSongId = songs[0].id;
+                      selectedKey = songs[0].originalKey;
+                    }
+                    makeButtons();
+                    render();
+                    applyingRemote = false;
+                  }
+                  setCloudPill("Online - tersinkron");
+                } else {
+                  dbRef.set(songs);
+                  setCloudPill("Online - tersinkron");
+                }
+              },
+              (err) => {
+                console.error(err);
+                cloudReady = false;
+                dbRef = null;
+                setCloudPill("Gagal konek - mode lokal");
+              },
+            );
+          } catch (e) {
+            console.error(e);
+            setCloudPill("Mode lokal (perangkat ini)");
+          }
+        }
+        var isAdmin = false,
+          locked = false,
+          authRef = null,
+          lockRef = null,
+          notesRef = null;
+        function canEdit() {
+          return isAdmin || !locked;
+        }
+        function applyAdminUI() {
+          document.body.classList.toggle("noEdit", !canEdit());
+          var panel = document.getElementById("adminPanel");
+          if (panel) panel.hidden = !isAdmin;
+          var loginBtn = document.getElementById("adminLoginBtn");
+          if (loginBtn) loginBtn.style.display = isAdmin ? "none" : "";
+          var lt = document.getElementById("lockToggle");
+          if (lt) lt.checked = locked;
+          var ls = document.getElementById("lockStatus");
+          if (ls)
+            ls.textContent = locked
+              ? isAdmin
+                ? "Status: terkunci. Hanya admin yang bisa mengubah daftar lagu."
+                : "Daftar lagu sedang dikunci oleh admin."
+              : "Status: terbuka. Semua orang bisa mengubah daftar lagu.";
+        }
+        function initAuthLock() {
+          try {
+            if (firebase.auth) {
+              authRef = firebase.auth();
+              authRef.onAuthStateChanged(function (u) {
+                isAdmin = !!u;
+                applyAdminUI();
+              });
+            }
+          } catch (e) {}
+          try {
+            lockRef = firebase.database().ref("pujianYouth/config/locked");
+            lockRef.on("value", function (s) {
+              locked = s.val() === true;
+              applyAdminUI();
+            });
+            notesRef = firebase.database().ref("pujianYouth/notes");
+            notesRef.on("value", function (s) {
+              var v = s.val();
+              if (v) {
+                var arr = Array.isArray(v) ? v.filter(Boolean) : Object.values(v);
+                arr.sort(function (a, b) {
+                  return (b.t || 0) - (a.t || 0);
+                });
+                RELEASE_NOTES = arr.concat(SEED_NOTES);
+              } else {
+                RELEASE_NOTES = SEED_NOTES.slice();
+              }
+              renderInfoList();
+              updateNoteDot();
+            });
+          } catch (e) {}
+        }
+        function openLogin() {
+          closeMenu();
+          document.getElementById("loginMsg").textContent = "";
+          document.getElementById("loginModal").classList.add("open");
+        }
+        function closeLogin() {
+          document.getElementById("loginModal").classList.remove("open");
+        }
+        function doLogin() {
+          var e = document.getElementById("loginEmail").value.trim();
+          var p = document.getElementById("loginPass").value;
+          var msg = document.getElementById("loginMsg");
+          if (!authRef) {
+            if (msg) msg.textContent = "Login belum tersedia (mode lokal).";
+            return;
+          }
+          if (!e || !p) {
+            if (msg) msg.textContent = "Isi email & password.";
+            return;
+          }
+          if (msg) msg.textContent = "Memproses...";
+          authRef
+            .signInWithEmailAndPassword(e, p)
+            .then(function () {
+              if (msg) msg.textContent = "";
+              document.getElementById("loginPass").value = "";
+              closeLogin();
+            })
+            .catch(function (err) {
+              if (msg) msg.textContent = "Gagal: " + ((err && err.message) || "cek email/password");
+            });
+        }
+        function doLogout() {
+          if (authRef) authRef.signOut();
+          closeMenu();
+        }
+        function toggleLock() {
+          if (!isAdmin || !lockRef) return;
+          lockRef.set(!locked);
+        }
+        function openNoteModal() {
+          if (!isAdmin) return;
+          closeMenu();
+          document.getElementById("noteMsg").textContent = "";
+          document.getElementById("noteModal").classList.add("open");
+        }
+        function closeNoteModal() {
+          document.getElementById("noteModal").classList.remove("open");
+        }
+        function submitNote() {
+          if (!isAdmin || !notesRef) return;
+          var ver = document.getElementById("noteVer").value.trim();
+          var items = document
+            .getElementById("noteItems")
+            .value.split("\n")
+            .map(function (s) {
+              return s.trim();
+            })
+            .filter(Boolean);
+          var msg = document.getElementById("noteMsg");
+          if (!ver || !items.length) {
+            if (msg) msg.textContent = "Isi versi & minimal satu perubahan.";
+            return;
+          }
+          var now = new Date();
+          var months = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "Mei",
+            "Jun",
+            "Jul",
+            "Agu",
+            "Sep",
+            "Okt",
+            "Nov",
+            "Des",
+          ];
+          var d = now.getDate() + " " + months[now.getMonth()] + " " + now.getFullYear();
+          if (msg) msg.textContent = "Menyimpan...";
+          notesRef
+            .push({ v: ver, d: d, items: items, t: now.getTime() })
+            .then(function () {
+              if (msg) msg.textContent = "";
+              document.getElementById("noteVer").value = "";
+              document.getElementById("noteItems").value = "";
+              closeNoteModal();
+            })
+            .catch(function (err) {
+              if (msg) msg.textContent = "Gagal: " + ((err && err.message) || "");
+            });
+        }
+        var spectateOn = false,
+          liveRef = null,
+          applyingLive = false,
+          liveThrottle = 0;
+        function initSpectate() {
+          try {
+            liveRef = firebase.database().ref("pujianYouth/live");
+            liveRef.on("value", function (s) {
+              applyLive(s.val());
+            });
+          } catch (e) {}
+        }
+        function currentScrollFrac() {
+          var el = document.getElementById("sheet");
+          if (!el) return 0;
+          var m = el.scrollHeight - el.clientHeight;
+          return m > 0 ? el.scrollTop / m : 0;
+        }
+        function broadcastLive() {
+          if (!spectateOn || !isAdmin || !liveRef || applyingLive) return;
+          var now = Date.now();
+          if (now - liveThrottle < 180) return;
+          liveThrottle = now;
+          try {
+            liveRef.set({
+              active: true,
+              songId: selectedSongId,
+              key: selectedKey,
+              scroll: currentScrollFrac(),
+              t: now,
+            });
+          } catch (e) {}
+        }
+        function applyLive(v) {
+          var banner = document.getElementById("liveBanner");
+          if (!v || !v.active || isAdmin) {
+            if (banner) banner.hidden = true;
+            document.body.classList.remove("spectating");
+            return;
+          }
+          document.body.classList.add("spectating");
+          if (banner) banner.hidden = false;
+          applyingLive = true;
+          try {
+            if (v.songId && v.songId !== selectedSongId) {
+              var s = songs.find(function (x) {
+                return x.id === v.songId;
+              });
+              if (s) selectedSongId = v.songId;
+            }
+            if (v.key) selectedKey = v.key;
+            makeButtons();
+            render();
+            var el = document.getElementById("sheet");
+            if (el && typeof v.scroll === "number") {
+              var m = el.scrollHeight - el.clientHeight;
+              el.scrollTop = m * v.scroll;
+            }
+          } catch (e) {}
+          applyingLive = false;
+        }
+        function toggleSpectate() {
+          if (!isAdmin) return;
+          spectateOn = !spectateOn;
+          if (spectateOn) {
+            broadcastLive();
+          } else if (liveRef) {
+            try {
+              liveRef.set({ active: false, t: Date.now() });
+            } catch (e) {}
+          }
+          var t = document.getElementById("spectateToggle");
+          if (t) t.checked = spectateOn;
+          var st = document.getElementById("spectateStatus");
+          if (st)
+            st.textContent = spectateOn ? "Spectate AKTIF - layar member mengikuti Anda." : "";
+        }
+        function saveSongs() {
+          if (cloudReady && dbRef && !applyingRemote) {
+            try {
+              dbRef.set(songs);
+            } catch (e) {}
+          } else {
+            try {
+              localStorage.setItem(storageKey, JSON.stringify(songs));
+            } catch (e) {}
+          }
+          const sp = document.getElementById("savePill");
+          if (sp) {
+            sp.style.display = "";
+            sp.textContent = "Tersimpan";
+          }
+        }
+        function mod(n, m) {
+          return ((n % m) + m) % m;
+        }
+        function currentSong() {
+          return songs.find((s) => s.id === selectedSongId) || songs[0];
+        }
+        function namesForKey(k) {
+          return sharpKeys.has(k) ? sharpNames : flatNames;
+        }
+        function leadingNote(s) {
+          if (!s) return "";
+          const c = s[0].toUpperCase();
+          if (!"ABCDEFG".includes(c)) return "";
+          if (s.length >= 2 && (s[1] === "#" || s[1] === "b")) return c + s[1];
+          return c;
+        }
+        function transposeRoot(chord, shift, targetKey) {
+          const root = leadingNote(chord);
+          if (!root || noteToIndex[root] === undefined) return chord;
+          const idx = mod(noteToIndex[root] + shift, 12);
+          if (numberMode) {
+            const deg = mod(idx - (noteToIndex[targetKey] ?? 0), 12);
+            return degreeNames[deg] + chord.slice(root.length);
+          }
+          return namesForKey(targetKey)[idx] + chord.slice(root.length);
+        }
+        function transposeToken(token, shift, targetKey) {
+          let prefix = "",
+            suffix = "",
+            core = token;
+          while (core && "|()[]{}".includes(core[0])) {
+            prefix += core[0];
+            core = core.slice(1);
+          }
+          while (core && "|,.;:)]}".includes(core[core.length - 1])) {
+            suffix = core[core.length - 1] + suffix;
+            core = core.slice(0, -1);
+          }
+          if (!core || core === "." || /^[\u2013\u2014-]+$/.test(core)) return token;
+          if (core.includes("/")) {
+            const parts = core.split("/");
+            core =
+              parts.length === 2
+                ? transposeRoot(parts[0], shift, targetKey) +
+                  "/" +
+                  transposeRoot(parts[1], shift, targetKey)
+                : transposeRoot(core, shift, targetKey);
+          } else {
+            core = transposeRoot(core, shift, targetKey);
+          }
+          return prefix + core + suffix;
+        }
+        function transposeLine(line, shift, targetKey) {
+          return line
+            .split(/(\s+)/)
+            .map((part) => (/^\s+$/.test(part) ? part : transposeToken(part, shift, targetKey)))
+            .join("");
+        }
+        function formatChordSpacing(line) {
+          return line.trim().split(/\s+/).join("      ");
+        }
+        function isChordLine(line) {
+          const t = line.trim();
+          if (!t) return false;
+          if (sectionWords.test(t)) return false;
+          const tokens = t.split(/\s+/);
+          let chordLike = 0;
+          for (const tok of tokens) {
+            const c = tok.replace(/^[|([{]+|[|,.;:)\]}]+$/g, "");
+            if (c === "." || c === "") continue;
+            if (/^[A-G](#|b)?(m|maj|min|dim|aug|sus|add|\d|\/|\(|\)|\+|-)*$/i.test(c)) chordLike++;
+            else return false;
+          }
+          return chordLike > 0;
+        }
+        // --- Membuat tombol lagu & nada, lalu menggambar lembar chord ---
+        function makeButtons() {
+          songButtons.innerHTML = "";
+          songs.forEach((song, idx) => {
+            song.num = idx + 1;
+            const row = document.createElement("div");
+            row.className = "songRow";
+            row.dataset.id = song.id;
+            const handle = document.createElement("span");
+            handle.className = "dragHandle";
+            handle.textContent = "⋮";
+            handle.title = "Tahan lalu geser untuk mengubah urutan";
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "songBtn";
+            b.dataset.id = song.id;
+            b.textContent = song.num + ". " + song.title;
+            b.onclick = () => {
+              if (selectedSongId !== song.id) stopYt();
+              selectedSongId = song.id;
+              selectedKey = song.originalKey;
+              closeEditor();
+              render();
+            };
+            row.appendChild(handle);
+            row.appendChild(b);
+            enableRowDrag(handle, row);
+            songButtons.appendChild(row);
+          });
+          keyButtons.innerHTML = "";
+          keyList.forEach((key) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "keyBtn";
+            b.dataset.key = key;
+            b.textContent = key;
+            b.onclick = () => {
+              selectedKey = key;
+              render();
+            };
+            keyButtons.appendChild(b);
+          });
+          refreshLibrary();
+        }
+        function hasInlineChords(line) {
+          return /\[[^\]]*\]/.test(line);
+        }
+        function parseInline(line) {
+          var out = [];
+          line.split(/(\[[^\]]*\])/).forEach(function (tk) {
+            if (!tk) return;
+            var mm = tk.match(/^\[([^\]]*)\]$/);
+            if (mm) {
+              out.push({ chord: mm[1].trim(), text: "" });
+            } else if (
+              out.length &&
+              out[out.length - 1].chord !== "" &&
+              out[out.length - 1].text === ""
+            ) {
+              out[out.length - 1].text = tk;
+            } else {
+              out.push({ chord: "", text: tk });
+            }
+          });
+          return out;
+        }
+        function parseSecMod(line) {
+          var off = 0;
+          var clean = line.replace(/\(([+-]\d{1,2})\)/, function (m, g) {
+            off = parseInt(g, 10) || 0;
+            return "";
+          });
+          clean = clean.replace(/\s+$/, "");
+          return { offset: off, clean: clean };
+        }
+        function secClass(line) {
+          var t = line.trim().toLowerCase();
+          if (/^intro/.test(t)) return "sec-intro";
+          if (/^pre-?chorus/.test(t)) return "sec-pre";
+          if (/^(reff|refrain|chorus)/.test(t)) return "sec-chorus";
+          if (/^post-?chorus/.test(t)) return "sec-post";
+          if (/^(bait|verse)/.test(t)) return "sec-verse";
+          if (/^bridge/.test(t)) return "sec-bridge";
+          if (/^(instrumen|musik|solo)/.test(t)) return "sec-inst";
+          if (/^(interlude|transition|transisi)/.test(t)) return "sec-inter";
+          if (/^breakdown/.test(t)) return "sec-break";
+          if (/^(modulation|key ?change|overtune)/.test(t)) return "sec-mod";
+          if (/^(ending|outro|outtro|coda)/.test(t)) return "sec-outro";
+          return "sec-none";
+        }
+        function renderLineEl(line, shift, target) {
+          var div = document.createElement("div");
+          if (hasInlineChords(line)) {
+            div.className = "line inlineChord";
+            parseInline(line).forEach(function (sg) {
+              var col = document.createElement("span");
+              col.className = "ic";
+              var ch = document.createElement("span");
+              ch.className = "ic-ch";
+              ch.textContent = sg.chord ? transposeToken(sg.chord, shift, target) : "";
+              var tx = document.createElement("span");
+              tx.className = "ic-tx";
+              tx.textContent = sg.text;
+              col.appendChild(ch);
+              col.appendChild(tx);
+              div.appendChild(col);
+            });
+          } else if (isChordLine(line)) {
+            div.className = "line chord";
+            div.textContent = formatChordSpacing(transposeLine(line, shift, target));
+          } else if (sectionWords.test(line.trim())) {
+            div.className = "line section";
+            var pm = parseSecMod(line);
+            div.textContent = pm.clean;
+            if (pm.offset) {
+              var mb = document.createElement("span");
+              mb.className = "modBadge";
+              mb.textContent = " (" + (pm.offset > 0 ? "+" : "") + pm.offset + ")";
+              div.appendChild(mb);
+            }
+          } else {
+            div.className = "line";
+            div.textContent = line;
+          }
+          return div;
+        }
+        function renderLinesInto(container, lines, shift, target) {
+          container.innerHTML = "";
+          var wrap = document.createElement("div");
+          wrap.className = "secBlock sec-none";
+          container.appendChild(wrap);
+          var secMod = 0;
+          lines.forEach(function (raw) {
+            var ln = raw || "";
+            if (sectionWords.test(ln.trim())) {
+              var pm = parseSecMod(ln);
+              secMod = pm.offset;
+              wrap = document.createElement("div");
+              wrap.className = "secBlock " + secClass(ln);
+              container.appendChild(wrap);
+              wrap.appendChild(renderLineEl(ln, shift, target));
+            } else {
+              wrap.appendChild(renderLineEl(ln, shift + secMod, target));
+            }
+          });
+        }
+        function updateEditPreview() {
+          var body = document.getElementById("editPreviewBody");
+          if (!body) return;
+          var key = (document.getElementById("editOriginalKey").value || "C").trim();
+          var target = noteToIndex[key] === undefined ? "C" : key;
+          var text = document.getElementById("editLines").value || "";
+          renderLinesInto(body, text.replace(/\r/g, "").split("\n"), 0, target);
+        }
+        function render() {
+          if (!songs.length) {
+            content.textContent = "Belum ada lagu.";
+            return;
+          }
+          const song = currentSong();
+          if (!song) return;
+          const target = selectedKey || song.originalKey;
+          const shift = (noteToIndex[target] ?? 0) - (noteToIndex[song.originalKey] ?? 0);
+          document
+            .querySelectorAll(".songBtn")
+            .forEach((b) => b.classList.toggle("active", b.dataset.id === song.id));
+          document
+            .querySelectorAll(".keyBtn")
+            .forEach((b) => b.classList.toggle("active", b.dataset.key === target));
+          document.getElementById("currentSongPill").textContent =
+            (song.num || "") + ". " + song.title;
+          document.getElementById("currentKeyPill").textContent =
+            target === song.originalKey
+              ? "Nada " + target + " (asli)"
+              : "Nada " + target + " (asli " + song.originalKey + ")";
+          document.getElementById("songTitle").textContent = song.title;
+          document.getElementById("keyLine").textContent =
+            "Nada asli " + song.originalKey + " \u2192 ditampilkan di " + target;
+          document.getElementById("sourceLine").textContent = song.source
+            ? "Keterangan: " + song.source
+            : "";
+          renderLinesInto(content, song.lines || [], shift, target);
+          if (typeof broadcastLive === "function") broadcastLive();
+        }
+        // --- Editor lagu: ubah, tambah, duplikat, dan hapus ---
+        function openEditor() {
+          const song = currentSong();
+          document.getElementById("editTitle").value = song.title;
+          document.getElementById("editOriginalKey").value = song.originalKey;
+          document.getElementById("editSource").value = song.source || "";
+          document.getElementById("editYoutube").value = song.youtube || "";
+          document.getElementById("editLines").value = (song.lines || []).join("\n");
+          document.getElementById("editor").classList.add("open");
+          document.getElementById("editor").scrollIntoView({ behavior: "smooth", block: "start" });
+          setStructMode(false);
+          updateEditPreview();
+        }
+        function closeEditor() {
+          document.getElementById("editor").classList.remove("open");
+        }
+        var SEC_TYPES = [
+          { key: "Intro", desc: "Pembuka lagu; biasanya instrumen atau melodi utama." },
+          { key: "Verse", desc: "Menceritakan isi/alur lagu; lirik tiap verse berbeda." },
+          { key: "Pre-Chorus", desc: "Jembatan verse ke chorus; membangun ketegangan." },
+          { key: "Chorus", desc: "Bagian paling mudah diingat; sering diulang." },
+          { key: "Post-Chorus", desc: "Setelah chorus; hook tambahan / instrumental singkat." },
+          { key: "Bridge", desc: "Nuansa baru menjelang akhir; chord/melodi berbeda." },
+          { key: "Instrumental", desc: "Bagian tanpa vokal; solo gitar/piano/dll." },
+          { key: "Breakdown", desc: "Dibuat lebih kosong/pelan sebagai kontras." },
+          { key: "Interlude", desc: "Sisipan instrumental pendek antar bagian." },
+          { key: "Modulation", desc: "Perubahan nada dasar untuk menaikkan energi." },
+          { key: "Outro", desc: "Penutup lagu; fade out / ending tegas." },
+        ];
+        function secDesc(name) {
+          var t = (name || "").toLowerCase();
+          for (var i = 0; i < SEC_TYPES.length; i++) {
+            if (t.indexOf(SEC_TYPES[i].key.toLowerCase()) === 0) return SEC_TYPES[i].desc;
+          }
+          return "";
+        }
+        function parseBlocks(text) {
+          var lines = (text || "").replace(/\r/g, "").split("\n");
+          var blocks = [];
+          var cur = { header: "", mod: 0, body: [] };
+          lines.forEach(function (ln) {
+            if (sectionWords.test(ln.trim())) {
+              if (cur.header !== "" || cur.body.length) blocks.push(cur);
+              var pm = parseSecMod(ln);
+              cur = { header: pm.clean.trim(), mod: pm.offset, body: [] };
+            } else {
+              cur.body.push(ln);
+            }
+          });
+          blocks.push(cur);
+          if (blocks.length > 1 && blocks[0].header === "" && blocks[0].body.join("").trim() === "")
+            blocks.shift();
+          return blocks;
+        }
+        function serializeCanvas() {
+          var canvas = document.getElementById("structCanvas");
+          if (!canvas) return;
+          var out = [];
+          canvas.querySelectorAll(".structBlock").forEach(function (bl) {
+            var header = bl.dataset.header || "";
+            var mod = parseInt(bl.dataset.mod || "0", 10) || 0;
+            var body = bl.querySelector("textarea").value.replace(/\r/g, "");
+            if (header) out.push(header + (mod ? " (" + (mod > 0 ? "+" : "") + mod + ")" : ""));
+            if (body.length)
+              body.split("\n").forEach(function (l) {
+                out.push(l);
+              });
+          });
+          document.getElementById("editLines").value = out.join("\n");
+          updateEditPreview();
+        }
+        var dragBlock = null;
+        function attachBlockDrag(wrap, handle) {
+          handle.addEventListener("dragstart", function (e) {
+            dragBlock = wrap;
+            wrap.classList.add("dragging");
+            if (e.dataTransfer) {
+              e.dataTransfer.effectAllowed = "move";
+              try {
+                e.dataTransfer.setData("text/plain", "b");
+              } catch (x) {}
+            }
+          });
+          handle.addEventListener("dragend", function () {
+            if (dragBlock) dragBlock.classList.remove("dragging");
+            dragBlock = null;
+            serializeCanvas();
+          });
+          wrap.addEventListener("dragover", function (e) {
+            if (!dragBlock || dragBlock === wrap) return;
+            e.preventDefault();
+            var canvas = document.getElementById("structCanvas");
+            var rect = wrap.getBoundingClientRect();
+            var after = e.clientY - rect.top > rect.height / 2;
+            canvas.insertBefore(dragBlock, after ? wrap.nextSibling : wrap);
+          });
+        }
+        function setBlockMod(wrap, delta) {
+          var m = (parseInt(wrap.dataset.mod || "0", 10) || 0) + delta;
+          if (m > 12) m = 12;
+          if (m < -12) m = -12;
+          wrap.dataset.mod = m;
+          var v = wrap.querySelector(".sbModVal");
+          if (v) v.textContent = m ? (m > 0 ? "+" + m : "" + m) : "0";
+          serializeCanvas();
+        }
+        function buildBlockEl(header, mod, bodyText) {
+          var wrap = document.createElement("div");
+          wrap.className = "structBlock";
+          if (header) wrap.classList.add(secClass(header));
+          wrap.dataset.header = header || "";
+          wrap.dataset.mod = mod || 0;
+          var head = document.createElement("div");
+          head.className = "sbHead";
+          var handle = document.createElement("span");
+          handle.className = "sbHandle";
+          handle.textContent = "\u2807";
+          handle.setAttribute("draggable", "true");
+          head.appendChild(handle);
+          var name = document.createElement("span");
+          name.className = "sbName";
+          name.textContent = header || "(pembuka)";
+          head.appendChild(name);
+          if (header) {
+            var modWrap = document.createElement("span");
+            modWrap.className = "sbMod";
+            var down = document.createElement("button");
+            down.type = "button";
+            down.textContent = "\u25BC";
+            var val = document.createElement("span");
+            val.className = "sbModVal";
+            val.textContent = mod ? (mod > 0 ? "+" + mod : "" + mod) : "0";
+            var up = document.createElement("button");
+            up.type = "button";
+            up.textContent = "\u25B2";
+            down.onclick = function () {
+              setBlockMod(wrap, -1);
+            };
+            up.onclick = function () {
+              setBlockMod(wrap, 1);
+            };
+            modWrap.appendChild(down);
+            modWrap.appendChild(val);
+            modWrap.appendChild(up);
+            head.appendChild(modWrap);
+          }
+          var del = document.createElement("button");
+          del.type = "button";
+          del.className = "sbDel";
+          del.textContent = "\u2715";
+          del.onclick = function () {
+            wrap.remove();
+            serializeCanvas();
+          };
+          head.appendChild(del);
+          wrap.appendChild(head);
+          if (header) {
+            var d = secDesc(header);
+            if (d) {
+              var dp = document.createElement("p");
+              dp.className = "sbDesc";
+              dp.textContent = d;
+              wrap.appendChild(dp);
+            }
+          }
+          var ta = document.createElement("textarea");
+          ta.value = bodyText || "";
+          ta.placeholder = "Tulis chord & lirik... mis. [G]Na-ma-[D]Nya";
+          ta.addEventListener("input", serializeCanvas);
+          wrap.appendChild(ta);
+          attachBlockDrag(wrap, handle);
+          return wrap;
+        }
+        function renderCanvas() {
+          var canvas = document.getElementById("structCanvas");
+          if (!canvas) return;
+          canvas.innerHTML = "";
+          parseBlocks(document.getElementById("editLines").value).forEach(function (b) {
+            canvas.appendChild(buildBlockEl(b.header, b.mod, b.body.join("\n")));
+          });
+        }
+        function addSection(name) {
+          var canvas = document.getElementById("structCanvas");
+          var el = buildBlockEl(name, 0, "");
+          canvas.appendChild(el);
+          serializeCanvas();
+          el.scrollIntoView({ block: "nearest" });
+          var ta = el.querySelector("textarea");
+          if (ta) ta.focus();
+        }
+        function buildPalette() {
+          var pal = document.getElementById("structPalette");
+          if (!pal) return;
+          pal.innerHTML = "";
+          SEC_TYPES.forEach(function (s) {
+            var c = document.createElement("span");
+            c.className = "palChip " + secClass(s.key);
+            c.textContent = s.key;
+            c.title = s.desc;
+            c.setAttribute("draggable", "true");
+            c.onclick = function () {
+              addSection(s.key);
+            };
+            c.addEventListener("dragstart", function (e) {
+              if (e.dataTransfer) {
+                try {
+                  e.dataTransfer.setData("text/plain", "pal:" + s.key);
+                } catch (x) {}
+              }
+            });
+            pal.appendChild(c);
+          });
+          var canvas = document.getElementById("structCanvas");
+          canvas.addEventListener("dragover", function (e) {
+            e.preventDefault();
+          });
+          canvas.addEventListener("drop", function (e) {
+            var d = "";
+            try {
+              d = e.dataTransfer.getData("text/plain");
+            } catch (x) {}
+            if (d && d.indexOf("pal:") === 0) {
+              e.preventDefault();
+              addSection(d.slice(4));
+            }
+          });
+        }
+        var structMode = false;
+        function setStructMode(on) {
+          structMode = !!on;
+          var wrap = document.getElementById("structWrap");
+          var ta = document.getElementById("editLines");
+          var hint = document.getElementById("editHint");
+          var btn = document.getElementById("structToggleBtn");
+          var sug = document.getElementById("chordSuggest");
+          if (structMode) renderCanvas();
+          if (wrap) wrap.hidden = !structMode;
+          if (ta) ta.style.display = structMode ? "none" : "";
+          if (hint) hint.style.display = structMode ? "none" : "";
+          if (sug && structMode) sug.hidden = true;
+          if (btn) {
+            btn.classList.toggle("active", structMode);
+            btn.innerHTML = structMode ? "\uD83D\uDCDD Mode teks" : "\uD83E\uDDE9 Mode struktur";
+          }
+        }
+        function toggleStructMode() {
+          setStructMode(!structMode);
+        }
+        function saveEdit() {
+          const song = currentSong();
+          const key = document.getElementById("editOriginalKey").value.trim();
+          if (noteToIndex[key] === undefined) {
+            alert("Nada dasar tidak dikenali. Pakai C, Db, D, Eb, E, F, Gb, G, Ab, A, Bb, atau B.");
+            return;
+          }
+          song.title = document.getElementById("editTitle").value.trim() || song.title;
+          song.originalKey = key;
+          song.source = document.getElementById("editSource").value.trim();
+          song.youtube = document.getElementById("editYoutube").value.trim();
+          song.lines = document.getElementById("editLines").value.replace(/\r/g, "").split("\n");
+          selectedKey = key;
+          saveSongs();
+          makeButtons();
+          render();
+          closeEditor();
+        }
+        function addSong() {
+          const s = {
+            id: "song-" + Date.now(),
+            title: "Lagu Baru",
+            originalKey: "C",
+            source: "",
+            youtube: "",
+            lines: [
+              "Intro :",
+              "[C] [G] [Am] [F]",
+              "Bait :",
+              "[C]Tulis lirik di sini, [G]ganti chord sebelum suku kata",
+              "[Am]Baris lirik berikut[F]nya di sini",
+              "Reff :",
+              "[F]Tulis lirik [G]reff di [C]sini",
+            ],
+          };
+          songs.push(s);
+          selectedSongId = s.id;
+          selectedKey = s.originalKey;
+          saveSongs();
+          makeButtons();
+          render();
+          openEditor();
+        }
+        function duplicateSong() {
+          const song = currentSong();
+          const copy = JSON.parse(JSON.stringify(song));
+          copy.id = "song-" + Date.now();
+          copy.title = copy.title + " (Salinan)";
+          songs.push(copy);
+          selectedSongId = copy.id;
+          selectedKey = copy.originalKey;
+          saveSongs();
+          makeButtons();
+          render();
+          openEditor();
+        }
+        function deleteSong() {
+          if (songs.length <= 1) {
+            alert("Minimal harus ada 1 lagu.");
+            return;
+          }
+          const song = currentSong();
+          if (!confirm('Hapus lagu \"' + song.title + '\"?')) return;
+          songs = songs.filter((s) => s.id !== song.id);
+          selectedSongId = songs[0].id;
+          selectedKey = songs[0].originalKey;
+          saveSongs();
+          makeButtons();
+          render();
+          closeEditor();
+        }
+        // --- Cadangan: salin, muat, dan unduh data lagu ---
+        function openBackup() {
+          document.getElementById("backupText").value = JSON.stringify(songs, null, 2);
+          document.getElementById("backupModal").classList.add("open");
+        }
+        function closeBackup() {
+          document.getElementById("backupModal").classList.remove("open");
+        }
+        function importBackup() {
+          try {
+            const data = JSON.parse(document.getElementById("backupText").value);
+            if (!Array.isArray(data)) throw new Error("Data bukan array");
+            songs = data;
+            selectedSongId = songs[0].id;
+            selectedKey = songs[0].originalKey;
+            saveSongs();
+            makeButtons();
+            render();
+            closeBackup();
+            alert("Berhasil dimuat.");
+          } catch (e) {
+            alert("Gagal memuat: " + e.message);
+          }
+        }
+        function downloadBackup() {
+          const blob = new Blob([JSON.stringify(songs, null, 2)], { type: "application/json" });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "cadangan-chord-pujian-youth.json";
+          a.click();
+          URL.revokeObjectURL(a.href);
+        }
+        // --- Memasang aksi ke setiap tombol ---
+        document.getElementById("printBtn").onclick = () => window.print();
+        document.getElementById("copyBtn").onclick = async () => {
+          const t = document.getElementById("sheet").innerText;
+          try {
+            await navigator.clipboard.writeText(t);
+            alert("Lagu sudah disalin.");
+          } catch (e) {
+            alert("Penyalinan otomatis gagal. Blok teks lagu lalu salin manual.");
+          }
+        };
+        document.getElementById("editBtn").onclick = openEditor;
+        document.getElementById("saveEditBtn").onclick = saveEdit;
+        document.getElementById("cancelEditBtn").onclick = closeEditor;
+        document.getElementById("duplicateBtn").onclick = duplicateSong;
+        document.getElementById("deleteSongBtn").onclick = deleteSong;
+        document.getElementById("addBtn").onclick = addSong;
+        document.getElementById("backupBtn").onclick = openBackup;
+        document.getElementById("closeBackupBtn").onclick = closeBackup;
+        document.getElementById("importBackupBtn").onclick = importBackup;
+        document.getElementById("downloadBackupBtn").onclick = downloadBackup;
+        document.getElementById("copyBackupBtn").onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(document.getElementById("backupText").value);
+            alert("Cadangan sudah disalin.");
+          } catch (e) {
+            alert("Penyalinan gagal. Blok teks cadangan lalu salin manual.");
+          }
+        };
+        // --- Menu (laci kanan atas) ---
+        function openMenu() {
+          document.getElementById("menuBackdrop").classList.add("open");
+        }
+        function closeMenu() {
+          document.getElementById("menuBackdrop").classList.remove("open");
+        }
+        function openIzin() {
+          closeMenu();
+          document.getElementById("izinStatus").textContent = "";
+          document.getElementById("izinModal").classList.add("open");
+        }
+        function closeIzin() {
+          document.getElementById("izinModal").classList.remove("open");
+        }
+        // --- Bantu saran ---
+        function openSaran() {
+          closeMenu();
+          document.getElementById("saranStatus").textContent = "";
+          document.getElementById("saranModal").classList.add("open");
+        }
+        function closeSaran() {
+          document.getElementById("saranModal").classList.remove("open");
+        }
+        function submitSaran() {
+          var nama = (document.getElementById("saranNama").value || "").trim();
+          var teks = (document.getElementById("saranTeks").value || "").trim();
+          var st = document.getElementById("saranStatus");
+          if (!teks) {
+            st.style.color = "var(--red)";
+            st.textContent = "Tulis saran kamu dulu ya.";
+            return;
+          }
+          if (!IZIN_ENDPOINT) {
+            st.style.color = "var(--red)";
+            st.textContent = "Form belum dikonfigurasi (URL Google Script masih kosong).";
+            return;
+          }
+          var payload = {
+            type: "saran",
+            nama: nama || "(tanpa nama)",
+            saran: teks,
+            waktu: new Date().toLocaleString("id-ID"),
+          };
+          st.style.color = "var(--muted)";
+          st.textContent = "Mengirim...";
+          var btn = document.getElementById("sendSaranBtn");
+          btn.disabled = true;
+          fetch(IZIN_ENDPOINT, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload),
+          })
+            .then(function () {
+              st.style.color = "var(--green)";
+              st.textContent = "Terima kasih! Saran kamu sudah terkirim.";
+              document.getElementById("saranNama").value = "";
+              document.getElementById("saranTeks").value = "";
+            })
+            .catch(function () {
+              st.style.color = "var(--red)";
+              st.textContent = "Gagal mengirim. Coba lagi ya.";
+            })
+            .finally(function () {
+              btn.disabled = false;
+            });
+        }
+        // --- Info & pembaruan (release notes) ---
+        var SEED_NOTES = [
+          {
+            v: "1.3",
+            d: "26 Jul 2026",
+            items: [
+              "Autocomplete chord canggih saat mengedit lagu.",
+              "Mode chord jadi angka (Nashville 1-7).",
+              "Kotak 'Bantu saran' untuk usulan fitur.",
+              "Tampilan menu dirapikan agar lebih ringan.",
+            ],
+          },
+          {
+            v: "1.2",
+            d: "Juli 2026",
+            items: [
+              "Metronome dengan aksen ketukan pertama + ketuk tempo.",
+              "Eye saver untuk kenyamanan mata di panggung.",
+              "Form izin pelayanan langsung dari aplikasi.",
+            ],
+          },
+          {
+            v: "1.1",
+            d: "Juli 2026",
+            items: [
+              "Song Bank dengan pencarian & urutkan lagu.",
+              "Pemutar YouTube dengan progress bar.",
+              "Sinkronisasi realtime antar perangkat.",
+            ],
+          },
+        ];
+        var RELEASE_NOTES = SEED_NOTES.slice();
+        function latestNoteVersion() {
+          return RELEASE_NOTES.length ? RELEASE_NOTES[0].v : "";
+        }
+        function renderInfoList() {
+          var host = document.getElementById("infoList");
+          if (!host) return;
+          host.innerHTML = "";
+          RELEASE_NOTES.forEach(function (n) {
+            var item = document.createElement("div");
+            item.className = "infoItem";
+            var head = document.createElement("div");
+            head.className = "iv";
+            var b = document.createElement("b");
+            b.textContent = "Versi " + n.v;
+            var s = document.createElement("span");
+            s.textContent = n.d;
+            head.appendChild(b);
+            head.appendChild(s);
+            var ul = document.createElement("ul");
+            n.items.forEach(function (t) {
+              var li = document.createElement("li");
+              li.textContent = t;
+              ul.appendChild(li);
+            });
+            item.appendChild(head);
+            item.appendChild(ul);
+            host.appendChild(item);
+          });
+        }
+        function updateNoteDot() {
+          var dot = document.getElementById("menuDot");
+          if (!dot) return;
+          var seen = "";
+          try {
+            seen = localStorage.getItem("ptSeenNote") || "";
+          } catch (e) {}
+          if (seen !== latestNoteVersion()) dot.classList.add("on");
+          else dot.classList.remove("on");
+        }
+        function markNotesSeen() {
+          try {
+            localStorage.setItem("ptSeenNote", latestNoteVersion());
+          } catch (e) {}
+          var dot = document.getElementById("menuDot");
+          if (dot) dot.classList.remove("on");
+        }
+        function openInfo() {
+          closeMenu();
+          renderInfoList();
+          markNotesSeen();
+          document.getElementById("infoModal").classList.add("open");
+        }
+        function closeInfo() {
+          document.getElementById("infoModal").classList.remove("open");
+        }
+        function izinSelectedWeeks() {
+          var out = [];
+          document.querySelectorAll("#izinWeeks .weekChip.on").forEach(function (b) {
+            out.push(b.getAttribute("data-week"));
+          });
+          return out;
+        }
+        function submitIzin() {
+          var nama = (document.getElementById("izinNama").value || "").trim();
+          var weeks = izinSelectedWeeks();
+          var ket = (document.getElementById("izinKet").value || "").trim();
+          var st = document.getElementById("izinStatus");
+          if (!nama) {
+            st.style.color = "var(--red)";
+            st.textContent = "Isi nama dulu ya.";
+            return;
+          }
+          if (weeks.length === 0) {
+            st.style.color = "var(--red)";
+            st.textContent = "Pilih minggu ke berapa kamu izin.";
+            return;
+          }
+          if (!IZIN_ENDPOINT) {
+            st.style.color = "var(--red)";
+            st.textContent = "Form belum dikonfigurasi (URL Google Script masih kosong).";
+            return;
+          }
+          var payload = {
+            nama: nama,
+            minggu: weeks.join(", "),
+            keterangan: ket,
+            waktu: new Date().toLocaleString("id-ID"),
+          };
+          st.style.color = "var(--muted)";
+          st.textContent = "Mengirim...";
+          var btn = document.getElementById("sendIzinBtn");
+          btn.disabled = true;
+          fetch(IZIN_ENDPOINT, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload),
+          })
+            .then(function () {
+              st.style.color = "var(--green)";
+              st.textContent = "Terima kasih! Izin kamu sudah terkirim.";
+              document.getElementById("izinNama").value = "";
+              document.getElementById("izinKet").value = "";
+              document.querySelectorAll("#izinWeeks .weekChip.on").forEach(function (b) {
+                b.classList.remove("on");
+              });
+              btn.disabled = false;
+              setTimeout(closeIzin, 1400);
+            })
+            .catch(function () {
+              st.style.color = "var(--red)";
+              st.textContent = "Gagal mengirim. Cek koneksi internet lalu coba lagi.";
+              btn.disabled = false;
+            });
+        }
+        function ytId(url) {
+          if (!url) return "";
+          var s = String(url).trim();
+          var marks = ["watch?v=", "youtu.be/", "/shorts/", "/embed/", "/live/", "v="];
+          for (var i = 0; i < marks.length; i++) {
+            var k = s.indexOf(marks[i]);
+            if (k < 0) continue;
+            var rest = s.slice(k + marks[i].length),
+              id = "";
+            for (var j = 0; j < rest.length; j++) {
+              var c = rest[j];
+              if (
+                (c >= "A" && c <= "Z") ||
+                (c >= "a" && c <= "z") ||
+                (c >= "0" && c <= "9") ||
+                c === "_" ||
+                c === "-"
+              ) {
+                id += c;
+              } else {
+                break;
+              }
+            }
+            if (id.length >= 6) return id;
+          }
+          if (s.length === 11) {
+            var ok = true;
+            for (var m = 0; m < s.length; m++) {
+              var cc = s[m];
+              if (!(
+                (cc >= "A" && cc <= "Z") ||
+                (cc >= "a" && cc <= "z") ||
+                (cc >= "0" && cc <= "9") ||
+                cc === "_" ||
+                cc === "-"
+              )) {
+                ok = false;
+                break;
+              }
+            }
+            if (ok) return s;
+          }
+          return "";
+        }
+        function openYouTube() {
+          var song = currentSong();
+          if (!song) return;
+          var id = ytId(song.youtube);
+          if (id) {
+            loadYtApi();
+            if (ytReady && window.YT && window.YT.Player) {
+              startYtPlayer(id);
+            } else {
+              ytPending = id;
+            }
+          } else {
+            var q = encodeURIComponent((song.title || "") + " " + (song.source || ""));
+            window.open("https://www.youtube.com/results?search_query=" + q, "_blank");
+          }
+        }
+        var ytPlayer = null,
+          ytPoll = 0,
+          ytReady = false,
+          ytPending = null;
+        function loadYtApi() {
+          if (window.YT && window.YT.Player) {
+            ytReady = true;
+            return;
+          }
+          if (document.getElementById("ytApiScript")) return;
+          var t = document.createElement("script");
+          t.id = "ytApiScript";
+          t.src = "https://www.youtube.com/iframe_api";
+          document.head.appendChild(t);
+        }
+        window.onYouTubeIframeAPIReady = function () {
+          ytReady = true;
+          if (ytPending) {
+            var v = ytPending;
+            ytPending = null;
+            startYtPlayer(v);
+          }
+        };
+        function fmtTime(s) {
+          s = Math.max(0, Math.floor(s || 0));
+          var m = Math.floor(s / 60),
+            r = s % 60;
+          return m + ":" + (r < 10 ? "0" : "") + r;
+        }
+        function startYtPlayer(id) {
+          showYtBar();
+          if (ytPlayer && ytPlayer.loadVideoById) {
+            ytPlayer.loadVideoById(id);
+            startYtPoll();
+            return;
+          }
+          var host = document.getElementById("ytHost");
+          host.innerHTML = '<div id="ytPlayerEl"></div>';
+          ytPlayer = new YT.Player("ytPlayerEl", {
+            videoId: id,
+            playerVars: { autoplay: 1, playsinline: 1, rel: 0, controls: 0, modestbranding: 1 },
+            events: {
+              onReady: function (e) {
+                try {
+                  e.target.playVideo();
+                } catch (_) {}
+                startYtPoll();
+              },
+              onStateChange: onYtState,
+            },
+          });
+        }
+        function onYtState(e) {
+          var pp = document.getElementById("ytPP");
+          if (!pp) return;
+          if (e.data === YT.PlayerState.PLAYING) {
+            pp.innerHTML = "&#10074;&#10074;";
+            startYtPoll();
+          } else {
+            pp.innerHTML = "&#9654;";
+          }
+        }
+        function startYtPoll() {
+          if (ytPoll) return;
+          ytPoll = setInterval(updateYtBar, 250);
+        }
+        function stopYtPoll() {
+          if (ytPoll) {
+            clearInterval(ytPoll);
+            ytPoll = 0;
+          }
+        }
+        function updateYtBar() {
+          if (!ytPlayer || !ytPlayer.getDuration) return;
+          var d = ytPlayer.getDuration() || 0,
+            c = ytPlayer.getCurrentTime() || 0;
+          var pct = d > 0 ? Math.min(100, (c / d) * 100) : 0;
+          var fill = document.getElementById("ytFill"),
+            dot = document.getElementById("ytDot"),
+            tm = document.getElementById("ytTime");
+          if (fill) fill.style.width = pct + "%";
+          if (dot) dot.style.left = pct + "%";
+          if (tm) tm.textContent = fmtTime(c) + " / " + fmtTime(d);
+        }
+        function showYtBar() {
+          var b = document.getElementById("ytBar");
+          if (b) b.classList.add("open");
+        }
+        function hideYtBar() {
+          var b = document.getElementById("ytBar");
+          if (b) b.classList.remove("open");
+        }
+        function ytTogglePlay() {
+          if (!ytPlayer || !ytPlayer.getPlayerState) return;
+          if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+            ytPlayer.pauseVideo();
+          } else {
+            ytPlayer.playVideo();
+          }
+        }
+        function ytSeek(e) {
+          if (!ytPlayer || !ytPlayer.getDuration) return;
+          var tr = document.getElementById("ytTrack"),
+            r = tr.getBoundingClientRect();
+          var f = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+          ytPlayer.seekTo(f * (ytPlayer.getDuration() || 0), true);
+          updateYtBar();
+        }
+        function stopYt() {
+          stopYtPoll();
+          if (ytPlayer && ytPlayer.stopVideo) {
+            try {
+              ytPlayer.stopVideo();
+            } catch (_) {}
+          }
+          hideYtBar();
+        }
+
+        // --- Bank Lagu: lagu populer siap ditambahkan ---
+        const songBank = [
+          {
+            title: "Bapa Yang Kekal",
+            by: "Cover/asli: JPCC Worship",
+            key: "C",
+            link: "https://www.youtube.com/results?search_query=Bapa+Yang+Kekal+JPCC+Worship",
+          },
+          {
+            title: "Kupilih Yesus",
+            by: "Cover/asli: NDC Worship",
+            key: "G",
+            link: "https://www.youtube.com/results?search_query=Kupilih+Yesus+NDC+Worship",
+          },
+          {
+            title: "Tak Terbatas",
+            by: "Cover/asli: Symphony Worship",
+            key: "D",
+            link: "https://www.youtube.com/results?search_query=Tak+Terbatas+Symphony+Worship",
+          },
+          {
+            title: "Kaulah Harapan",
+            by: "Cover/asli: JPCC Worship",
+            key: "A",
+            link: "https://www.youtube.com/results?search_query=Kaulah+Harapan+JPCC+Worship",
+          },
+          {
+            title: "Cinta Paling Berharga",
+            by: "Cover/asli: True Worshippers",
+            key: "G",
+            link: "https://www.youtube.com/results?search_query=Cinta+Paling+Berharga+True+Worshippers",
+          },
+          {
+            title: "Besar SetiaMu",
+            by: "Cover/asli: Franky Sihombing",
+            key: "D",
+            link: "https://www.youtube.com/results?search_query=Besar+SetiaMu",
+          },
+          {
+            title: "Mujizat Itu Nyata",
+            by: "Cover/asli: NDC Worship",
+            key: "E",
+            link: "https://www.youtube.com/results?search_query=Mujizat+Itu+Nyata+NDC+Worship",
+          },
+          {
+            title: "Seperti Yang Kau Ingini",
+            by: "Cover/asli: Nikita",
+            key: "F",
+            link: "https://www.youtube.com/results?search_query=Seperti+Yang+Kau+Ingini",
+          },
+        ];
+        function addFromBank(item) {
+          const s = {
+            id: "song-" + Date.now(),
+            title: item.title,
+            originalKey: item.key,
+            source: item.by + " - " + item.link,
+            link: item.link,
+            youtube: "",
+            lines: ["Intro :", "(isi chord di sini)", "Verse :", "(tulis chord lalu liriknya)"],
+          };
+          songs.push(s);
+          selectedSongId = s.id;
+          selectedKey = s.originalKey;
+          saveSongs();
+          makeButtons();
+          render();
+          closeMenu();
+          openEditor();
+        }
+        function renderBank() {
+          const box = document.getElementById("songBank");
+          if (!box) return;
+          box.innerHTML = "";
+          songBank.forEach((item) => {
+            const row = document.createElement("div");
+            row.className = "bankItem";
+            const grip = document.createElement("span");
+            grip.className = "bankGrip";
+            grip.textContent = "☰";
+            grip.title = "Tarik ke Daftar lagu";
+            const info = document.createElement("div");
+            info.className = "bankInfo";
+            const b = document.createElement("b");
+            b.textContent = item.title;
+            const meta = document.createElement("span");
+            meta.textContent = item.by + " • Nada " + item.key;
+            const a = document.createElement("a");
+            a.href = item.link;
+            a.target = "_blank";
+            a.rel = "noopener";
+            a.textContent = "Buka referensi chord";
+            info.appendChild(b);
+            info.appendChild(meta);
+            info.appendChild(a);
+            const add = document.createElement("button");
+            add.type = "button";
+            add.className = "bankAdd";
+            add.textContent = "Tambah";
+            add.onclick = () => addFromBank(item);
+            row.appendChild(grip);
+            row.appendChild(info);
+            row.appendChild(add);
+            enableBankDrag(grip, item);
+            box.appendChild(row);
+          });
+        }
+
+        // --- Song Bank: pencarian, lompat lagu, dan halaman database ---
+        function gotoSong(id) {
+          if (selectedSongId !== id) stopYt();
+          var s = songs.find(function (x) {
+            return x.id === id;
+          });
+          if (!s) return;
+          selectedSongId = id;
+          selectedKey = s.originalKey;
+          closeMenu();
+          closeBankPage();
+          closeEditor();
+          render();
+          var sh = document.getElementById("sheet");
+          if (sh) sh.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        function renderSongJump() {
+          var sel = document.getElementById("songJump");
+          if (!sel) return;
+          sel.innerHTML = '<option value="">Pilih lagu…</option>';
+          songs.forEach(function (s) {
+            var o = document.createElement("option");
+            o.value = s.id;
+            o.textContent = (s.num || "") + ". " + s.title;
+            sel.appendChild(o);
+          });
+          sel.value = "";
+        }
+        function renderSearch(q) {
+          var box = document.getElementById("searchResults");
+          if (!box) return;
+          box.innerHTML = "";
+          q = (q || "").trim().toLowerCase();
+          if (!q) return;
+          songs
+            .filter(function (s) {
+              return (s.title || "").toLowerCase().indexOf(q) >= 0;
+            })
+            .slice(0, 8)
+            .forEach(function (s) {
+              var it = document.createElement("div");
+              it.className = "srItem";
+              var b = document.createElement("b");
+              b.textContent = (s.num || "") + ". " + s.title;
+              var tag = document.createElement("span");
+              tag.className = "srTag";
+              tag.textContent = "Buka";
+              it.appendChild(b);
+              it.appendChild(tag);
+              it.onclick = function () {
+                gotoSong(s.id);
+              };
+              box.appendChild(it);
+            });
+          songBank
+            .filter(function (item) {
+              return (
+                item.title.toLowerCase().indexOf(q) >= 0 &&
+                !songs.find(function (s) {
+                  return (s.title || "").toLowerCase() === item.title.toLowerCase();
+                })
+              );
+            })
+            .slice(0, 6)
+            .forEach(function (item) {
+              var it = document.createElement("div");
+              it.className = "srItem";
+              var b = document.createElement("b");
+              b.textContent = item.title;
+              var tag = document.createElement("span");
+              tag.className = "srTag";
+              tag.textContent = "+ Tambah";
+              it.appendChild(b);
+              it.appendChild(tag);
+              it.onclick = function () {
+                addFromBank(item);
+              };
+              box.appendChild(it);
+            });
+        }
+        function addSongFromBank() {
+          closeBankPage();
+          addSong();
+        }
+        function openBankPage() {
+          closeMenu();
+          var si = document.getElementById("bankPageSearch");
+          renderBankPage(si ? si.value : "");
+          document.getElementById("bankPage").classList.add("open");
+        }
+        function closeBankPage() {
+          var pg = document.getElementById("bankPage");
+          if (pg) pg.classList.remove("open");
+        }
+        function renderBankPage(q) {
+          var box = document.getElementById("bankPageList");
+          if (!box) return;
+          box.innerHTML = "";
+          q = (q || "").trim().toLowerCase();
+          var list = songs.filter(function (s) {
+            return !q || (s.title || "").toLowerCase().indexOf(q) >= 0;
+          });
+          if (!list.length) {
+            var e = document.createElement("p");
+            e.className = "small";
+            e.textContent = "Tidak ada lagu yang cocok.";
+            box.appendChild(e);
+            return;
+          }
+          list.forEach(function (s) {
+            var card = document.createElement("div");
+            card.className = "songCard";
+            var info = document.createElement("div");
+            info.className = "scInfo";
+            var t = document.createElement("b");
+            t.textContent = (s.num || "") + ". " + s.title;
+            var meta = document.createElement("span");
+            meta.textContent = "Nada dasar " + s.originalKey + (s.source ? " • " + s.source : "");
+            info.appendChild(t);
+            info.appendChild(meta);
+            var btns = document.createElement("div");
+            btns.className = "scBtns";
+            var open = document.createElement("button");
+            open.type = "button";
+            open.className = "scBtn primary";
+            open.textContent = "Buka";
+            open.onclick = function () {
+              gotoSong(s.id);
+            };
+            var edit = document.createElement("button");
+            edit.type = "button";
+            edit.className = "scBtn";
+            edit.textContent = "Ubah";
+            edit.onclick = function () {
+              gotoSong(s.id);
+              setTimeout(openEditor, 80);
+            };
+            btns.appendChild(open);
+            btns.appendChild(edit);
+            card.appendChild(info);
+            card.appendChild(btns);
+            box.appendChild(card);
+          });
+        }
+        function refreshLibrary() {
+          renderSongJump();
+          var ss = document.getElementById("songSearch");
+          if (ss && ss.value) renderSearch(ss.value);
+          var bp = document.getElementById("bankPage");
+          if (bp && bp.classList.contains("open")) {
+            var si = document.getElementById("bankPageSearch");
+            renderBankPage(si ? si.value : "");
+          }
+        }
+        // --- Metronome (bantuan musik) ---
+        var metroCtx = null,
+          metroTimer = 0,
+          bpm = 80,
+          bpmStep = 5,
+          metroBeat = 0,
+          metroOn = false,
+          tapTimes = [];
+        function ensureCtx() {
+          if (!metroCtx) {
+            try {
+              metroCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {}
+          }
+          return metroCtx;
+        }
+        function metroClick() {
+          var ctx = ensureCtx();
+          if (!ctx) return;
+          var accent = metroBeat % 4 === 0;
+          var o = ctx.createOscillator(),
+            g = ctx.createGain();
+          o.frequency.value = accent ? 1600 : 1000;
+          o.connect(g);
+          g.connect(ctx.destination);
+          var t = ctx.currentTime;
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(accent ? 0.7 : 0.35, t + 0.001);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+          o.start(t);
+          o.stop(t + 0.06);
+          metroBeat = (metroBeat + 1) % 4;
+        }
+        function startMetro() {
+          if (metroOn) return;
+          var ctx = ensureCtx();
+          if (ctx && ctx.state === "suspended") {
+            try {
+              ctx.resume();
+            } catch (e) {}
+          }
+          metroOn = true;
+          metroBeat = 0;
+          var b = document.getElementById("metroToggle");
+          if (b) {
+            b.textContent = "Stop";
+            b.classList.add("active");
+          }
+          metroClick();
+          metroTimer = setInterval(metroClick, 60000 / bpm);
+        }
+        function stopMetro() {
+          metroOn = false;
+          if (metroTimer) {
+            clearInterval(metroTimer);
+            metroTimer = 0;
+          }
+          var b = document.getElementById("metroToggle");
+          if (b) {
+            b.textContent = "Mulai";
+            b.classList.remove("active");
+          }
+        }
+        function toggleMetro() {
+          metroOn ? stopMetro() : startMetro();
+        }
+        function fmtBpm(v) {
+          return Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100);
+        }
+        function setBpm(v) {
+          v = Number(v) || 0;
+          bpm = Math.min(240, Math.max(30, Math.round(v * 100) / 100));
+          var el = document.getElementById("bpmVal");
+          if (el) el.textContent = fmtBpm(bpm);
+          if (metroOn) {
+            clearInterval(metroTimer);
+            metroTimer = setInterval(metroClick, 60000 / bpm);
+          }
+          try {
+            localStorage.setItem("ptBpm", String(bpm));
+          } catch (e) {}
+        }
+        function editBpm() {
+          var ans = window.prompt("Masukkan BPM (30-240, boleh koma, mis. 90,5):", fmtBpm(bpm));
+          if (ans == null) return;
+          var n = parseFloat(String(ans).replace(",", ".").trim());
+          if (!isNaN(n)) setBpm(n);
+        }
+        function setStep(s) {
+          bpmStep = s === 1 ? 1 : 5;
+          var b1 = document.getElementById("step1"),
+            b5 = document.getElementById("step5");
+          if (b1) b1.classList.toggle("on", bpmStep === 1);
+          if (b5) b5.classList.toggle("on", bpmStep === 5);
+          try {
+            localStorage.setItem("ptStep", String(bpmStep));
+          } catch (e) {}
+        }
+        function tapTempo() {
+          var now = Date.now();
+          tapTimes.push(now);
+          tapTimes = tapTimes.filter(function (t) {
+            return now - t < 3000;
+          });
+          if (tapTimes.length >= 2) {
+            var iv = [];
+            for (var i = 1; i < tapTimes.length; i++) iv.push(tapTimes[i] - tapTimes[i - 1]);
+            var avg =
+              iv.reduce(function (a, b) {
+                return a + b;
+              }, 0) / iv.length;
+            if (avg > 0) setBpm(Math.round(60000 / avg));
+          }
+        }
+        // --- Bantuan capo untuk gitar ---
+        // --- Geser untuk mengubah urutan Daftar lagu ---
+        let dragRow = null,
+          dragGhostEl = null,
+          dragStartOrder = "",
+          dragGX = 0,
+          dragGY = 0,
+          ghostOX = 0,
+          ghostOY = 0,
+          rowRaf = 0,
+          activePid = null;
+        function enableRowDrag(handle, row) {
+          handle.addEventListener("pointerdown", (e) => {
+            if (e.button && e.button !== 0) return;
+            if (dragRow) return;
+            e.preventDefault();
+            activePid = e.pointerId;
+            dragRow = row;
+            dragStartOrder = Array.from(songButtons.children)
+              .map((r) => r.dataset.id)
+              .join(",");
+            const rect = row.getBoundingClientRect();
+            dragGX = e.clientX - rect.left;
+            dragGY = e.clientY - rect.top;
+            ghostOX = rect.left;
+            ghostOY = rect.top;
+            dragGhostEl = row.cloneNode(true);
+            dragGhostEl.className = "songRow rowGhost";
+            dragGhostEl.style.width = rect.width + "px";
+            dragGhostEl.style.height = rect.height + "px";
+            dragGhostEl.style.left = rect.left + "px";
+            dragGhostEl.style.top = rect.top + "px";
+            dragGhostEl.style.transform = "translate(0px,0px) scale(1.04)";
+            document.body.appendChild(dragGhostEl);
+            row.classList.add("placeholder");
+            document.body.style.touchAction = "none";
+            window.addEventListener("pointermove", onRowMove, { passive: false });
+            window.addEventListener("pointerup", onRowUp);
+            window.addEventListener("pointercancel", onRowUp);
+          });
+        }
+        function positionGhost(x, y) {
+          if (!dragGhostEl) return;
+          dragGhostEl.style.transform =
+            "translate(" +
+            (x - dragGX - ghostOX) +
+            "px," +
+            (y - dragGY - ghostOY) +
+            "px) scale(1.04)";
+        }
+        function onRowMove(e) {
+          if (!dragRow) return;
+          if (activePid !== null && e.pointerId !== activePid) return;
+          if (e.cancelable) e.preventDefault();
+          const x = e.clientX,
+            y = e.clientY;
+          if (rowRaf) cancelAnimationFrame(rowRaf);
+          rowRaf = requestAnimationFrame(() => {
+            rowRaf = 0;
+            positionGhost(x, y);
+            reorderPreview(x, y);
+          });
+        }
+        function reorderPreview(x, y) {
+          if (!dragRow) return;
+          const rows = Array.from(songButtons.children).filter((r) => r !== dragRow);
+          let best = null,
+            bestDist = Infinity,
+            after = false;
+          rows.forEach((r) => {
+            const rect = r.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2,
+              cy = rect.top + rect.height / 2;
+            const d = Math.hypot(x - cx, y - cy);
+            if (d < bestDist) {
+              bestDist = d;
+              best = r;
+              after = y > cy || (Math.abs(y - cy) < 6 && x > cx);
+            }
+          });
+          if (!best) return;
+          const already = after
+            ? best.nextElementSibling === dragRow
+            : best.previousElementSibling === dragRow;
+          if (already) return;
+          flipMove(() => {
+            if (after) best.after(dragRow);
+            else best.before(dragRow);
+          });
+        }
+        function flipMove(mutate) {
+          const rows = Array.from(songButtons.children);
+          const first = new Map();
+          rows.forEach((r) => first.set(r, r.getBoundingClientRect()));
+          mutate();
+          Array.from(songButtons.children).forEach((r) => {
+            if (r === dragRow) return;
+            const f = first.get(r);
+            if (!f) return;
+            const l = r.getBoundingClientRect();
+            const dx = f.left - l.left,
+              dy = f.top - l.top;
+            if (dx || dy) {
+              r.style.transition = "none";
+              r.style.transform = "translate(" + dx + "px," + dy + "px)";
+              requestAnimationFrame(() => {
+                r.style.transition = "transform .2s cubic-bezier(.2,.9,.25,1.25)";
+                r.style.transform = "";
+              });
+            }
+          });
+        }
+        function onRowUp(e) {
+          if (activePid !== null && e.pointerId !== activePid) return;
+          window.removeEventListener("pointermove", onRowMove);
+          window.removeEventListener("pointerup", onRowUp);
+          window.removeEventListener("pointercancel", onRowUp);
+          document.body.style.touchAction = "";
+          activePid = null;
+          if (rowRaf) {
+            cancelAnimationFrame(rowRaf);
+            rowRaf = 0;
+          }
+          if (!dragRow) return;
+          const row = dragRow,
+            ghost = dragGhostEl;
+          dragRow = null;
+          dragGhostEl = null;
+          row.classList.remove("placeholder");
+          const slot = row.getBoundingClientRect();
+          if (ghost) {
+            ghost.classList.add("landing");
+            ghost.style.transform =
+              "translate(" + (slot.left - ghostOX) + "px," + (slot.top - ghostOY) + "px) scale(1)";
+            setTimeout(() => {
+              if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+            }, 210);
+          }
+          const order = Array.from(songButtons.children).map((r) => r.dataset.id);
+          if (order.join(",") === dragStartOrder) return;
+          songs.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+          songs.forEach((s, i) => {
+            s.num = i + 1;
+          });
+          Array.from(songButtons.children).forEach((r) => {
+            const btn = r.querySelector(".songBtn");
+            const s = songs.find((x) => x.id === r.dataset.id);
+            if (btn && s) btn.textContent = s.num + ". " + s.title;
+          });
+          saveSongs();
+          if (currentSong()) render();
+        }
+
+        // --- Tarik lagu dari Bank ke Daftar lagu ---
+        let bankGhost = null,
+          bankDragItem = null;
+        function enableBankDrag(grip, item) {
+          grip.addEventListener("pointerdown", (e) => {
+            e.preventDefault();
+            bankDragItem = item;
+            grip.setPointerCapture(e.pointerId);
+            document.getElementById("menuBackdrop").classList.add("dragging-bank");
+            bankGhost = document.createElement("div");
+            bankGhost.className = "dragGhost";
+            bankGhost.textContent = item.title;
+            document.body.appendChild(bankGhost);
+            moveGhost(e);
+            grip.addEventListener("pointermove", onBankMove);
+            grip.addEventListener("pointerup", onBankUp);
+          });
+        }
+        function moveGhost(e) {
+          if (bankGhost) {
+            bankGhost.style.left = e.clientX + 12 + "px";
+            bankGhost.style.top = e.clientY + 12 + "px";
+          }
+        }
+        function overSongList(e) {
+          const r = songButtons.getBoundingClientRect();
+          return (
+            e.clientX >= r.left &&
+            e.clientX <= r.right &&
+            e.clientY >= r.top &&
+            e.clientY <= r.bottom
+          );
+        }
+        function onBankMove(e) {
+          moveGhost(e);
+          songButtons.classList.toggle("dropHint", overSongList(e));
+        }
+        function onBankUp(e) {
+          const grip = e.currentTarget;
+          grip.removeEventListener("pointermove", onBankMove);
+          grip.removeEventListener("pointerup", onBankUp);
+          try {
+            grip.releasePointerCapture(e.pointerId);
+          } catch (_) {}
+          const drop = overSongList(e);
+          if (bankGhost) {
+            bankGhost.remove();
+            bankGhost = null;
+          }
+          songButtons.classList.remove("dropHint");
+          document.getElementById("menuBackdrop").classList.remove("dragging-bank");
+          const item = bankDragItem;
+          bankDragItem = null;
+          if (drop && item) addFromBank(item);
+        }
+
+        // --- Gulir otomatis (mode manggung) ---
+        let scrollTimer = null,
+          scrollSpeed = 1.2;
+        function startScroll() {
+          if (scrollTimer) return;
+          scrollTimer = setInterval(() => {
+            window.scrollBy(0, scrollSpeed);
+            if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 2) stopScroll();
+          }, 30);
+          const b = document.getElementById("scrollToggle");
+          if (b) {
+            b.textContent = "⏸";
+            b.classList.add("active");
+          }
+        }
+        function stopScroll() {
+          if (scrollTimer) {
+            clearInterval(scrollTimer);
+            scrollTimer = null;
+          }
+          const b = document.getElementById("scrollToggle");
+          if (b) {
+            b.textContent = "▶";
+            b.classList.remove("active");
+          }
+        }
+        function toggleScroll() {
+          scrollTimer ? stopScroll() : startScroll();
+        }
+
+        // --- Mode gelap & ukuran teks ---
+        function applyDark(on) {
+          document.body.classList.toggle("dark", on);
+          try {
+            localStorage.setItem("ptDark", on ? "1" : "0");
+          } catch (e) {}
+          const b = document.getElementById("darkToggle");
+          if (b) b.textContent = on ? "Mode terang" : "Mode gelap";
+        }
+        function toggleDark() {
+          applyDark(!document.body.classList.contains("dark"));
+        }
+        function applyEye(on) {
+          document.body.classList.toggle("eye", on);
+          try {
+            localStorage.setItem("ptEye", on ? "1" : "0");
+          } catch (e) {}
+          const b = document.getElementById("eyeToggle");
+          if (b) b.textContent = on ? "Eye saver: aktif" : "Eye saver";
+        }
+        function toggleEye() {
+          applyEye(!document.body.classList.contains("eye"));
+        }
+        function applyNum(on) {
+          numberMode = !!on;
+          try {
+            localStorage.setItem("ptNum", on ? "1" : "0");
+          } catch (e) {}
+          const b = document.getElementById("numToggle");
+          if (b) {
+            b.textContent = on ? "Chord jadi huruf (A-G)" : "Chord jadi angka (1-7)";
+            b.classList.toggle("active", !!on);
+          }
+          render();
+          var ed = document.getElementById("editor");
+          if (ed && ed.classList.contains("open")) updateEditPreview();
+        }
+        function toggleNum() {
+          applyNum(!numberMode);
+        }
+        const textSteps = ["xs", "sm", "", "big", "xl"];
+        const textLabels = ["Sangat kecil", "Kecil", "Sedang", "Besar", "Sangat besar"];
+        let textIdx = 2;
+        function applyText() {
+          document.body.classList.remove("xs", "sm", "big", "xl");
+          const c = textSteps[textIdx];
+          if (c) document.body.classList.add(c);
+          const lbl = document.getElementById("textSizeLabel");
+          if (lbl) lbl.textContent = textLabels[textIdx];
+          try {
+            localStorage.setItem("ptTextName", c);
+          } catch (e) {}
+        }
+        function textBigger() {
+          textIdx = Math.min(textSteps.length - 1, textIdx + 1);
+          applyText();
+        }
+        function textSmaller() {
+          textIdx = Math.max(0, textIdx - 1);
+          applyText();
+        }
+        function applyCompact(on) {
+          document.body.classList.toggle("compact", !!on);
+          var b = document.getElementById("compactToggle");
+          if (b) b.classList.toggle("active", !!on);
+          try {
+            localStorage.setItem("ptCompact", on ? "1" : "0");
+          } catch (e) {}
+        }
+        function toggleCompact() {
+          applyCompact(!document.body.classList.contains("compact"));
+        }
+        function restorePrefs() {
+          try {
+            applyDark(localStorage.getItem("ptDark") === "1");
+            applyEye(localStorage.getItem("ptEye") === "1");
+            const nm = localStorage.getItem("ptTextName");
+            const i = textSteps.indexOf(nm == null ? "" : nm);
+            textIdx = i >= 0 ? i : 2;
+            applyText();
+            var sv = parseInt(localStorage.getItem("ptStep"), 10);
+            setStep(sv === 1 ? 1 : 5);
+            var bv = parseFloat(localStorage.getItem("ptBpm"));
+            if (!isNaN(bv)) setBpm(bv);
+            applyNum(localStorage.getItem("ptNum") === "1");
+            applyCompact(localStorage.getItem("ptCompact") === "1");
+          } catch (e) {}
+        }
+
+        // --- Pasang aksi menu & fitur baru ---
+        function initExtras() {
+          document.getElementById("menuBtn").onclick = openMenu;
+          document.getElementById("closeMenuBtn").onclick = closeMenu;
+          document.getElementById("openIzinBtn").onclick = openIzin;
+          document.getElementById("closeIzinBtn").onclick = closeIzin;
+          document.getElementById("sendIzinBtn").onclick = submitIzin;
+          document.getElementById("openSaranBtn").onclick = openSaran;
+          document.getElementById("sendSaranBtn").onclick = submitSaran;
+          document.getElementById("closeSaranBtn").onclick = closeSaran;
+          document.getElementById("openInfoBtn").onclick = openInfo;
+          document.getElementById("closeInfoBtn").onclick = closeInfo;
+          document.getElementById("adminLoginBtn").onclick = openLogin;
+          document.getElementById("adminLogoutBtn").onclick = doLogout;
+          document.getElementById("lockToggle").onclick = toggleLock;
+          document.getElementById("addNoteBtn").onclick = openNoteModal;
+          document.getElementById("loginSubmit").onclick = doLogin;
+          document.getElementById("loginClose").onclick = closeLogin;
+          document.getElementById("noteSubmit").onclick = submitNote;
+          var spx = document.getElementById("spectateToggle");
+          if (spx) spx.onclick = toggleSpectate;
+          var shEl = document.getElementById("sheet");
+          if (shEl)
+            shEl.addEventListener("scroll", function () {
+              if (typeof broadcastLive === "function") broadcastLive();
+            });
+          if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("sw.js").catch(function () {});
+          }
+          document.getElementById("noteClose").onclick = closeNoteModal;
+          var lgm = document.getElementById("loginModal");
+          if (lgm)
+            lgm.addEventListener("click", function (e) {
+              if (e.target === lgm) closeLogin();
+            });
+          var ntm = document.getElementById("noteModal");
+          if (ntm)
+            ntm.addEventListener("click", function (e) {
+              if (e.target === ntm) closeNoteModal();
+            });
+          var srm = document.getElementById("saranModal");
+          if (srm)
+            srm.addEventListener("click", function (e) {
+              if (e.target === srm) closeSaran();
+            });
+          var ifm = document.getElementById("infoModal");
+          if (ifm)
+            ifm.addEventListener("click", function (e) {
+              if (e.target === ifm) closeInfo();
+            });
+          updateNoteDot();
+          document.querySelectorAll("#izinWeeks .weekChip").forEach(function (b) {
+            b.onclick = function () {
+              b.classList.toggle("on");
+            };
+          });
+          var izm = document.getElementById("izinModal");
+          if (izm)
+            izm.addEventListener("click", function (e) {
+              if (e.target === izm) closeIzin();
+            });
+          var mb = document.getElementById("menuBackdrop");
+          mb.addEventListener("click", function (e) {
+            if (e.target === mb) closeMenu();
+          });
+          document.getElementById("ytPlay").onclick = openYouTube;
+          document.getElementById("ytPP").onclick = ytTogglePlay;
+          document.getElementById("ytStop").onclick = stopYt;
+          document.getElementById("ytTrack").addEventListener("click", ytSeek);
+          document.getElementById("darkToggle").onclick = toggleDark;
+          document.getElementById("eyeToggle").onclick = toggleEye;
+          document.getElementById("numToggle").onclick = toggleNum;
+          document.getElementById("textBigger").onclick = textBigger;
+          document.getElementById("textSmaller").onclick = textSmaller;
+          document.getElementById("compactToggle").onclick = toggleCompact;
+          document.getElementById("songSearch").addEventListener("input", function (e) {
+            renderSearch(e.target.value);
+          });
+          document.getElementById("songJump").addEventListener("change", function (e) {
+            if (e.target.value) gotoSong(e.target.value);
+          });
+          document.getElementById("openBankBtn").onclick = openBankPage;
+          document.getElementById("bankPageClose").onclick = closeBankPage;
+          document.getElementById("bankPageSearch").addEventListener("input", function (e) {
+            renderBankPage(e.target.value);
+          });
+          document.getElementById("metroToggle").onclick = toggleMetro;
+          document.getElementById("bpmUp").onclick = function () {
+            setBpm(bpm + bpmStep);
+          };
+          document.getElementById("bpmDown").onclick = function () {
+            setBpm(bpm - bpmStep);
+          };
+          document.getElementById("bpmVal").onclick = editBpm;
+          document.getElementById("step1").onclick = function () {
+            setStep(1);
+          };
+          document.getElementById("step5").onclick = function () {
+            setStep(5);
+          };
+          document.getElementById("tapTempo").onclick = tapTempo;
+          document.getElementById("bankAddBtn").onclick = addSongFromBank;
+          document.getElementById("editLines").addEventListener("input", updateEditPreview);
+          document.getElementById("structToggleBtn").onclick = toggleStructMode;
+          buildPalette();
+          document.getElementById("editOriginalKey").addEventListener("input", updateEditPreview);
+          // --- Autocomplete / autocorrect chord canggih di editor ---
+          var CHORD_SUFFIXES = [
+            "",
+            "m",
+            "7",
+            "m7",
+            "maj7",
+            "sus4",
+            "sus2",
+            "6",
+            "m6",
+            "9",
+            "m9",
+            "maj9",
+            "add9",
+            "madd9",
+            "11",
+            "m11",
+            "13",
+            "m13",
+            "dim",
+            "dim7",
+            "m7b5",
+            "aug",
+            "+",
+            "5",
+            "6/9",
+            "m6/9",
+            "7sus4",
+            "9sus4",
+            "7b5",
+            "7#5",
+            "7b9",
+            "7#9",
+            "7#11",
+            "7b13",
+            "13sus4",
+            "mmaj7",
+            "maj7#11",
+            "maj13",
+            "sus4add9",
+            "add11",
+            "add13",
+            "sus",
+          ];
+          function csIsBoundary(ch) {
+            if (ch === undefined) return true;
+            var c = ch.charCodeAt(0);
+            return c === 32 || c === 9 || c === 10 || c === 13 || ch === "[" || ch === "]";
+          }
+          function csRootOf(tok) {
+            if (!tok) return "";
+            var c = tok[0].toUpperCase();
+            if (!"ABCDEFG".includes(c)) return "";
+            if (tok.length >= 2 && (tok[1] === "#" || tok[1] === "b")) return c + tok[1];
+            return c;
+          }
+          function csTokenAtCursor(ta) {
+            if (ta.selectionStart !== ta.selectionEnd) return null;
+            var pos = ta.selectionStart;
+            var val = ta.value;
+            var start = pos;
+            while (start > 0 && !csIsBoundary(val[start - 1])) start--;
+            var tok = val.slice(start, pos);
+            var root = csRootOf(tok);
+            if (!root) return null;
+            var inBracket = start > 0 && val[start - 1] === "[";
+            return {
+              start: start,
+              end: pos,
+              root: root,
+              partial: tok.slice(root.length),
+              inBracket: inBracket,
+            };
+          }
+          function csBuild(root, partial) {
+            var p = partial.toLowerCase();
+            var out = [];
+            var seen = {};
+            for (var i = 0; i < CHORD_SUFFIXES.length; i++) {
+              var suf = CHORD_SUFFIXES[i];
+              if (p === "" || suf.toLowerCase().indexOf(p) === 0) {
+                var full = root + suf;
+                if (!seen[full]) {
+                  seen[full] = 1;
+                  out.push(full);
+                }
+              }
+            }
+            return out.slice(0, 16);
+          }
+          var csLastTok = null;
+          function csHide() {
+            var box = document.getElementById("chordSuggest");
+            if (box) box.hidden = true;
+            csLastTok = null;
+          }
+          function csApply(chord) {
+            var ta = document.getElementById("editLines");
+            var t = csLastTok || csTokenAtCursor(ta);
+            if (!t) return;
+            var val = ta.value;
+            var before = val.slice(0, t.start);
+            var after = val.slice(t.end);
+            var addClose = t.inBracket && after[0] !== "]";
+            ta.value = before + chord + (addClose ? "]" : "") + after;
+            var np = (before + chord + (addClose ? "]" : "")).length;
+            ta.focus();
+            ta.setSelectionRange(np, np);
+            csHide();
+            updateEditPreview();
+          }
+          function csRefresh() {
+            var ta = document.getElementById("editLines");
+            var box = document.getElementById("chordSuggest");
+            if (!ta || !box) return;
+            var t = csTokenAtCursor(ta);
+            if (!t || (!t.inBracket && t.partial === "")) {
+              csHide();
+              return;
+            }
+            var list = csBuild(t.root, t.partial);
+            if (!list.length) {
+              csHide();
+              return;
+            }
+            csLastTok = t;
+            box.innerHTML = "";
+            list.forEach(function (ch) {
+              var b = document.createElement("button");
+              b.type = "button";
+              b.className = "csChip";
+              b.textContent = ch;
+              b.addEventListener("mousedown", function (e) {
+                e.preventDefault();
+              });
+              b.addEventListener("click", function () {
+                csApply(ch);
+              });
+              box.appendChild(b);
+            });
+            box.hidden = false;
+          }
+          (function () {
+            var ta = document.getElementById("editLines");
+            if (!ta) return;
+            ta.addEventListener("input", csRefresh);
+            ta.addEventListener("click", csRefresh);
+            ta.addEventListener("keyup", function (e) {
+              if (
+                e.key === "ArrowLeft" ||
+                e.key === "ArrowRight" ||
+                e.key === "ArrowUp" ||
+                e.key === "ArrowDown" ||
+                e.key === "Home" ||
+                e.key === "End"
+              )
+                csRefresh();
+            });
+            ta.addEventListener("keydown", function (e) {
+              var box = document.getElementById("chordSuggest");
+              if (box && !box.hidden && e.key === "Tab") {
+                var first = box.querySelector(".csChip");
+                if (first) {
+                  e.preventDefault();
+                  csApply(first.textContent);
+                }
+              } else if (e.key === "Escape") {
+                csHide();
+              }
+            });
+            ta.addEventListener("blur", function () {
+              setTimeout(csHide, 200);
+            });
+          })();
+          document.getElementById("dragInfoBtn").onclick = function () {
+            var t = document.getElementById("dragTip");
+            if (t) t.style.display = t.style.display === "none" ? "block" : "none";
+          };
+          loadYtApi();
+          renderBank();
+          refreshLibrary();
+          restorePrefs();
+        }
+
+        // Jalankan aplikasi: gambar tampilan, lalu coba sambungkan ke server online.
+        makeButtons();
+        render();
+        initExtras();
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", initCloud);
+        } else {
+          initCloud();
+        }
+      })();
+    </script>
+  </body>
+</html>
