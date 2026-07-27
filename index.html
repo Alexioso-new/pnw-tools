@@ -1621,9 +1621,225 @@
         border-color: var(--blue);
         color: #fff;
       }
+      #toastWrap {
+        position: fixed;
+        left: 50%;
+        top: 14px;
+        transform: translateX(-50%);
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        pointer-events: none;
+        width: calc(100% - 24px);
+        max-width: 380px;
+      }
+      .toast {
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        background: #fff;
+        color: #2c2c2b;
+        border: 1px solid #e6e5e3;
+        border-left: 4px solid #2783de;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 14px;
+        font-weight: 600;
+        max-width: 100%;
+        opacity: 0;
+        transform: translateY(-8px);
+        transition:
+          opacity 0.22s,
+          transform 0.22s;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .toast.success {
+        border-left-color: #46a171;
+      }
+      .toast.error {
+        border-left-color: #e56458;
+      }
+      .toast.info {
+        border-left-color: #2783de;
+      }
+      .toast.loading {
+        border-left-color: #d5803b;
+      }
+      .toast .tIco {
+        font-size: 16px;
+        line-height: 1;
+      }
+      .toast .tSpin {
+        width: 15px;
+        height: 15px;
+        border: 2px solid #e6e5e3;
+        border-top-color: #d5803b;
+        border-radius: 50%;
+        animation: tspin 0.7s linear infinite;
+        flex: 0 0 auto;
+      }
+      @keyframes tspin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      body.dark .toast {
+        background: #1f2429;
+        color: #ececec;
+        border-color: #333b44;
+      }
+      .scBtn.danger {
+        background: #e56458;
+        color: #fff;
+        border-color: #e56458;
+      }
+      .songCard .scInfo b .inSet {
+        color: #46a171;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 6px;
+      }
+      .schedTabs {
+        display: flex;
+        gap: 6px;
+        margin: 8px 0 12px;
+      }
+      .schedTabBtn {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #e6e5e3;
+        background: #fff;
+        border-radius: 9px;
+        font-weight: 600;
+        cursor: pointer;
+        color: #2c2c2b;
+      }
+      .schedTabBtn.on {
+        background: #2783de;
+        color: #fff;
+        border-color: #2783de;
+      }
+      .schedToolbar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+      }
+      .schedToolbar input {
+        flex: 1;
+        min-width: 140px;
+        padding: 8px;
+        border: 1px solid #e6e5e3;
+        border-radius: 8px;
+      }
+      .schedScroll {
+        overflow: auto;
+        max-width: 100%;
+      }
+      table.schedGrid {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 13px;
+      }
+      table.schedGrid th,
+      table.schedGrid td {
+        border: 1px solid #e6e5e3;
+        padding: 6px 8px;
+        vertical-align: top;
+      }
+      table.schedGrid th {
+        background: #f9f8f7;
+        font-weight: 700;
+      }
+      table.schedGrid tr.teamRow td {
+        background: #eef4fb;
+        font-weight: 700;
+        color: #2783de;
+      }
+      table.schedGrid td.roleCell {
+        font-weight: 600;
+        white-space: nowrap;
+        background: #fcfbfa;
+      }
+      .cell .chip {
+        display: inline-flex;
+        align-items: center;
+        background: #eaf3ff;
+        color: #2c2c2b;
+        border-radius: 20px;
+        padding: 3px 9px;
+        margin: 2px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .cell .chip.warn {
+        background: #fbe3e0;
+        color: #b23a2e;
+      }
+      .chipX {
+        cursor: pointer;
+        margin-left: 4px;
+        color: #e56458;
+        font-weight: 800;
+      }
+      .cellSel {
+        margin-top: 3px;
+        font-size: 12px;
+        padding: 3px;
+        border: 1px solid #e6e5e3;
+        border-radius: 6px;
+        max-width: 140px;
+      }
+      .rosterCard {
+        border: 1px solid #e6e5e3;
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 8px;
+      }
+      .rosterHead {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .roleChecks {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+      }
+      .roleCheck {
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+      }
+      body.dark .schedTabBtn,
+      body.dark table.schedGrid th,
+      body.dark table.schedGrid td,
+      body.dark .rosterCard {
+        background: #181b1f;
+        color: #ececec;
+        border-color: #333b44;
+      }
+      body.dark table.schedGrid tr.teamRow td {
+        background: #1e2a38;
+      }
+      body.dark .cell .chip {
+        background: #22303f;
+        color: #ececec;
+      }
     </style>
   </head>
   <body>
+    <div id="toastWrap" aria-live="polite"></div>
     <div class="app">
       <header class="brand no-print">
         <img
@@ -1828,7 +2044,7 @@
         <div class="bankPageHead">
           <b>Song Bank</b>
           <div style="display: flex; gap: 8px; align-items: center">
-            <button id="bankAddBtn" type="button">+ Tambah lagu</button>
+            <button id="bankAddBtn" type="button">+ Daftarkan lagu</button>
             <button class="xBtn" id="bankPageClose" type="button">&#10005;</button>
           </div>
         </div>
@@ -1905,6 +2121,12 @@
           <p class="label">Izin</p>
           <button class="actionBtn orange" id="openIzinBtn" type="button" style="width: 100%">
             Kirim izin
+          </button>
+        </section>
+        <section class="menuSec">
+          <p class="label">Penjadwalan</p>
+          <button class="actionBtn" id="openSchedBtn" type="button" style="width: 100%">
+            Penjadwal Pelayanan
           </button>
         </section>
         <section class="menuSec">
@@ -2021,6 +2243,34 @@
           <button class="actionBtn" id="noteSubmit" type="button">Publikasikan</button>
           <button class="actionBtn secondary" id="noteClose" type="button">Batal</button>
         </div>
+      </div>
+    </div>
+    <div class="bankPage no-print" id="schedulePage">
+      <div class="bankPageInner">
+        <div class="bankPageHead">
+          <b>Penjadwal Pelayanan</b>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <label class="small"
+              >Minggu:
+              <select id="schedWeekCount">
+                <option>3</option>
+                <option>4</option>
+                <option selected>5</option>
+                <option>6</option>
+                <option>7</option>
+                <option>8</option>
+              </select>
+            </label>
+            <span class="pill green" id="schedSaveStatus"></span>
+            <button class="xBtn" id="schedClose" type="button">&#10005;</button>
+          </div>
+        </div>
+        <div class="schedTabs">
+          <button class="schedTabBtn on" id="schedTab_jadwal" type="button">Jadwal</button>
+          <button class="schedTabBtn" id="schedTab_pelayan" type="button">Pelayan</button>
+          <button class="schedTabBtn" id="schedTab_izin" type="button">Izin</button>
+        </div>
+        <div id="schedBody"></div>
       </div>
     </div>
     <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -2307,7 +2557,9 @@
           },
         ];
         const storageKey = "pujianYouthChordSongs.v3";
+        const bankKey = "pujianYouthSongBank.v1";
         let songs = loadSongs();
+        let bankSongs = loadBank();
         // --- Tabel nada & util untuk transpose chord ---
         const keyList = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
         const noteToIndex = {
@@ -2348,8 +2600,65 @@
           } catch (e) {}
           return JSON.parse(JSON.stringify(defaultSongs));
         }
+        function loadBank() {
+          try {
+            const raw = localStorage.getItem(bankKey);
+            if (raw) {
+              var v = JSON.parse(raw);
+              if (Array.isArray(v)) return v.filter(Boolean);
+            }
+          } catch (e) {}
+          return [];
+        }
+        function ensureBankId(s) {
+          if (!s.bankId) s.bankId = "bank-" + Date.now() + "-" + Math.floor(Math.random() * 100000);
+          return s.bankId;
+        }
+        function mirrorToBank(song) {
+          var bid = ensureBankId(song);
+          var master = {
+            bankId: bid,
+            title: song.title,
+            num: song.num || "",
+            originalKey: song.originalKey,
+            source: song.source || "",
+            youtube: song.youtube || "",
+            lines: (song.lines || []).slice(),
+          };
+          var i = -1;
+          for (var k = 0; k < bankSongs.length; k++) {
+            if (bankSongs[k] && bankSongs[k].bankId === bid) {
+              i = k;
+              break;
+            }
+          }
+          if (i >= 0) bankSongs[i] = master;
+          else bankSongs.push(master);
+        }
+        function saveBank() {
+          try {
+            localStorage.setItem(bankKey, JSON.stringify(bankSongs));
+          } catch (e) {}
+          if (cloudReady && bankRef && !applyingRemote) {
+            try {
+              bankRef.set(bankSongs);
+            } catch (e) {}
+          }
+        }
+        function seedBankFromSongs() {
+          if (bankSongs.length) return;
+          songs.forEach(mirrorToBank);
+          saveBank();
+          if (cloudReady && dbRef && !applyingRemote) {
+            try {
+              dbRef.set(songs);
+            } catch (e) {}
+          }
+          refreshLibrary();
+        }
         // --- Sinkronisasi online (Firebase) + penyimpanan lokal ---
         let dbRef = null,
+          bankRef = null,
           cloudReady = false,
           applyingRemote = false;
         function setCloudPill(t) {
@@ -2364,10 +2673,27 @@
           try {
             firebase.initializeApp(firebaseConfig);
             dbRef = firebase.database().ref("pujianYouth/songs");
+            bankRef = firebase.database().ref("pujianYouth/songBank");
+            bankRef.on("value", function (snap) {
+              var val = snap.val();
+              if (val) {
+                var arr = Array.isArray(val)
+                  ? val.filter(Boolean)
+                  : Object.values(val).filter(Boolean);
+                bankSongs = arr;
+                try {
+                  localStorage.setItem(bankKey, JSON.stringify(bankSongs));
+                } catch (e) {}
+                refreshLibrary();
+              } else {
+                setTimeout(seedBankFromSongs, 700);
+              }
+            });
             initAuthLock();
             initSpectate();
             cloudReady = true;
             setCloudPill("Menghubungkan...");
+            var _syncToast = toast("Menyinkronkan data...", "loading", 0);
             dbRef.on(
               "value",
               (snap) => {
@@ -2389,9 +2715,17 @@
                     applyingRemote = false;
                   }
                   setCloudPill("Online - tersinkron");
+                  if (_syncToast) {
+                    _syncToast.close();
+                    _syncToast = null;
+                  }
                 } else {
                   dbRef.set(songs);
                   setCloudPill("Online - tersinkron");
+                  if (_syncToast) {
+                    _syncToast.close();
+                    _syncToast = null;
+                  }
                 }
               },
               (err) => {
@@ -2399,6 +2733,10 @@
                 cloudReady = false;
                 dbRef = null;
                 setCloudPill("Gagal konek - mode lokal");
+                if (_syncToast) {
+                  _syncToast.close();
+                  _syncToast = null;
+                }
               },
             );
           } catch (e) {
@@ -2484,24 +2822,31 @@
             return;
           }
           if (msg) msg.textContent = "Memproses...";
+          var _loginT = toast("Memproses login...", "loading", 0);
           authRef
             .signInWithEmailAndPassword(e, p)
             .then(function () {
               if (msg) msg.textContent = "";
               document.getElementById("loginPass").value = "";
               closeLogin();
+              if (_loginT) _loginT.close();
+              toast("Login berhasil. Anda masuk sebagai admin.", "success");
             })
             .catch(function (err) {
               if (msg) msg.textContent = "Gagal: " + ((err && err.message) || "cek email/password");
+              if (_loginT) _loginT.close();
+              toast("Login gagal. Periksa email/password.", "error");
             });
         }
         function doLogout() {
           if (authRef) authRef.signOut();
           closeMenu();
+          toast("Anda keluar dari mode admin.", "info");
         }
         function toggleLock() {
           if (!isAdmin || !lockRef) return;
           lockRef.set(!locked);
+          toast(!locked ? "Daftar lagu dikunci." : "Daftar lagu dibuka.", "success");
         }
         function openNoteModal() {
           if (!isAdmin) return;
@@ -2548,6 +2893,7 @@
             .push({ v: ver, d: d, items: items, t: now.getTime() })
             .then(function () {
               if (msg) msg.textContent = "";
+              toast("Catatan rilis dipublikasikan.", "success");
               document.getElementById("noteVer").value = "";
               document.getElementById("noteItems").value = "";
               closeNoteModal();
@@ -2633,7 +2979,655 @@
           if (st)
             st.textContent = spectateOn ? "Spectate AKTIF - layar member mengikuti Anda." : "";
         }
+        function toast(msg, type, ms) {
+          var wrap = document.getElementById("toastWrap");
+          if (!wrap) return null;
+          var el = document.createElement("div");
+          el.className = "toast " + (type || "info");
+          var ico = document.createElement("span");
+          if (type === "loading") {
+            ico.className = "tSpin";
+          } else {
+            ico.className = "tIco";
+            ico.textContent = type === "success" ? "✅" : type === "error" ? "⚠️" : "ℹ️";
+          }
+          var tx = document.createElement("span");
+          tx.textContent = msg;
+          el.appendChild(ico);
+          el.appendChild(tx);
+          wrap.appendChild(el);
+          requestAnimationFrame(function () {
+            el.classList.add("show");
+          });
+          var dur = ms == null ? 2600 : ms;
+          var handle = {
+            el: el,
+            close: function () {
+              if (!el.parentNode) return;
+              el.classList.remove("show");
+              setTimeout(function () {
+                if (el.parentNode) el.parentNode.removeChild(el);
+              }, 240);
+            },
+          };
+          if (type !== "loading" && dur > 0) setTimeout(handle.close, dur);
+          return handle;
+        }
+        // ===== FASE C: Penjadwal Pelayanan =====
+        var SCHED_KEY = "pujianYouthSchedule.v1";
+        var scheduleRef = null;
+        var schedInited = false;
+        var schedTab = "jadwal";
+        var schedAutoWarned = false;
+        var SCHED_TEAMS = [
+          {
+            key: "hosp",
+            label: "Tim Hospitality",
+            roles: [
+              { key: "doaBuka", label: "Doa Pembuka", slots: 1, dbl: true },
+              { key: "usher", label: "Usher", slots: 2, dbl: true },
+              { key: "pengumuman", label: "Pengumuman", slots: 1, dbl: true },
+              { key: "doaTutup", label: "Doa Penutup", slots: 1, dbl: true },
+            ],
+          },
+          {
+            key: "mm",
+            label: "Sound & Multimedia",
+            roles: [
+              { key: "presenter", label: "Presenter", slots: 1 },
+              { key: "streaming", label: "Streaming", slots: 1 },
+              { key: "soundTech", label: "Sound Technician", slots: 1 },
+              { key: "camera", label: "Camera", slots: 1 },
+              { key: "liveReport", label: "Live Report", slots: 1 },
+            ],
+          },
+          {
+            key: "wPNW",
+            label: "Worship Team - PNW",
+            roles: [
+              { key: "wlPNW", label: "Worship Leader", slots: 1 },
+              { key: "singPNW", label: "Singers", slots: 3 },
+              { key: "musPNW", label: "Musician", slots: 4 },
+              { key: "tambPNW", label: "Tambourine", slots: 1 },
+              { key: "banPNW", label: "Banners", slots: 1 },
+            ],
+          },
+          {
+            key: "wPsb",
+            label: "Worship Team - Persembahan",
+            roles: [
+              { key: "wlPsb", label: "Worship Leader", slots: 1 },
+              { key: "singPsb", label: "Singers", slots: 3 },
+              { key: "musPsb", label: "Musician", slots: 4 },
+              { key: "tambPsb", label: "Tambourine", slots: 1 },
+              { key: "banPsb", label: "Banners", slots: 1 },
+            ],
+          },
+        ];
+        function allSchedRoles() {
+          var out = [];
+          SCHED_TEAMS.forEach(function (t) {
+            t.roles.forEach(function (r) {
+              out.push(r);
+            });
+          });
+          return out;
+        }
+        function schedRole(key) {
+          var f = null;
+          allSchedRoles().forEach(function (r) {
+            if (r.key === key) f = r;
+          });
+          return f;
+        }
+        var DEFAULT_ROSTER_NAMES = [
+          "Alesandro",
+          "Christian",
+          "Dini",
+          "Geby",
+          "Sherina",
+          "Bill Stephen",
+          "Florie",
+          "Natha",
+          "Yemima",
+          "Gilberto",
+          "Chintya",
+          "Mishael",
+          "Adit",
+          "Joshua",
+          "Amos",
+          "Mia",
+          "Tesa",
+          "Yessica",
+          "Gilbert",
+        ];
+        var DEFAULT_IZIN = {
+          "Bill Stephen": [1, 2, 3],
+          Florie: [1, 4, 5],
+          Natha: [4],
+          Yemima: [1, 2, 3, 4, 5],
+          Gilberto: [1, 4, 5],
+          Chintya: [1, 2, 3, 4, 5],
+          Mishael: [1, 4, 5],
+          Adit: [1, 2, 3, 4, 5],
+          Joshua: [1, 4],
+          Amos: [1, 2],
+          Mia: [1, 2, 3, 4],
+          Tesa: [2],
+          Yessica: [1],
+          Gilbert: [1, 2, 3, 4, 5],
+        };
+        function defaultSched() {
+          var general = ["doaBuka", "usher", "pengumuman", "doaTutup"];
+          var roster = DEFAULT_ROSTER_NAMES.map(function (nm, i) {
+            return {
+              id: "p-" + i + "-" + Math.floor(Math.random() * 10000),
+              name: nm,
+              roles: general.slice(),
+            };
+          });
+          var izin = {};
+          roster.forEach(function (p) {
+            if (DEFAULT_IZIN[p.name]) izin[p.id] = DEFAULT_IZIN[p.name].slice();
+          });
+          return { weeks: 5, roster: roster, izin: izin, assign: {}, auto: false };
+        }
+        function loadSched() {
+          try {
+            var raw = localStorage.getItem(SCHED_KEY);
+            if (raw) {
+              var v = JSON.parse(raw);
+              if (v && v.roster) return v;
+            }
+          } catch (e) {}
+          return defaultSched();
+        }
+        var sched = loadSched();
+        function saveSched(silent) {
+          try {
+            localStorage.setItem(SCHED_KEY, JSON.stringify(sched));
+          } catch (e) {}
+          if (cloudReady && scheduleRef) {
+            try {
+              scheduleRef.set(sched);
+            } catch (e) {}
+          }
+          if (!silent) {
+            var sp = document.getElementById("schedSaveStatus");
+            if (sp) {
+              sp.textContent = "Tersimpan";
+              setTimeout(function () {
+                if (sp) sp.textContent = "";
+              }, 1500);
+            }
+          }
+        }
+        function initScheduleCloud() {
+          if (schedInited) return;
+          if (
+            !cloudReady ||
+            typeof firebase === "undefined" ||
+            !firebase.apps ||
+            !firebase.apps.length
+          )
+            return;
+          try {
+            scheduleRef = firebase.database().ref("pujianYouth/schedule");
+            schedInited = true;
+            scheduleRef.on("value", function (snap) {
+              var v = snap.val();
+              if (v && v.roster) {
+                sched = v;
+                try {
+                  localStorage.setItem(SCHED_KEY, JSON.stringify(sched));
+                } catch (e) {}
+              } else if (v == null) {
+                scheduleRef.set(sched);
+              }
+              var pg = document.getElementById("schedulePage");
+              if (pg && pg.classList.contains("open")) renderSchedule();
+            });
+          } catch (e) {}
+        }
+        function personById(id) {
+          var f = null;
+          sched.roster.forEach(function (p) {
+            if (p.id === id) f = p;
+          });
+          return f;
+        }
+        function personName(id) {
+          var p = personById(id);
+          return p ? p.name : "?";
+        }
+        function isIzin(pid, wk) {
+          return !!(sched.izin[pid] && sched.izin[pid].indexOf(wk) >= 0);
+        }
+        function weekAssignments(wk) {
+          return sched.assign["w" + wk] || {};
+        }
+        function rolesOfPersonInWeek(pid, wk) {
+          var wa = weekAssignments(wk);
+          var out = [];
+          Object.keys(wa).forEach(function (rk) {
+            if ((wa[rk] || []).indexOf(pid) >= 0) out.push(rk);
+          });
+          return out;
+        }
+        function canDouble(roleKey) {
+          var r = schedRole(roleKey);
+          return !!(r && r.dbl);
+        }
+        function eligible(roleKey, wk, allowIzin) {
+          return sched.roster.filter(function (p) {
+            if (p.roles.indexOf(roleKey) < 0) return false;
+            if (!allowIzin && isIzin(p.id, wk)) return false;
+            return true;
+          });
+        }
+        function setAssign(wk, roleKey, arr) {
+          if (!sched.assign["w" + wk]) sched.assign["w" + wk] = {};
+          sched.assign["w" + wk][roleKey] = arr;
+        }
+        function getAssign(wk, roleKey) {
+          var wa = weekAssignments(wk);
+          return (wa[roleKey] || []).slice();
+        }
+        function assignPerson(wk, roleKey, pid) {
+          var existingRoles = rolesOfPersonInWeek(pid, wk);
+          if (existingRoles.length) {
+            var conflict = false;
+            if (!canDouble(roleKey)) conflict = true;
+            existingRoles.forEach(function (rk) {
+              if (!canDouble(rk)) conflict = true;
+            });
+            if (conflict) {
+              toast(
+                personName(pid) +
+                  " sudah punya tugas lain minggu ini (rangkap hanya untuk Usher/Doa/Pengumuman).",
+                "error",
+                3800,
+              );
+              return false;
+            }
+          }
+          var arr = getAssign(wk, roleKey);
+          if (arr.indexOf(pid) >= 0) return false;
+          var role = schedRole(roleKey);
+          var slots = (role && role.slots) || 1;
+          if (arr.length >= slots) {
+            toast(
+              "Slot " + (role ? role.label : roleKey) + " sudah penuh (" + slots + ").",
+              "info",
+            );
+            return false;
+          }
+          arr.push(pid);
+          setAssign(wk, roleKey, arr);
+          if (sched.auto && !schedAutoWarned) {
+            schedAutoWarned = true;
+            toast(
+              "Anda mengubah jadwal yang dibuat otomatis. Perubahan manual disimpan.",
+              "info",
+              4000,
+            );
+          }
+          saveSched();
+          return true;
+        }
+        function removeAssign(wk, roleKey, pid) {
+          var arr = getAssign(wk, roleKey).filter(function (x) {
+            return x !== pid;
+          });
+          setAssign(wk, roleKey, arr);
+          saveSched();
+        }
+        function autoSchedule() {
+          if (!canEdit()) {
+            toast("Hanya admin yang bisa membuat jadwal.", "error");
+            return;
+          }
+          if (!confirm("Buat ulang jadwal otomatis? Ini menimpa jadwal saat ini.")) return;
+          sched.assign = {};
+          var load = {};
+          sched.roster.forEach(function (p) {
+            load[p.id] = 0;
+          });
+          for (var w = 1; w <= sched.weeks; w++) {
+            allSchedRoles().forEach(function (role) {
+              var slots = role.slots || 1;
+              for (var s = 0; s < slots; s++) {
+                var cands = eligible(role.key, w, false).filter(function (p) {
+                  var er = rolesOfPersonInWeek(p.id, w);
+                  if (!er.length) return true;
+                  if (!canDouble(role.key)) return false;
+                  var ok = true;
+                  er.forEach(function (rk) {
+                    if (!canDouble(rk)) ok = false;
+                  });
+                  return ok;
+                });
+                var cur = getAssign(w, role.key);
+                cands = cands.filter(function (p) {
+                  return cur.indexOf(p.id) < 0;
+                });
+                if (!cands.length) continue;
+                cands.sort(function (a, b) {
+                  return (load[a.id] || 0) - (load[b.id] || 0);
+                });
+                var pick = cands[0];
+                var arr = getAssign(w, role.key);
+                arr.push(pick.id);
+                setAssign(w, role.key, arr);
+                load[pick.id] = (load[pick.id] || 0) + 1;
+              }
+            });
+          }
+          sched.auto = true;
+          schedAutoWarned = false;
+          saveSched();
+          renderSchedule();
+          toast("Jadwal otomatis dibuat. Anda bisa sesuaikan manual.", "success");
+        }
+        function openSchedulePage() {
+          closeMenu();
+          initScheduleCloud();
+          document.getElementById("schedulePage").classList.add("open");
+          renderSchedule();
+        }
+        function closeSchedulePage() {
+          var pg = document.getElementById("schedulePage");
+          if (pg) pg.classList.remove("open");
+        }
+        function schedSetTab(t) {
+          schedTab = t;
+          renderSchedule();
+        }
+        function renderSchedule() {
+          var pg = document.getElementById("schedulePage");
+          if (!pg) return;
+          ["jadwal", "pelayan", "izin"].forEach(function (t) {
+            var b = document.getElementById("schedTab_" + t);
+            if (b) b.classList.toggle("on", schedTab === t);
+          });
+          var admin = canEdit();
+          var wc = document.getElementById("schedWeekCount");
+          if (wc) wc.value = String(sched.weeks);
+          var body = document.getElementById("schedBody");
+          if (!body) return;
+          body.innerHTML = "";
+          if (schedTab === "jadwal") renderSchedGrid(body, admin);
+          else if (schedTab === "pelayan") renderSchedRoster(body, admin);
+          else renderSchedIzin(body, admin);
+        }
+        function renderSchedGrid(body, admin) {
+          var toolbar = document.createElement("div");
+          toolbar.className = "schedToolbar";
+          if (admin) {
+            var autoBtn = document.createElement("button");
+            autoBtn.className = "actionBtn";
+            autoBtn.textContent = "Buat jadwal otomatis";
+            autoBtn.onclick = autoSchedule;
+            toolbar.appendChild(autoBtn);
+            var clearBtn = document.createElement("button");
+            clearBtn.className = "actionBtn secondary";
+            clearBtn.textContent = "Kosongkan";
+            clearBtn.onclick = function () {
+              if (confirm("Kosongkan semua jadwal?")) {
+                sched.assign = {};
+                sched.auto = false;
+                saveSched();
+                renderSchedule();
+              }
+            };
+            toolbar.appendChild(clearBtn);
+          } else {
+            var note = document.createElement("span");
+            note.className = "small";
+            note.textContent = "Mode lihat. Login admin untuk mengubah jadwal.";
+            toolbar.appendChild(note);
+          }
+          body.appendChild(toolbar);
+          var wrap = document.createElement("div");
+          wrap.className = "schedScroll";
+          var table = document.createElement("table");
+          table.className = "schedGrid";
+          var thead = document.createElement("thead");
+          var htr = document.createElement("tr");
+          var corner = document.createElement("th");
+          corner.textContent = "Pelayanan";
+          htr.appendChild(corner);
+          for (var w = 1; w <= sched.weeks; w++) {
+            var th = document.createElement("th");
+            th.textContent = "Minggu " + w;
+            htr.appendChild(th);
+          }
+          thead.appendChild(htr);
+          table.appendChild(thead);
+          var tbody = document.createElement("tbody");
+          SCHED_TEAMS.forEach(function (team) {
+            var trh = document.createElement("tr");
+            trh.className = "teamRow";
+            var tdh = document.createElement("td");
+            tdh.colSpan = sched.weeks + 1;
+            tdh.textContent = team.label;
+            trh.appendChild(tdh);
+            tbody.appendChild(trh);
+            team.roles.forEach(function (role) {
+              var tr = document.createElement("tr");
+              var rl = document.createElement("td");
+              rl.className = "roleCell";
+              rl.textContent = role.label + (role.slots > 1 ? " (x" + role.slots + ")" : "");
+              tr.appendChild(rl);
+              for (var w2 = 1; w2 <= sched.weeks; w2++) {
+                (function (wk) {
+                  var td = document.createElement("td");
+                  td.className = "cell";
+                  var arr = getAssign(wk, role.key);
+                  arr.forEach(function (pid) {
+                    var chip = document.createElement("span");
+                    chip.className = "chip" + (isIzin(pid, wk) ? " warn" : "");
+                    chip.textContent = personName(pid);
+                    if (admin) {
+                      var x = document.createElement("b");
+                      x.className = "chipX";
+                      x.textContent = "x";
+                      x.onclick = function () {
+                        removeAssign(wk, role.key, pid);
+                        renderSchedule();
+                      };
+                      chip.appendChild(x);
+                    }
+                    td.appendChild(chip);
+                  });
+                  if (admin && arr.length < (role.slots || 1)) {
+                    var sel = document.createElement("select");
+                    sel.className = "cellSel";
+                    var opt0 = document.createElement("option");
+                    opt0.value = "";
+                    opt0.textContent = "+ tambah";
+                    sel.appendChild(opt0);
+                    sched.roster.forEach(function (p) {
+                      if (p.roles.indexOf(role.key) < 0) return;
+                      if (arr.indexOf(p.id) >= 0) return;
+                      var o = document.createElement("option");
+                      o.value = p.id;
+                      o.textContent = (isIzin(p.id, wk) ? "(IZIN) " : "") + p.name;
+                      sel.appendChild(o);
+                    });
+                    sel.onchange = function () {
+                      var pid = sel.value;
+                      if (!pid) return;
+                      if (isIzin(pid, wk)) {
+                        var reason = prompt(
+                          personName(pid) +
+                            " sedang IZIN minggu " +
+                            wk +
+                            ". Ketik alasan urgent untuk tetap menugaskan (kosongkan untuk batal):",
+                          "",
+                        );
+                        if (!reason) {
+                          sel.value = "";
+                          return;
+                        }
+                      }
+                      if (assignPerson(wk, role.key, pid)) renderSchedule();
+                      else sel.value = "";
+                    };
+                    td.appendChild(sel);
+                  }
+                  tr.appendChild(td);
+                })(w2);
+              }
+              tbody.appendChild(tr);
+            });
+          });
+          table.appendChild(tbody);
+          wrap.appendChild(table);
+          body.appendChild(wrap);
+        }
+        function renderSchedRoster(body, admin) {
+          var info = document.createElement("p");
+          info.className = "small";
+          info.textContent =
+            "Centang pelayanan yang bisa dilakukan tiap orang. Seed awal mencentang Usher/Doa/Pengumuman - silakan sesuaikan sesuai data.";
+          body.appendChild(info);
+          if (admin) {
+            var addRow = document.createElement("div");
+            addRow.className = "schedToolbar";
+            var inp = document.createElement("input");
+            inp.placeholder = "Nama pelayan baru";
+            var addBtn = document.createElement("button");
+            addBtn.className = "actionBtn";
+            addBtn.textContent = "Tambah";
+            addBtn.onclick = function () {
+              var nm = (inp.value || "").trim();
+              if (!nm) return;
+              sched.roster.push({
+                id: "p-" + Date.now() + "-" + Math.floor(Math.random() * 10000),
+                name: nm,
+                roles: [],
+              });
+              saveSched();
+              renderSchedule();
+            };
+            addRow.appendChild(inp);
+            addRow.appendChild(addBtn);
+            body.appendChild(addRow);
+          }
+          sched.roster.forEach(function (p) {
+            var card = document.createElement("div");
+            card.className = "rosterCard";
+            var head = document.createElement("div");
+            head.className = "rosterHead";
+            var nm = document.createElement("b");
+            nm.textContent = p.name;
+            head.appendChild(nm);
+            if (admin) {
+              var del = document.createElement("button");
+              del.className = "scBtn danger";
+              del.textContent = "Hapus";
+              del.onclick = function () {
+                if (confirm("Hapus " + p.name + "?")) {
+                  sched.roster = sched.roster.filter(function (x) {
+                    return x.id !== p.id;
+                  });
+                  delete sched.izin[p.id];
+                  saveSched();
+                  renderSchedule();
+                }
+              };
+              head.appendChild(del);
+            }
+            card.appendChild(head);
+            var rolesWrap = document.createElement("div");
+            rolesWrap.className = "roleChecks";
+            allSchedRoles().forEach(function (role) {
+              var lab = document.createElement("label");
+              lab.className = "roleCheck";
+              var cb = document.createElement("input");
+              cb.type = "checkbox";
+              cb.checked = p.roles.indexOf(role.key) >= 0;
+              cb.disabled = !admin;
+              cb.onchange = function () {
+                if (cb.checked) {
+                  if (p.roles.indexOf(role.key) < 0) p.roles.push(role.key);
+                } else {
+                  p.roles = p.roles.filter(function (k) {
+                    return k !== role.key;
+                  });
+                }
+                saveSched(true);
+              };
+              lab.appendChild(cb);
+              lab.appendChild(document.createTextNode(" " + role.label));
+              rolesWrap.appendChild(lab);
+            });
+            card.appendChild(rolesWrap);
+            body.appendChild(card);
+          });
+        }
+        function renderSchedIzin(body, admin) {
+          var info = document.createElement("p");
+          info.className = "small";
+          info.textContent =
+            "Centang minggu di mana pelayan IZIN / tidak bisa melayani. Nama yang izin otomatis merah dan tidak bisa dijadwalkan (kecuali admin override dengan alasan).";
+          body.appendChild(info);
+          var wrap = document.createElement("div");
+          wrap.className = "schedScroll";
+          var table = document.createElement("table");
+          table.className = "schedGrid";
+          var thead = document.createElement("thead");
+          var htr = document.createElement("tr");
+          var c0 = document.createElement("th");
+          c0.textContent = "Pelayan";
+          htr.appendChild(c0);
+          for (var w = 1; w <= sched.weeks; w++) {
+            var th = document.createElement("th");
+            th.textContent = "M" + w;
+            htr.appendChild(th);
+          }
+          thead.appendChild(htr);
+          table.appendChild(thead);
+          var tb = document.createElement("tbody");
+          sched.roster.forEach(function (p) {
+            var tr = document.createElement("tr");
+            var nmc = document.createElement("td");
+            nmc.className = "roleCell";
+            nmc.textContent = p.name;
+            tr.appendChild(nmc);
+            for (var w2 = 1; w2 <= sched.weeks; w2++) {
+              (function (wk) {
+                var td = document.createElement("td");
+                td.style.textAlign = "center";
+                var cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.checked = isIzin(p.id, wk);
+                cb.disabled = !admin;
+                cb.onchange = function () {
+                  if (!sched.izin[p.id]) sched.izin[p.id] = [];
+                  if (cb.checked) {
+                    if (sched.izin[p.id].indexOf(wk) < 0) sched.izin[p.id].push(wk);
+                  } else {
+                    sched.izin[p.id] = sched.izin[p.id].filter(function (x) {
+                      return x !== wk;
+                    });
+                  }
+                  saveSched(true);
+                };
+                td.appendChild(cb);
+                tr.appendChild(td);
+              })(w2);
+            }
+            tb.appendChild(tr);
+          });
+          table.appendChild(tb);
+          wrap.appendChild(table);
+          body.appendChild(wrap);
+        }
         function saveSongs() {
+          songs.forEach(mirrorToBank);
+          saveBank();
           if (cloudReady && dbRef && !applyingRemote) {
             try {
               dbRef.set(songs);
@@ -3204,6 +4198,7 @@
           const copy = JSON.parse(JSON.stringify(song));
           copy.id = "song-" + Date.now();
           copy.title = copy.title + " (Salinan)";
+          copy.bankId = "";
           songs.push(copy);
           selectedSongId = copy.id;
           selectedKey = copy.originalKey;
@@ -3870,8 +4865,7 @@
             });
         }
         function addSongFromBank() {
-          closeBankPage();
-          addSong();
+          registerNewBankSong();
         }
         function openBankPage() {
           closeMenu();
@@ -3888,50 +4882,152 @@
           if (!box) return;
           box.innerHTML = "";
           q = (q || "").trim().toLowerCase();
-          var list = songs.filter(function (s) {
-            return !q || (s.title || "").toLowerCase().indexOf(q) >= 0;
+          var list = bankSongs.filter(function (s) {
+            return s && (!q || (s.title || "").toLowerCase().indexOf(q) >= 0);
           });
           if (!list.length) {
             var e = document.createElement("p");
             e.className = "small";
-            e.textContent = "Tidak ada lagu yang cocok.";
+            e.textContent = bankSongs.length
+              ? "Tidak ada lagu yang cocok."
+              : "Bank lagu masih kosong. Tekan tombol Daftarkan lagu untuk menambah.";
             box.appendChild(e);
             return;
           }
           list.forEach(function (s) {
+            var setSong = songs.find(function (x) {
+              return x.bankId === s.bankId;
+            });
+            var inSet = !!setSong;
             var card = document.createElement("div");
             card.className = "songCard";
             var info = document.createElement("div");
             info.className = "scInfo";
             var t = document.createElement("b");
-            t.textContent = (s.num || "") + ". " + s.title;
+            t.textContent = s.title;
+            if (inSet) {
+              var tag = document.createElement("span");
+              tag.className = "inSet";
+              tag.textContent = " ✓ di daftar";
+              t.appendChild(tag);
+            }
             var meta = document.createElement("span");
             meta.textContent = "Nada dasar " + s.originalKey + (s.source ? " • " + s.source : "");
             info.appendChild(t);
             info.appendChild(meta);
             var btns = document.createElement("div");
             btns.className = "scBtns";
-            var open = document.createElement("button");
-            open.type = "button";
-            open.className = "scBtn primary";
-            open.textContent = "Buka";
-            open.onclick = function () {
-              gotoSong(s.id);
+            var pull = document.createElement("button");
+            pull.type = "button";
+            pull.className = "scBtn primary";
+            pull.textContent = inSet ? "Buka" : "Tarik ke daftar";
+            pull.onclick = function () {
+              if (inSet) gotoSong(setSong.id);
+              else pullFromBank(s);
             };
             var edit = document.createElement("button");
             edit.type = "button";
             edit.className = "scBtn";
             edit.textContent = "Ubah";
             edit.onclick = function () {
-              gotoSong(s.id);
-              setTimeout(openEditor, 80);
+              editBankSong(s);
             };
-            btns.appendChild(open);
+            btns.appendChild(pull);
             btns.appendChild(edit);
+            if (isAdmin) {
+              var del = document.createElement("button");
+              del.type = "button";
+              del.className = "scBtn danger";
+              del.textContent = "Hapus";
+              del.onclick = function () {
+                removeFromBank(s);
+              };
+              btns.appendChild(del);
+            }
             card.appendChild(info);
             card.appendChild(btns);
             box.appendChild(card);
           });
+        }
+        function pullFromBank(master) {
+          if (
+            songs.find(function (x) {
+              return x.bankId === master.bankId;
+            })
+          ) {
+            toast("Lagu sudah ada di daftar.", "info");
+            return;
+          }
+          var s = {
+            id: "song-" + Date.now(),
+            bankId: master.bankId,
+            num: master.num || "",
+            title: master.title,
+            originalKey: master.originalKey,
+            source: master.source || "",
+            youtube: master.youtube || "",
+            lines: (master.lines || []).slice(),
+          };
+          songs.push(s);
+          selectedSongId = s.id;
+          selectedKey = s.originalKey;
+          saveSongs();
+          makeButtons();
+          render();
+          refreshLibrary();
+          toast("'" + master.title + "' ditarik ke daftar lagu.", "success");
+        }
+        function editBankSong(master) {
+          var ex = songs.find(function (x) {
+            return x.bankId === master.bankId;
+          });
+          closeBankPage();
+          if (ex) {
+            gotoSong(ex.id);
+            setTimeout(openEditor, 90);
+          } else {
+            pullFromBank(master);
+            setTimeout(openEditor, 140);
+          }
+        }
+        function removeFromBank(master) {
+          if (!isAdmin) {
+            toast("Hanya admin yang bisa menghapus dari bank.", "error");
+            return;
+          }
+          if (!confirm("Hapus '" + master.title + "' dari BANK lagu? Tindakan ini permanen."))
+            return;
+          bankSongs = bankSongs.filter(function (x) {
+            return x.bankId !== master.bankId;
+          });
+          saveBank();
+          var si = document.getElementById("bankPageSearch");
+          renderBankPage(si ? si.value : "");
+          toast("Lagu dihapus dari bank.", "info");
+        }
+        function registerNewBankSong() {
+          var master = {
+            bankId: "bank-" + Date.now() + "-" + Math.floor(Math.random() * 100000),
+            title: "Lagu Baru",
+            num: "",
+            originalKey: "C",
+            source: "",
+            youtube: "",
+            lines: [
+              "Intro :",
+              "[C] [G] [Am] [F]",
+              "Bait :",
+              "[C]Tulis lirik di sini, [G]ganti chord sebelum suku kata",
+              "Reff :",
+              "[F]Tulis lirik [G]reff di [C]sini",
+            ],
+          };
+          bankSongs.push(master);
+          saveBank();
+          toast("Lagu baru terdaftar di bank.", "success");
+          pullFromBank(master);
+          setTimeout(openEditor, 140);
+          closeBankPage();
         }
         function refreshLibrary() {
           renderSongJump();
@@ -4404,6 +5500,13 @@
           document.getElementById("loginSubmit").onclick = doLogin;
           document.getElementById("loginClose").onclick = closeLogin;
           document.getElementById("noteSubmit").onclick = submitNote;
+          window.addEventListener("online", function () {
+            toast("Kembali online - perubahan tersinkron.", "success");
+          });
+          window.addEventListener("offline", function () {
+            toast("Mode offline - perubahan disimpan, dikirim saat online.", "info", 3500);
+          });
+          setTimeout(seedBankFromSongs, 1800);
           var spx = document.getElementById("spectateToggle");
           if (spx) spx.onclick = toggleSpectate;
           var shEl = document.getElementById("sheet");
@@ -4468,6 +5571,24 @@
           });
           document.getElementById("openBankBtn").onclick = openBankPage;
           document.getElementById("bankPageClose").onclick = closeBankPage;
+          document.getElementById("openSchedBtn").onclick = openSchedulePage;
+          document.getElementById("schedClose").onclick = closeSchedulePage;
+          document.getElementById("schedTab_jadwal").onclick = function () {
+            schedSetTab("jadwal");
+          };
+          document.getElementById("schedTab_pelayan").onclick = function () {
+            schedSetTab("pelayan");
+          };
+          document.getElementById("schedTab_izin").onclick = function () {
+            schedSetTab("izin");
+          };
+          document.getElementById("schedWeekCount").onchange = function (e) {
+            var n = parseInt(e.target.value, 10) || 5;
+            sched.weeks = n;
+            saveSched(true);
+            renderSchedule();
+          };
+          setTimeout(initScheduleCloud, 2200);
           document.getElementById("bankPageSearch").addEventListener("input", function (e) {
             renderBankPage(e.target.value);
           });
