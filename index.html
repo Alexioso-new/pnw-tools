@@ -1992,6 +1992,33 @@
         font-style: normal;
         vertical-align: middle;
       }
+      .infoItem .iv {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .noteActs {
+        margin-left: auto;
+        display: inline-flex;
+        gap: 6px;
+      }
+      .noteAct {
+        font-size: 12px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        background: transparent;
+        color: var(--blue);
+        cursor: pointer;
+      }
+      .noteAct.danger {
+        color: var(--red);
+      }
+      .gridSearch {
+        min-width: 150px;
+        flex: 1;
+      }
     </style>
   </head>
   <body>
@@ -2008,7 +2035,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v1.4</span>
+            <span class="verTag" id="appVer">v1.5</span>
           </p>
         </div>
         <button class="menuBtn no-print" id="menuBtn" type="button" aria-label="Menu">
@@ -2282,7 +2309,7 @@
             Kirim izin
           </button>
         </section>
-        <section class="menuSec">
+        <section class="menuSec" id="schedMenuSec">
           <p class="label">Penjadwalan</p>
           <button class="actionBtn" id="openSchedBtn" type="button" style="width: 100%">
             Penjadwal Pelayanan
@@ -2356,6 +2383,10 @@
               admin)</label
             >
             <p class="small" id="spectateStatus"></p>
+            <label class="lockRow"
+              ><input type="checkbox" id="izinOpenToggle" checked /> Buka form izin (member bisa
+              kirim izin)</label
+            >
             <button class="actionBtn secondary" id="addNoteBtn" type="button" style="width: 100%">
               &#128221; Tambah catatan rilis
             </button>
@@ -2376,7 +2407,13 @@
       <div class="modal">
         <h2>&#128273; Login Admin</h2>
         <div class="field">
-          <label>Email</label><input id="loginEmail" type="email" autocomplete="username" />
+          <label>Username</label
+          ><input
+            id="loginEmail"
+            type="text"
+            autocomplete="username"
+            placeholder="username pengurus"
+          />
         </div>
         <div class="field">
           <label>Password</label
@@ -2904,10 +2941,37 @@
           }
         }
         var isAdmin = false,
+          localAdmin = false,
+          fbAdmin = false,
           locked = false,
+          izinFormOpen = true,
           authRef = null,
           lockRef = null,
+          izinRef = null,
           notesRef = null;
+        // ==== AKUN PENGURUS (login username & password) ====
+        // Tambah / ubah akun di sini lalu bagikan ke pengurus.
+        // Catatan: ini keamanan tingkat kenyamanan (client-side), bukan enkripsi.
+        var LOCAL_ACCOUNTS = [
+          { u: "admin", p: "hosana2026", name: "Admin Utama" },
+          { u: "pengurus", p: "pnw2026", name: "Pengurus" },
+        ];
+        function findLocalAccount(u, p) {
+          var uu = (u || "").trim().toLowerCase();
+          for (var i = 0; i < LOCAL_ACCOUNTS.length; i++) {
+            if (
+              (LOCAL_ACCOUNTS[i].u || "").toLowerCase() === uu &&
+              String(LOCAL_ACCOUNTS[i].p) === String(p)
+            )
+              return LOCAL_ACCOUNTS[i];
+          }
+          return null;
+        }
+        function recomputeAdmin() {
+          isAdmin = localAdmin || fbAdmin;
+          applyAdminUI();
+          applyIzinUI();
+        }
         function canEdit() {
           return isAdmin || !locked;
         }
@@ -2917,6 +2981,8 @@
           if (panel) panel.hidden = !isAdmin;
           var loginBtn = document.getElementById("adminLoginBtn");
           if (loginBtn) loginBtn.style.display = isAdmin ? "none" : "";
+          var schedSec = document.getElementById("schedMenuSec");
+          if (schedSec) schedSec.style.display = isAdmin ? "" : "none";
           var lt = document.getElementById("lockToggle");
           if (lt) lt.checked = locked;
           var ls = document.getElementById("lockStatus");
@@ -2929,11 +2995,23 @@
         }
         function initAuthLock() {
           try {
+            var savedU = localStorage.getItem("ptAdminUser") || "";
+            if (savedU) {
+              var accOk = false;
+              for (var i = 0; i < LOCAL_ACCOUNTS.length; i++)
+                if ((LOCAL_ACCOUNTS[i].u || "").toLowerCase() === savedU.toLowerCase())
+                  accOk = true;
+              if (accOk) localAdmin = true;
+              else localStorage.removeItem("ptAdminUser");
+            }
+          } catch (e) {}
+          recomputeAdmin();
+          try {
             if (firebase.auth) {
               authRef = firebase.auth();
               authRef.onAuthStateChanged(function (u) {
-                isAdmin = !!u;
-                applyAdminUI();
+                fbAdmin = !!u;
+                recomputeAdmin();
               });
             }
           } catch (e) {}
@@ -2947,7 +3025,17 @@
             notesRef.on("value", function (s) {
               var v = s.val();
               if (v) {
-                var arr = Array.isArray(v) ? v.filter(Boolean) : Object.values(v);
+                var arr;
+                if (Array.isArray(v)) {
+                  arr = [];
+                  v.forEach(function (it, i) {
+                    if (it) arr.push(Object.assign({ _key: String(i) }, it));
+                  });
+                } else {
+                  arr = Object.keys(v).map(function (k) {
+                    return Object.assign({ _key: k }, v[k]);
+                  });
+                }
                 arr.sort(function (a, b) {
                   return (b.t || 0) - (a.t || 0);
                 });
@@ -2957,6 +3045,12 @@
               }
               renderInfoList();
               updateNoteDot();
+            });
+            izinRef = firebase.database().ref("pujianYouth/config/izinOpen");
+            izinRef.on("value", function (s) {
+              var val = s.val();
+              izinFormOpen = val === false ? false : true;
+              applyIzinUI();
             });
           } catch (e) {}
         }
@@ -2972,12 +3066,26 @@
           var e = document.getElementById("loginEmail").value.trim();
           var p = document.getElementById("loginPass").value;
           var msg = document.getElementById("loginMsg");
-          if (!authRef) {
-            if (msg) msg.textContent = "Login belum tersedia (mode lokal).";
+          if (!e || !p) {
+            if (msg) msg.textContent = "Isi username & password.";
             return;
           }
-          if (!e || !p) {
-            if (msg) msg.textContent = "Isi email & password.";
+          var acc = findLocalAccount(e, p);
+          if (acc) {
+            localAdmin = true;
+            try {
+              localStorage.setItem("ptAdminUser", acc.u);
+            } catch (x) {}
+            if (msg) msg.textContent = "";
+            document.getElementById("loginPass").value = "";
+            closeLogin();
+            recomputeAdmin();
+            toast("Login berhasil. Masuk sebagai " + (acc.name || acc.u) + ".", "success");
+            return;
+          }
+          if (!authRef || e.indexOf("@") < 0) {
+            if (msg) msg.textContent = "Username atau password salah.";
+            toast("Login gagal. Periksa username/password.", "error");
             return;
           }
           if (msg) msg.textContent = "Memproses...";
@@ -2992,13 +3100,20 @@
               toast("Login berhasil. Anda masuk sebagai admin.", "success");
             })
             .catch(function (err) {
-              if (msg) msg.textContent = "Gagal: " + ((err && err.message) || "cek email/password");
+              if (msg)
+                msg.textContent = "Gagal: " + ((err && err.message) || "cek username/password");
               if (_loginT) _loginT.close();
-              toast("Login gagal. Periksa email/password.", "error");
+              toast("Login gagal. Periksa username/password.", "error");
             });
         }
         function doLogout() {
+          localAdmin = false;
+          fbAdmin = false;
+          try {
+            localStorage.removeItem("ptAdminUser");
+          } catch (x) {}
           if (authRef) authRef.signOut();
+          recomputeAdmin();
           closeMenu();
           toast("Anda keluar dari mode admin.", "info");
         }
@@ -3007,11 +3122,42 @@
           lockRef.set(!locked);
           toast(!locked ? "Daftar lagu dikunci." : "Daftar lagu dibuka.", "success");
         }
-        function openNoteModal() {
+        var noteEditKey = null,
+          noteEditT = 0;
+        function openNoteModal(note) {
           if (!isAdmin) return;
           closeMenu();
           document.getElementById("noteMsg").textContent = "";
+          var h = document.querySelector("#noteModal h2");
+          var sb = document.getElementById("noteSubmit");
+          if (note && note._key) {
+            noteEditKey = note._key;
+            noteEditT = note.t || 0;
+            document.getElementById("noteVer").value = note.v || "";
+            document.getElementById("noteItems").value = (note.items || []).join("\n");
+            if (h) h.textContent = "Edit catatan rilis";
+            if (sb) sb.textContent = "Simpan perubahan";
+          } else {
+            noteEditKey = null;
+            noteEditT = 0;
+            document.getElementById("noteVer").value = "";
+            document.getElementById("noteItems").value = "";
+            if (h) h.textContent = "Tambah catatan rilis";
+            if (sb) sb.textContent = "Publikasikan";
+          }
           document.getElementById("noteModal").classList.add("open");
+        }
+        function deleteNote(key) {
+          if (!isAdmin || !notesRef || !key) return;
+          notesRef
+            .child(key)
+            .remove()
+            .then(function () {
+              toast("Catatan rilis dihapus.", "success");
+            })
+            .catch(function (err) {
+              toast("Gagal menghapus: " + ((err && err.message) || ""), "error");
+            });
         }
         function closeNoteModal() {
           document.getElementById("noteModal").classList.remove("open");
@@ -3048,18 +3194,27 @@
           ];
           var d = now.getDate() + " " + months[now.getMonth()] + " " + now.getFullYear();
           if (msg) msg.textContent = "Menyimpan...";
-          notesRef
-            .push({ v: ver, d: d, items: items, t: now.getTime() })
-            .then(function () {
-              if (msg) msg.textContent = "";
-              toast("Catatan rilis dipublikasikan.", "success");
-              document.getElementById("noteVer").value = "";
-              document.getElementById("noteItems").value = "";
-              closeNoteModal();
-            })
-            .catch(function (err) {
-              if (msg) msg.textContent = "Gagal: " + ((err && err.message) || "");
-            });
+          var payload = {
+            v: ver,
+            d: d,
+            items: items,
+            t: noteEditKey ? noteEditT || now.getTime() : now.getTime(),
+          };
+          var op = noteEditKey ? notesRef.child(noteEditKey).set(payload) : notesRef.push(payload);
+          op.then(function () {
+            if (msg) msg.textContent = "";
+            toast(
+              noteEditKey ? "Catatan rilis diperbarui." : "Catatan rilis dipublikasikan.",
+              "success",
+            );
+            noteEditKey = null;
+            noteEditT = 0;
+            document.getElementById("noteVer").value = "";
+            document.getElementById("noteItems").value = "";
+            closeNoteModal();
+          }).catch(function (err) {
+            if (msg) msg.textContent = "Gagal: " + ((err && err.message) || "");
+          });
         }
         var spectateOn = false,
           liveRef = null,
@@ -3631,6 +3786,10 @@
         }
         function openSchedulePage() {
           closeMenu();
+          if (!isAdmin) {
+            toast("Fitur penjadwalan khusus admin. Silakan login admin dulu.", "error");
+            return;
+          }
           initScheduleCloud();
           document.getElementById("schedulePage").classList.add("open");
           renderSchedule();
@@ -3656,9 +3815,21 @@
           var body = document.getElementById("schedBody");
           if (!body) return;
           body.innerHTML = "";
-          if (schedTab === "jadwal") renderSchedGrid(body, admin);
-          else if (schedTab === "pelayan") renderSchedRoster(body, admin);
+          if (schedTab === "jadwal") {
+            renderSchedGrid(body, admin);
+            applyGridFilter();
+          } else if (schedTab === "pelayan") renderSchedRoster(body, admin);
           else renderSchedIzin(body, admin);
+        }
+        var gridNameFilter = "";
+        function applyGridFilter() {
+          var q = (gridNameFilter || "").trim().toLowerCase();
+          document.querySelectorAll("#schedBody select.cellSel").forEach(function (sel) {
+            Array.prototype.forEach.call(sel.options, function (o) {
+              if (!o.value) return;
+              o.hidden = q ? o.textContent.toLowerCase().indexOf(q) < 0 : false;
+            });
+          });
         }
         function renderSchedGrid(body, admin) {
           var toolbar = document.createElement("div");
@@ -3700,6 +3871,16 @@
             dblLab.appendChild(dblCb);
             dblLab.appendChild(document.createTextNode(" Izinkan double role"));
             toolbar.appendChild(dblLab);
+            var gs = document.createElement("input");
+            gs.type = "search";
+            gs.className = "gridSearch";
+            gs.placeholder = "Cari nama untuk diisi...";
+            gs.value = gridNameFilter;
+            gs.oninput = function () {
+              gridNameFilter = gs.value;
+              applyGridFilter();
+            };
+            toolbar.appendChild(gs);
           } else {
             var note = document.createElement("span");
             note.className = "small";
@@ -3796,17 +3977,24 @@
                     opt0.value = "";
                     opt0.textContent = "+ tambah";
                     sel.appendChild(opt0);
-                    sched.roster.forEach(function (p) {
-                      if (arr.indexOf(p.id) >= 0) return; // sudah di role ini
-                      var o = document.createElement("option");
-                      o.value = p.id;
-                      var marks = [];
-                      if (isIzin(p.id, wk)) marks.push("IZIN");
-                      if (p.roles.indexOf(role.key) < 0) marks.push("di luar kemampuan");
-                      if (rolesOfPersonInWeek(p.id, wk).length) marks.push("sudah bertugas");
-                      o.textContent = p.name + (marks.length ? " - " + marks.join(", ") : "");
-                      sel.appendChild(o);
-                    });
+                    sched.roster
+                      .slice()
+                      .sort(function (a, b) {
+                        return (a.name || "").localeCompare(b.name || "", "id", {
+                          sensitivity: "base",
+                        });
+                      })
+                      .forEach(function (p) {
+                        if (arr.indexOf(p.id) >= 0) return; // sudah di role ini
+                        var o = document.createElement("option");
+                        o.value = p.id;
+                        var marks = [];
+                        if (isIzin(p.id, wk)) marks.push("IZIN");
+                        if (p.roles.indexOf(role.key) < 0) marks.push("di luar kemampuan");
+                        if (rolesOfPersonInWeek(p.id, wk).length) marks.push("sudah bertugas");
+                        o.textContent = p.name + (marks.length ? " - " + marks.join(", ") : "");
+                        sel.appendChild(o);
+                      });
                     sel.onchange = function () {
                       var pid = sel.value;
                       if (!pid) return;
@@ -4661,8 +4849,41 @@
         function closeMenu() {
           document.getElementById("menuBackdrop").classList.remove("open");
         }
+        function applyIzinUI() {
+          var btn = document.getElementById("openIzinBtn");
+          if (btn) {
+            if (!izinFormOpen && !isAdmin) {
+              btn.disabled = true;
+              btn.textContent = "Form izin ditutup admin";
+              btn.style.opacity = "0.6";
+            } else {
+              btn.disabled = false;
+              btn.textContent = "Kirim izin";
+              btn.style.opacity = "";
+            }
+          }
+          var tgl = document.getElementById("izinOpenToggle");
+          if (tgl) tgl.checked = !!izinFormOpen;
+        }
+        function toggleIzinForm() {
+          if (!isAdmin) return;
+          var want = document.getElementById("izinOpenToggle").checked;
+          izinFormOpen = want;
+          if (izinRef) izinRef.set(want);
+          applyIzinUI();
+          toast(
+            want
+              ? "Form izin dibuka. Member bisa kirim izin."
+              : "Form izin ditutup. Member tidak bisa kirim izin.",
+            "success",
+          );
+        }
         function openIzin() {
           closeMenu();
+          if (!izinFormOpen && !isAdmin) {
+            toast("Form izin sedang ditutup oleh admin.", "info");
+            return;
+          }
           document.getElementById("izinStatus").textContent = "";
           document.getElementById("izinModal").classList.add("open");
         }
@@ -4725,6 +4946,17 @@
         // --- Info & pembaruan (release notes) ---
         var SEED_NOTES = [
           {
+            v: "1.5",
+            d: "28 Jul 2026",
+            items: [
+              "Login username & password untuk pengurus.",
+              "Penjadwalan khusus admin + admin bisa tutup form izin.",
+              "Kotak cari + urut abjad saat mengisi kolom jadwal.",
+              "Admin bisa edit/hapus catatan Info & pembaruan.",
+              "Drag-and-drop daftar lagu lebih stabil (tidak sensitif).",
+            ],
+          },
+          {
             v: "1.4",
             d: "28 Jul 2026",
             items: [
@@ -4783,6 +5015,27 @@
             s.textContent = n.d;
             head.appendChild(b);
             head.appendChild(s);
+            if (isAdmin && n._key) {
+              var act = document.createElement("span");
+              act.className = "noteActs";
+              var ed = document.createElement("button");
+              ed.type = "button";
+              ed.className = "noteAct";
+              ed.textContent = "Edit";
+              ed.onclick = function () {
+                openNoteModal(n);
+              };
+              var dl = document.createElement("button");
+              dl.type = "button";
+              dl.className = "noteAct danger";
+              dl.textContent = "Hapus";
+              dl.onclick = function () {
+                if (confirm("Hapus catatan versi " + n.v + "?")) deleteNote(n._key);
+              };
+              act.appendChild(ed);
+              act.appendChild(dl);
+              head.appendChild(act);
+            }
             var ul = document.createElement("ul");
             n.items.forEach(function (t) {
               var li = document.createElement("li");
@@ -4906,6 +5159,11 @@
           var weeks = izinSelectedWeeks();
           var ket = (document.getElementById("izinKet").value || "").trim();
           var st = document.getElementById("izinStatus");
+          if (!izinFormOpen && !isAdmin) {
+            st.style.color = "var(--red)";
+            st.textContent = "Form izin sedang ditutup oleh admin.";
+            return;
+          }
           if (!nama) {
             st.style.color = "var(--red)";
             st.textContent = "Isi nama dulu ya.";
@@ -5615,6 +5873,10 @@
         // --- Bantuan capo untuk gitar ---
         // --- Geser untuk mengubah urutan Daftar lagu ---
         let dragRow = null,
+          pendingRow = null,
+          pendStartX = 0,
+          pendStartY = 0,
+          DRAG_THRESHOLD = 8,
           dragGhostEl = null,
           dragStartOrder = "",
           dragGX = 0,
@@ -5626,32 +5888,63 @@
         function enableRowDrag(handle, row) {
           handle.addEventListener("pointerdown", (e) => {
             if (e.button && e.button !== 0) return;
-            if (dragRow) return;
-            e.preventDefault();
+            if (dragRow || pendingRow) return;
             activePid = e.pointerId;
-            dragRow = row;
-            dragStartOrder = Array.from(songButtons.children)
-              .map((r) => r.dataset.id)
-              .join(",");
-            const rect = row.getBoundingClientRect();
-            dragGX = e.clientX - rect.left;
-            dragGY = e.clientY - rect.top;
-            ghostOX = rect.left;
-            ghostOY = rect.top;
-            dragGhostEl = row.cloneNode(true);
-            dragGhostEl.className = "songRow rowGhost";
-            dragGhostEl.style.width = rect.width + "px";
-            dragGhostEl.style.height = rect.height + "px";
-            dragGhostEl.style.left = rect.left + "px";
-            dragGhostEl.style.top = rect.top + "px";
-            dragGhostEl.style.transform = "translate(0px,0px) scale(1.04)";
-            document.body.appendChild(dragGhostEl);
-            row.classList.add("placeholder");
-            document.body.style.touchAction = "none";
-            window.addEventListener("pointermove", onRowMove, { passive: false });
-            window.addEventListener("pointerup", onRowUp);
-            window.addEventListener("pointercancel", onRowUp);
+            pendingRow = row;
+            pendStartX = e.clientX;
+            pendStartY = e.clientY;
+            window.addEventListener("pointermove", onPendMove, { passive: false });
+            window.addEventListener("pointerup", onPendUp);
+            window.addEventListener("pointercancel", onPendUp);
           });
+        }
+        function onPendMove(e) {
+          if (!pendingRow) return;
+          if (activePid !== null && e.pointerId !== activePid) return;
+          var dx = e.clientX - pendStartX,
+            dy = e.clientY - pendStartY;
+          if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+          var row = pendingRow;
+          clearPend();
+          startRowDrag(row, e);
+        }
+        function onPendUp() {
+          clearPend();
+        }
+        function clearPend() {
+          pendingRow = null;
+          window.removeEventListener("pointermove", onPendMove);
+          window.removeEventListener("pointerup", onPendUp);
+          window.removeEventListener("pointercancel", onPendUp);
+        }
+        function startRowDrag(row, e) {
+          if (dragRow) return;
+          if (e.cancelable) e.preventDefault();
+          activePid = e.pointerId;
+          dragRow = row;
+          dragStartOrder = Array.from(songButtons.children)
+            .map((r) => r.dataset.id)
+            .join(",");
+          const rect = row.getBoundingClientRect();
+          dragGX = pendStartX - rect.left;
+          dragGY = pendStartY - rect.top;
+          ghostOX = rect.left;
+          ghostOY = rect.top;
+          dragGhostEl = row.cloneNode(true);
+          dragGhostEl.className = "songRow rowGhost";
+          dragGhostEl.style.width = rect.width + "px";
+          dragGhostEl.style.height = rect.height + "px";
+          dragGhostEl.style.left = rect.left + "px";
+          dragGhostEl.style.top = rect.top + "px";
+          dragGhostEl.style.transform = "translate(0px,0px) scale(1.04)";
+          document.body.appendChild(dragGhostEl);
+          row.classList.add("placeholder");
+          document.body.style.touchAction = "none";
+          window.addEventListener("pointermove", onRowMove, { passive: false });
+          window.addEventListener("pointerup", onRowUp);
+          window.addEventListener("pointercancel", onRowUp);
+          positionGhost(e.clientX, e.clientY);
+          reorderPreview(e.clientX, e.clientY);
         }
         function positionGhost(x, y) {
           if (!dragGhostEl) return;
@@ -5955,6 +6248,8 @@
           document.getElementById("adminLoginBtn").onclick = openLogin;
           document.getElementById("adminLogoutBtn").onclick = doLogout;
           document.getElementById("lockToggle").onclick = toggleLock;
+          var izt = document.getElementById("izinOpenToggle");
+          if (izt) izt.onclick = toggleIzinForm;
           document.getElementById("addNoteBtn").onclick = openNoteModal;
           document.getElementById("loginSubmit").onclick = doLogin;
           document.getElementById("loginClose").onclick = closeLogin;
