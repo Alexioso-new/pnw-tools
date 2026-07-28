@@ -28874,7 +28874,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v2.8</span>
+            <span class="verTag" id="appVer">v2.9</span>
           </p>
         </div>
         <button
@@ -30674,6 +30674,62 @@
           var r = schedRole(rk);
           return r && r.label ? r.label : rk;
         }
+        // ===== v2.9 - role yang ditutup per minggu =====
+        // Bentuk data: sched.closed = { "w1": { "tamb": true } }
+        function isRoleClosed(wk, roleKey) {
+          var c = sched.closed && sched.closed["w" + wk];
+          return !!(c && c[roleKey]);
+        }
+        function setRoleClosed(wk, roleKey, on) {
+          if (!sched.closed) sched.closed = {};
+          var k = "w" + wk;
+          if (!sched.closed[k]) sched.closed[k] = {};
+          if (on) sched.closed[k][roleKey] = true;
+          else delete sched.closed[k][roleKey];
+        }
+        function buildTutupBtn(wk, roleKey, tutup) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "tutupBtn";
+          b.textContent = tutup ? "Buka" : "Tutup";
+          b.title = tutup
+            ? "Buka kembali pelayanan ini di minggu ini"
+            : "Tutup pelayanan ini di minggu ini";
+          b.style.cssText =
+            "display:block;margin-top:4px;padding:1px 7px;border-radius:7px;" +
+            "border:1px solid " +
+            (tutup ? "#0d9488" : "#d1d5db") +
+            ";background:" +
+            (tutup ? "#ccfbf1" : "transparent") +
+            ";color:" +
+            (tutup ? "#0f766e" : "#9ca3af") +
+            ";font-size:10px;cursor:pointer";
+          b.onclick = function () {
+            var akan = !tutup;
+            if (akan) {
+              var isi = getAssign(wk, roleKey);
+              if (
+                isi.length &&
+                !confirm(
+                  "Tutup pelayanan ini di minggu " +
+                    wk +
+                    "? " +
+                    isi.length +
+                    " nama yang sudah terisi akan dikosongkan.",
+                )
+              )
+                return;
+              setAssign(wk, roleKey, []);
+            }
+            setRoleClosed(wk, roleKey, akan);
+            // saveSched penuh, bukan saveSchedCell: yang berubah bukan hanya
+            // isi sel tapi juga peta sched.closed.
+            saveSched();
+            schedHistPush();
+            renderSchedule();
+          };
+          return b;
+        }
         var LEGACY_CAP = {
           doaBuka: [
             "Martin",
@@ -30975,7 +31031,32 @@
           });
           if (!s.weekLabels || typeof s.weekLabels !== "object")
             s.weekLabels = {};
+          if (!s.closed || typeof s.closed !== "object") s.closed = {};
+          Object.keys(s.closed).forEach(function (wk) {
+            if (!s.closed[wk] || typeof s.closed[wk] !== "object")
+              s.closed[wk] = {};
+          });
           return s;
+        }
+        // v2.9 - render ulang akibat sinkronisasi ditunda SELAMA pengurus masih
+        // mengetik atau memilih di halaman jadwal. Versi lama memaksa render
+        // setelah 4 detik, yang menghapus ketikan pencarian di tengah jalan.
+        function schedRenderSaatSenggang() {
+          var pg = document.getElementById("schedulePage");
+          if (!pg || !pg.classList.contains("open")) return;
+          var ae = document.activeElement;
+          var sibuk =
+            ae &&
+            pg.contains(ae) &&
+            (ae.tagName === "INPUT" ||
+              ae.tagName === "SELECT" ||
+              ae.tagName === "TEXTAREA");
+          if (sibuk) {
+            clearTimeout(window.__schedRT);
+            window.__schedRT = setTimeout(schedRenderSaatSenggang, 1500);
+            return;
+          }
+          renderSchedule();
         }
         function schedApplyRemote(v) {
           if (v == null) {
@@ -31003,14 +31084,8 @@
             toast("Jadwal diperbarui oleh " + meta.by, "info", 2600);
           var pg = document.getElementById("schedulePage");
           if (pg && pg.classList.contains("open")) {
-            // Jangan render ulang saat pengurus sedang mengetik di kolom Tambah.
-            var ae = document.activeElement;
-            if (ae && pg.contains(ae) && ae.tagName === "INPUT") {
-              clearTimeout(window.__schedRT);
-              window.__schedRT = setTimeout(renderSchedule, 4000);
-              return;
-            }
-            renderSchedule();
+            // Tidak ada lagi batas waktu 4 detik.
+            schedRenderSaatSenggang();
           }
         }
         function initScheduleCloud() {
@@ -31120,10 +31195,15 @@
         var schedHist = { stack: [], idx: -1, max: 40 };
         var schedHistBusy = false;
         function schedSnap() {
+          // v2.9 - cuplikan mencakup penempatan DAN peta role tertutup,
+          // supaya menutup/membuka role juga bisa dibatalkan.
           try {
-            return JSON.stringify(sched.assign || {});
+            return JSON.stringify({
+              a: sched.assign || {},
+              c: sched.closed || {},
+            });
           } catch (e) {
-            return "{}";
+            return '{"a":{},"c":{}}';
           }
         }
         function schedHistReset() {
@@ -31146,9 +31226,12 @@
         function schedHistApply(snap) {
           schedHistBusy = true;
           try {
-            sched.assign = JSON.parse(snap) || {};
+            var o = JSON.parse(snap) || {};
+            sched.assign = o.a || {};
+            sched.closed = o.c || {};
           } catch (e) {
             sched.assign = {};
+            sched.closed = {};
           }
           // Undo mengubah banyak sel sekaligus, jadi simpan PENUH ke cloud;
           // saveSchedCell yang per-sel tidak cukup untuk kasus ini.
@@ -31448,6 +31531,8 @@
             { relaxH8: true, crossPool: true, allowDouble: true },
           ];
           function fill(w, rk, n, soft) {
+            // Role yang ditutup tidak diisi dan tidak dihitung sebagai kosong.
+            if (isRoleClosed(w, rk)) return;
             for (var k = getAssign(w, rk).length; k < n; k++) {
               var got = null,
                 step = 0;
@@ -31611,9 +31696,9 @@
               tr.appendChild(rl);
               for (var w2 = 1; w2 <= sched.weeks; w2++) {
                 var td = document.createElement("td");
-                td.textContent = getAssign(w2, role.key)
-                  .map(personName)
-                  .join(", ");
+                td.textContent = isRoleClosed(w2, role.key)
+                  ? "-"
+                  : getAssign(w2, role.key).map(personName).join(", ");
                 tr.appendChild(td);
               }
               tb.appendChild(tr);
@@ -31669,14 +31754,30 @@
           if (wc) wc.value = String(sched.weeks);
           var body = document.getElementById("schedBody");
           if (!body) return;
+          // v2.9 - simpan keadaan UI supaya render ulang (mis. dari realtime)
+          // tidak menghapus ketikan pencarian atau melompatkan posisi gulir.
+          var _cariEl = document.getElementById("rosterSearch");
+          var _cariVal = _cariEl ? _cariEl.value : "";
+          var _gulir = body.scrollTop;
           body.innerHTML = "";
           if (schedTab === "jadwal") {
             renderSchedGrid(body, admin);
             applyGridFilter();
           } else if (schedTab === "pelayan") renderSchedRoster(body, admin);
           else renderSchedIzin(body, admin);
+          if (_cariVal) {
+            var _c2 = document.getElementById("rosterSearch");
+            if (_c2) {
+              _c2.value = _cariVal;
+              _c2.dispatchEvent(new Event("input"));
+            }
+          }
+          if (_gulir) body.scrollTop = _gulir;
         }
         var gridNameFilter = "";
+        // v2.9 - keadaan urutan & saringan daftar pelayan.
+        var rosterSort = "az";
+        var rosterRoleFilter = "";
         function applyGridFilter() {
           var q = (gridNameFilter || "").trim().toLowerCase();
           document
@@ -31970,7 +32071,11 @@
             team.roles.forEach(function (role) {
               var sel = [];
               for (var w2 = 1; w2 <= n; w2++)
-                sel.push(getAssign(w2, role.key).map(personName).join(", "));
+                sel.push(
+                  isRoleClosed(w2, role.key)
+                    ? "-"
+                    : getAssign(w2, role.key).map(personName).join(", "),
+                );
               b.baris.push({ role: role.label, sel: sel });
             });
             blocks.push(b);
@@ -32222,12 +32327,28 @@
                       lb.textContent = role.label;
                       box.appendChild(lb);
                     }
-                    var arr = getAssign(wk, role.key);
-                    arr.forEach(function (pid) {
-                      box.appendChild(schedBuildChip(pid, wk, role.key, admin));
-                    });
-                    if (admin && arr.length < (role.slots || 1))
-                      box.appendChild(buildAddPicker(wk, role.key, arr));
+                    var tutup = isRoleClosed(wk, role.key);
+                    if (tutup) {
+                      box.classList.add("cellTutup");
+                      var tg = document.createElement("span");
+                      tg.className = "tutupTag";
+                      tg.textContent = "Ditutup";
+                      tg.style.cssText =
+                        "display:inline-block;padding:2px 8px;border-radius:8px;" +
+                        "background:#e5e7eb;color:#6b7280;font-size:11px;font-style:italic";
+                      box.appendChild(tg);
+                    } else {
+                      var arr = getAssign(wk, role.key);
+                      arr.forEach(function (pid) {
+                        box.appendChild(
+                          schedBuildChip(pid, wk, role.key, admin),
+                        );
+                      });
+                      if (admin && arr.length < (role.slots || 1))
+                        box.appendChild(buildAddPicker(wk, role.key, arr));
+                    }
+                    if (admin)
+                      box.appendChild(buildTutupBtn(wk, role.key, tutup));
                     if (row.group) td.appendChild(box);
                   });
                   tr.appendChild(td);
@@ -32277,9 +32398,81 @@
             addRow.appendChild(addBtn);
             body.appendChild(addRow);
           }
+          var urutRow = document.createElement("div");
+          urutRow.className = "schedToolbar";
+          var lbUrut = document.createElement("span");
+          lbUrut.className = "small";
+          lbUrut.textContent = "Urutkan:";
+          var sortSel = document.createElement("select");
+          [
+            ["az", "Nama A-Z"],
+            ["za", "Nama Z-A"],
+          ].forEach(function (o) {
+            var op = document.createElement("option");
+            op.value = o[0];
+            op.textContent = o[1];
+            sortSel.appendChild(op);
+          });
+          sortSel.value = rosterSort;
+          sortSel.onchange = function () {
+            rosterSort = sortSel.value;
+            drawRoster();
+          };
+          var lbRole = document.createElement("span");
+          lbRole.className = "small";
+          lbRole.textContent = "Pelayanan:";
+          var roleSel = document.createElement("select");
+          var opAll = document.createElement("option");
+          opAll.value = "";
+          opAll.textContent = "Semua pelayanan";
+          roleSel.appendChild(opAll);
+          allSchedRoles().forEach(function (r) {
+            var op = document.createElement("option");
+            op.value = r.key;
+            op.textContent = r.label;
+            roleSel.appendChild(op);
+          });
+          roleSel.value = rosterRoleFilter;
+          roleSel.onchange = function () {
+            rosterRoleFilter = roleSel.value;
+            drawRoster();
+          };
+          var jml = document.createElement("span");
+          jml.className = "small";
+          jml.id = "rosterCount";
+          urutRow.appendChild(lbUrut);
+          urutRow.appendChild(sortSel);
+          urutRow.appendChild(lbRole);
+          urutRow.appendChild(roleSel);
+          urutRow.appendChild(jml);
+          body.appendChild(urutRow);
           var listWrap = document.createElement("div");
           listWrap.className = "rosterList";
-          sched.roster.forEach(function (p) {
+          // Daftar diurutkan dari SALINAN roster, bukan mengubah urutan aslinya,
+          // supaya urutan tampilan tidak ikut tersimpan & tersebar ke pengurus lain.
+          function rosterUrut() {
+            var arr = sched.roster.slice();
+            if (rosterRoleFilter)
+              arr = arr.filter(function (p) {
+                return p.roles.indexOf(rosterRoleFilter) >= 0;
+              });
+            arr.sort(function (a, b) {
+              var x = (a.name || "").toLowerCase(),
+                y = (b.name || "").toLowerCase();
+              if (x < y) return rosterSort === "za" ? 1 : -1;
+              if (x > y) return rosterSort === "za" ? -1 : 1;
+              return 0;
+            });
+            return arr;
+          }
+          function terapkanCari() {
+            var q = (searchInp.value || "").trim().toLowerCase();
+            listWrap.querySelectorAll(".rosterCard").forEach(function (cd) {
+              var nm = cd.getAttribute("data-name") || "";
+              cd.style.display = !q || nm.indexOf(q) >= 0 ? "" : "none";
+            });
+          }
+          function gambarKartu(p) {
             var card = document.createElement("div");
             card.className = "rosterCard";
             card.setAttribute("data-name", (p.name || "").toLowerCase());
@@ -32330,7 +32523,22 @@
             });
             card.appendChild(rolesWrap);
             listWrap.appendChild(card);
-          });
+          }
+          function drawRoster() {
+            listWrap.innerHTML = "";
+            var arr = rosterUrut();
+            if (!arr.length) {
+              var kos = document.createElement("p");
+              kos.className = "small";
+              kos.textContent = "Tidak ada pelayan yang cocok.";
+              listWrap.appendChild(kos);
+            }
+            arr.forEach(gambarKartu);
+            var jc = document.getElementById("rosterCount");
+            if (jc) jc.textContent = arr.length + " pelayan";
+            terapkanCari();
+          }
+          drawRoster();
           body.appendChild(listWrap);
           searchInp.addEventListener("input", function () {
             var q = (searchInp.value || "").trim().toLowerCase();
@@ -33489,7 +33697,7 @@
         // --- Info & pembaruan (release notes) ---
         var SEED_NOTES = [
           {
-            v: "v2.8",
+            v: "v2.9",
             d: "28 Jul 2026",
             items: [
               "Tombol Kirim ke Sheets: jadwal langsung tertulis ke Google Sheets Jadwal Youth.",
@@ -33498,7 +33706,7 @@
             t: 1785293400000,
           },
           {
-            v: "v2.8",
+            v: "v2.9",
             d: "28 Jul 2026",
             items: [
               "Kolom + tambah kini bisa dicari di HP, lengkap dengan penanda tier.",
@@ -33510,7 +33718,7 @@
             t: 1785291600000,
           },
           {
-            v: "v2.8",
+            v: "v2.9",
             d: "28 Jul 2026",
             items: [
               "Pemusik jadi satu baris berjejer: Pianist - Guitarist - Bassist - Drummer.",
@@ -33523,7 +33731,7 @@
             t: 1785288000000,
           },
           {
-            v: "v2.8",
+            v: "v2.9",
             d: "28 Jul 2026",
             items: [
               "Tim Sound & Multimedia kini terkunci: tidak merangkap tugas di P&W, Persembahan, atau Hospitality pada minggu yang sama.",
@@ -33535,7 +33743,7 @@
             t: 1785300000000,
           },
           {
-            v: "v2.8",
+            v: "v2.9",
             d: "28 Jul 2026",
             items: [
               "Jadwal otomatis memakai aturan resmi H1-H8 (bukan lagi coba-coba).",
