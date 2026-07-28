@@ -28874,7 +28874,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v2.6</span>
+            <span class="verTag" id="appVer">v2.7</span>
           </p>
         </div>
         <button
@@ -30968,6 +30968,11 @@
           var meta = v.meta || {};
           sched = schedNormalize(v);
           PIDX = null;
+          // Kalau perubahan datang dari pengurus LAIN, riwayat undo lokal
+          // dikosongkan. Tanpa ini, menekan Undo akan mengembalikan data lama
+          // dan menimpa pekerjaan orang tersebut.
+          if (meta.by && meta.by !== schedWho()) schedHistReset();
+          else schedHistPush();
           try {
             localStorage.setItem(SCHED_KEY, JSON.stringify(sched));
           } catch (e) {}
@@ -31090,6 +31095,90 @@
             return true;
           });
         }
+        // ===== Riwayat Undo / Redo jadwal (v2.7) =====
+        // Yang disimpan hanya cuplikan sched.assign, BUKAN seluruh sched.
+        // Jadi Undo hanya membatalkan penempatan orang - data roster, izin,
+        // dan label minggu tidak pernah ikut termundurkan.
+        var schedHist = { stack: [], idx: -1, max: 40 };
+        var schedHistBusy = false;
+        function schedSnap() {
+          try {
+            return JSON.stringify(sched.assign || {});
+          } catch (e) {
+            return "{}";
+          }
+        }
+        function schedHistReset() {
+          schedHist.stack = [schedSnap()];
+          schedHist.idx = 0;
+          schedHistBtns();
+        }
+        function schedHistPush() {
+          if (schedHistBusy) return;
+          var snap = schedSnap();
+          if (schedHist.idx >= 0 && schedHist.stack[schedHist.idx] === snap)
+            return;
+          // Setelah aksi baru, cabang "maju" yang lama tidak berlaku lagi.
+          schedHist.stack = schedHist.stack.slice(0, schedHist.idx + 1);
+          schedHist.stack.push(snap);
+          if (schedHist.stack.length > schedHist.max) schedHist.stack.shift();
+          schedHist.idx = schedHist.stack.length - 1;
+          schedHistBtns();
+        }
+        function schedHistApply(snap) {
+          schedHistBusy = true;
+          try {
+            sched.assign = JSON.parse(snap) || {};
+          } catch (e) {
+            sched.assign = {};
+          }
+          // Undo mengubah banyak sel sekaligus, jadi simpan PENUH ke cloud;
+          // saveSchedCell yang per-sel tidak cukup untuk kasus ini.
+          saveSched(true);
+          renderSchedule();
+          schedHistBusy = false;
+          schedHistBtns();
+        }
+        function schedUndo() {
+          if (!isAdmin) return;
+          if (schedHist.idx <= 0) {
+            toast("Tidak ada lagi yang bisa dibatalkan.", "info", 2000);
+            return;
+          }
+          schedHist.idx--;
+          schedHistApply(schedHist.stack[schedHist.idx]);
+          toast("Dibatalkan (undo).", "info", 1800);
+        }
+        function schedRedo() {
+          if (!isAdmin) return;
+          if (schedHist.idx >= schedHist.stack.length - 1) {
+            toast("Tidak ada lagi yang bisa diulang.", "info", 2000);
+            return;
+          }
+          schedHist.idx++;
+          schedHistApply(schedHist.stack[schedHist.idx]);
+          toast("Diulang (redo).", "info", 1800);
+        }
+        function schedHistBtns() {
+          var u = document.getElementById("schedUndoBtn");
+          var r = document.getElementById("schedRedoBtn");
+          if (u) u.disabled = schedHist.idx <= 0;
+          if (r) r.disabled = schedHist.idx >= schedHist.stack.length - 1;
+        }
+        // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y - hanya saat halaman jadwal terbuka.
+        document.addEventListener("keydown", function (e) {
+          if (!(e.ctrlKey || e.metaKey)) return;
+          var pg = document.getElementById("schedulePage");
+          if (!pg || !pg.classList.contains("open") || !isAdmin) return;
+          var k = (e.key || "").toLowerCase();
+          if (k === "z" && !e.shiftKey) {
+            e.preventDefault();
+            schedUndo();
+          } else if ((k === "z" && e.shiftKey) || k === "y") {
+            e.preventDefault();
+            schedRedo();
+          }
+        });
         function setAssign(wk, roleKey, arr) {
           if (!sched.assign["w" + wk]) sched.assign["w" + wk] = {};
           sched.assign["w" + wk][roleKey] = arr;
@@ -31164,6 +31253,7 @@
             );
           }
           saveSchedCell(wk, roleKey);
+          schedHistPush();
           return true;
         }
         function removeAssign(wk, roleKey, pid) {
@@ -31172,6 +31262,7 @@
           });
           setAssign(wk, roleKey, arr);
           saveSchedCell(wk, roleKey);
+          schedHistPush();
         }
         function personTier(pid, roleKey) {
           var p = personById(pid);
@@ -31391,6 +31482,7 @@
 
           sched.auto = true;
           saveSched();
+          schedHistPush();
           renderSchedule();
           if (empties.length) {
             toast(
@@ -31912,6 +32004,7 @@
             });
         }
         function renderSchedGrid(body, admin) {
+          if (!schedHist.stack.length) schedHistReset();
           var toolbar = document.createElement("div");
           toolbar.className = "schedToolbar";
           if (admin) {
@@ -31928,10 +32021,30 @@
                 sched.assign = {};
                 sched.auto = false;
                 saveSched();
+                schedHistPush();
                 renderSchedule();
               }
             };
             toolbar.appendChild(clearBtn);
+            var undoBtn = document.createElement("button");
+            undoBtn.className = "actionBtn secondary";
+            undoBtn.id = "schedUndoBtn";
+            undoBtn.textContent = "\u21B6 Undo";
+            undoBtn.title = "Batalkan perubahan terakhir (Ctrl+Z)";
+            undoBtn.onclick = schedUndo;
+            // Status mati/hidup dipasang LANGSUNG di sini. Memakai
+            // schedHistBtns() belum bisa, karena toolbar baru masuk ke DOM
+            // setelah fungsi ini selesai - getElementById masih null.
+            undoBtn.disabled = schedHist.idx <= 0;
+            toolbar.appendChild(undoBtn);
+            var redoBtn = document.createElement("button");
+            redoBtn.className = "actionBtn secondary";
+            redoBtn.id = "schedRedoBtn";
+            redoBtn.textContent = "Maju \u21B7";
+            redoBtn.title = "Ulangi perubahan (Ctrl+Shift+Z)";
+            redoBtn.onclick = schedRedo;
+            redoBtn.disabled = schedHist.idx >= schedHist.stack.length - 1;
+            toolbar.appendChild(redoBtn);
             var dblLab = document.createElement("label");
             dblLab.className = "dblToggle";
             var dblCb = document.createElement("input");
@@ -33339,7 +33452,7 @@
         // --- Info & pembaruan (release notes) ---
         var SEED_NOTES = [
           {
-            v: "v2.6",
+            v: "v2.7",
             d: "28 Jul 2026",
             items: [
               "Tombol Kirim ke Sheets: jadwal langsung tertulis ke Google Sheets Jadwal Youth.",
@@ -33348,7 +33461,7 @@
             t: 1785293400000,
           },
           {
-            v: "v2.6",
+            v: "v2.7",
             d: "28 Jul 2026",
             items: [
               "Kolom + tambah kini bisa dicari di HP, lengkap dengan penanda tier.",
@@ -33360,7 +33473,7 @@
             t: 1785291600000,
           },
           {
-            v: "v2.6",
+            v: "v2.7",
             d: "28 Jul 2026",
             items: [
               "Pemusik jadi satu baris berjejer: Pianist - Guitarist - Bassist - Drummer.",
@@ -33373,7 +33486,7 @@
             t: 1785288000000,
           },
           {
-            v: "v2.6",
+            v: "v2.7",
             d: "28 Jul 2026",
             items: [
               "Tim Sound & Multimedia kini terkunci: tidak merangkap tugas di P&W, Persembahan, atau Hospitality pada minggu yang sama.",
@@ -33385,7 +33498,7 @@
             t: 1785300000000,
           },
           {
-            v: "v2.6",
+            v: "v2.7",
             d: "28 Jul 2026",
             items: [
               "Jadwal otomatis memakai aturan resmi H1-H8 (bukan lagi coba-coba).",
