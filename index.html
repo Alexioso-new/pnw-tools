@@ -28736,7 +28736,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v2.4</span>
+            <span class="verTag" id="appVer">v2.4.1</span>
           </p>
         </div>
         <button
@@ -30876,9 +30876,25 @@
               },
               function (err) {
                 console.error("sinkron jadwal gagal", err);
+                var code = (err && (err.code || err.message)) || "UNKNOWN";
+                window.__schedErr = String(code);
                 schedInited = false;
                 scheduleRef = null;
-                schedCloudStatus("Sinkron gagal - mencoba lagi");
+                if (/permission|denied/i.test(String(code))) {
+                  // Aturan Realtime Database menolak akses. Mencoba lagi
+                  // tidak ada gunanya sampai aturannya diperbaiki.
+                  schedCloudStatus("Ditolak Firebase (izin akses)");
+                  if (!window.__schedPermToast) {
+                    window.__schedPermToast = 1;
+                    toast(
+                      "Firebase menolak akses jadwal (PERMISSION_DENIED). Aturan database harus mengizinkan pujianYouth/schedule4.",
+                      "error",
+                      9000,
+                    );
+                  }
+                  return;
+                }
+                schedCloudStatus("Sinkron gagal: " + code);
                 clearTimeout(window.__schedInitRT);
                 window.__schedInitRT = setTimeout(initScheduleCloud, 3000);
               },
@@ -32916,18 +32932,20 @@
         // --- Info & pembaruan (release notes) ---
         var SEED_NOTES = [
           {
-            v: "v2.4",
+            v: "v2.4.1",
             d: "28 Jul 2026",
             items: [
               "Pemusik jadi satu baris berjejer: Pianist - Guitarist - Bassist - Drummer.",
               "Role Multimedia dihapus dan dilebur ke Presenter.",
               "Perbaikan sinkronisasi realtime jadwal antar perangkat.",
               "Ada lencana status sinkron di halaman jadwal.",
+              "Pesan error sinkron kini menyebut penyebab aslinya.",
+              "Form izin menulis ke jalur data yang sama dengan jadwal.",
             ],
             t: 1785288000000,
           },
           {
-            v: "v2.4",
+            v: "v2.4.1",
             d: "28 Jul 2026",
             items: [
               "Tim Sound & Multimedia kini terkunci: tidak merangkap tugas di P&W, Persembahan, atau Hospitality pada minggu yang sama.",
@@ -32939,7 +32957,7 @@
             t: 1785300000000,
           },
           {
-            v: "v2.4",
+            v: "v2.4.1",
             d: "28 Jul 2026",
             items: [
               "Jadwal otomatis memakai aturan resmi H1-H8 (bukan lagi coba-coba).",
@@ -33225,7 +33243,7 @@
           });
         }
         // Simpan izin member langsung ke matriks penjadwalan (Firebase
-        // pujianYouth/schedule3). Membaca data terbaru lebih dulu agar tidak
+        // pujianYouth/schedule4). Membaca data terbaru lebih dulu agar tidak
         // menimpa jadwal/roster admin.
         function saveIzinToCloud(nama, weeks, cb) {
           var online =
@@ -33234,7 +33252,7 @@
             firebase.apps &&
             firebase.apps.length;
           if (online) {
-            var ref = firebase.database().ref("pujianYouth/schedule3");
+            var ref = firebase.database().ref("pujianYouth/schedule4");
             ref
               .once("value")
               .then(function (snap) {
