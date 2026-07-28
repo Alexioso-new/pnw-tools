@@ -28682,6 +28682,44 @@
         background: #26304d;
         color: #c7d2fe;
       }
+      /* v2.4 - baris Pemusik: empat instrumen berjejer dalam satu sel. */
+      .cell.musCell {
+        padding: 3px 4px;
+      }
+      .cell.musCell .musSlot {
+        display: inline-block;
+        vertical-align: top;
+        width: calc(25% - 5px);
+        min-width: 72px;
+        margin: 0 2px;
+      }
+      .cell.musCell .musLb {
+        display: block;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 2px;
+        font-style: normal;
+      }
+      .cell.musCell .chip {
+        display: block;
+        margin: 0 0 3px 0;
+      }
+      #schedSyncPill {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: #eef2ff;
+        color: #3730a3;
+        margin-left: auto;
+      }
+      body.dark #schedSyncPill {
+        background: #2a3350;
+        color: #c7d2fe;
+      }
     </style>
   </head>
   <body>
@@ -28698,7 +28736,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v2.3</span>
+            <span class="verTag" id="appVer">v2.4</span>
           </p>
         </div>
         <button
@@ -29757,6 +29795,11 @@
             initAuthLock();
             initSpectate();
             cloudReady = true;
+            // v2.4 - pasang sinkronisasi jadwal sejak awal, bukan hanya saat
+            // halaman jadwal dibuka, supaya perubahan orang lain langsung masuk.
+            try {
+              initScheduleCloud();
+            } catch (e) {}
             setCloudPill("Menghubungkan...");
             var _syncToast = toast("Menyinkronkan data...", "loading", 0);
             dbRef.on(
@@ -30266,7 +30309,6 @@
             roles: [
               { key: "presenter", label: "Presenter", slots: 1 },
               { key: "presenterTrial", label: "Presenter (Trial)", slots: 1 },
-              { key: "mulmed", label: "Multimedia (Mulmed)", slots: 1 },
               { key: "streaming", label: "Streaming", slots: 1 },
               { key: "sound", label: "Sound", slots: 1 },
               { key: "camera", label: "Camera", slots: 1 },
@@ -30279,10 +30321,38 @@
             roles: [
               { key: "wlPNW", label: "Worship Leader", slots: 2, dbl: true },
               { key: "singPNW", label: "Singers", slots: 2, dbl: true },
-              { key: "kbPNW", label: "Keyboard", slots: 1, dbl: true },
-              { key: "gtPNW", label: "Guitar", slots: 1, dbl: true },
-              { key: "bsPNW", label: "Bass", slots: 1, dbl: true },
-              { key: "drPNW", label: "Drum", slots: 1, dbl: true },
+              {
+                key: "kbPNW",
+                label: "Pianist",
+                slots: 1,
+                dbl: true,
+                group: "musik",
+                groupLabel: "Pemusik",
+              },
+              {
+                key: "gtPNW",
+                label: "Guitarist",
+                slots: 1,
+                dbl: true,
+                group: "musik",
+                groupLabel: "Pemusik",
+              },
+              {
+                key: "bsPNW",
+                label: "Bassist",
+                slots: 1,
+                dbl: true,
+                group: "musik",
+                groupLabel: "Pemusik",
+              },
+              {
+                key: "drPNW",
+                label: "Drummer",
+                slots: 1,
+                dbl: true,
+                group: "musik",
+                groupLabel: "Pemusik",
+              },
             ],
           },
           {
@@ -30291,10 +30361,38 @@
             roles: [
               { key: "wlPsb", label: "Worship Leader", slots: 1, dbl: true },
               { key: "singPsb", label: "Singers", slots: 2, dbl: true },
-              { key: "kbPsb", label: "Keyboard", slots: 1, dbl: true },
-              { key: "gtPsb", label: "Guitar", slots: 1, dbl: true },
-              { key: "bsPsb", label: "Bass", slots: 1, dbl: true },
-              { key: "drPsb", label: "Drum", slots: 1, dbl: true },
+              {
+                key: "kbPsb",
+                label: "Pianist",
+                slots: 1,
+                dbl: true,
+                group: "musik",
+                groupLabel: "Pemusik",
+              },
+              {
+                key: "gtPsb",
+                label: "Guitarist",
+                slots: 1,
+                dbl: true,
+                group: "musik",
+                groupLabel: "Pemusik",
+              },
+              {
+                key: "bsPsb",
+                label: "Bassist",
+                slots: 1,
+                dbl: true,
+                group: "musik",
+                groupLabel: "Pemusik",
+              },
+              {
+                key: "drPsb",
+                label: "Drummer",
+                slots: 1,
+                dbl: true,
+                group: "musik",
+                groupLabel: "Pemusik",
+              },
             ],
           },
           {
@@ -30380,11 +30478,6 @@
             ],
             t3: ["Anggi"],
           },
-          mulmed: {
-            t1: ["Yemima", "Fingken"],
-            t2: ["Chintya", "Joshua", "Florie"],
-            t3: ["Ester"],
-          },
           streaming: {
             t1: ["Alex", "Florie", "Shinta"],
             t2: ["Yesika"],
@@ -30423,15 +30516,8 @@
           "sound",
           "camera",
           "liveReport",
-          "mulmed",
         ];
-        var TECH_ROLES = [
-          "streaming",
-          "sound",
-          "camera",
-          "liveReport",
-          "mulmed",
-        ];
+        var TECH_ROLES = ["streaming", "sound", "camera", "liveReport"];
         var MUS_PNW_ROLES = ["kbPNW", "gtPNW", "bsPNW", "drPNW"];
         var MUS_PSB_ROLES = ["kbPsb", "gtPsb", "bsPsb", "drPsb"];
         var LEGACY_CAP = {
@@ -30463,7 +30549,6 @@
         // Peta role aktual -> sumber prioritas di ROLE_PICKS.
         var ROLE_SRC = {
           usher: "usher",
-          mulmed: "mulmed",
           streaming: "streaming",
           sound: "sound",
           wlPNW: "wlsing",
@@ -30586,16 +30671,27 @@
           } catch (e) {}
           return defaultSched();
         }
-        var sched = loadSched();
+        var sched = schedNormalize(loadSched());
         function saveSched(silent) {
           try {
             localStorage.setItem(SCHED_KEY, JSON.stringify(sched));
           } catch (e) {}
           if (cloudReady && scheduleRef) {
+            sched.meta = { by: schedWho(), at: Date.now() };
             try {
-              sched.meta = { by: schedWho(), at: Date.now() };
-              scheduleRef.set(sched);
-            } catch (e) {}
+              scheduleRef.set(schedClean(sched), function (err) {
+                if (err) {
+                  console.error("simpan jadwal gagal", err);
+                  schedCloudStatus("Gagal simpan ke cloud");
+                  toast("Gagal menyimpan jadwal ke cloud.", "error");
+                } else schedCloudStatus("Realtime aktif");
+              });
+            } catch (e) {
+              console.error("simpan jadwal gagal", e);
+              toast("Gagal menyimpan jadwal ke cloud.", "error");
+            }
+          } else {
+            initScheduleCloud();
           }
           if (!silent) {
             var sp = document.getElementById("schedSaveStatus");
@@ -30624,9 +30720,19 @@
             try {
               scheduleRef
                 .child("assign/w" + wk + "/" + roleKey)
-                .set(getAssign(wk, roleKey));
+                .set(schedClean(getAssign(wk, roleKey)), function (err) {
+                  if (err) {
+                    console.error("simpan sel gagal", err);
+                    schedCloudStatus("Gagal simpan ke cloud");
+                    toast("Gagal menyimpan perubahan ke cloud.", "error");
+                  } else schedCloudStatus("Realtime aktif");
+                });
               scheduleRef.child("meta").set({ by: schedWho(), at: Date.now() });
-            } catch (e) {}
+            } catch (e) {
+              console.error("simpan sel gagal", e);
+            }
+          } else {
+            initScheduleCloud();
           }
           var sp = document.getElementById("schedSaveStatus");
           if (sp) {
@@ -30636,6 +30742,111 @@
             }, 1500);
           }
         }
+        // v2.4 - status sinkronisasi supaya kegagalan tidak lagi tersembunyi.
+        function schedCloudStatus(txt) {
+          window.__schedSyncTxt = txt;
+          var sp = document.getElementById("schedSyncPill");
+          if (sp) sp.textContent = txt;
+        }
+        // Firebase menolak nilai undefined; bersihkan dulu agar set() tidak gagal.
+        function schedClean(v) {
+          if (v === undefined || v === null) return null;
+          if (Array.isArray(v)) {
+            var a = [];
+            v.forEach(function (x) {
+              if (x !== undefined && x !== null) a.push(schedClean(x));
+            });
+            return a;
+          }
+          if (typeof v === "object") {
+            var o = {};
+            Object.keys(v).forEach(function (k) {
+              if (v[k] === undefined) return;
+              o[k] = schedClean(v[k]);
+            });
+            return o;
+          }
+          if (typeof v === "number" && !isFinite(v)) return 0;
+          return v;
+        }
+        // Firebase mengembalikan array jarang sebagai objek berkunci angka.
+        function schedToArr(v) {
+          if (Array.isArray(v))
+            return v.filter(function (x) {
+              return x !== null && x !== undefined;
+            });
+          if (v && typeof v === "object")
+            return Object.keys(v)
+              .sort(function (a, b) {
+                return Number(a) - Number(b);
+              })
+              .map(function (k) {
+                return v[k];
+              })
+              .filter(function (x) {
+                return x !== null && x !== undefined;
+              });
+          return [];
+        }
+        // Kembalikan data cloud ke bentuk yang diharapkan aplikasi.
+        function schedNormalize(s) {
+          if (!s || typeof s !== "object") return s;
+          s.weeks = Number(s.weeks) || 5;
+          s.roster = schedToArr(s.roster);
+          s.roster.forEach(function (p) {
+            if (!p.tiers || typeof p.tiers !== "object") p.tiers = {};
+            p.roles = schedToArr(p.roles);
+          });
+          if (!s.izin || typeof s.izin !== "object") s.izin = {};
+          Object.keys(s.izin).forEach(function (k) {
+            s.izin[k] = schedToArr(s.izin[k]).map(Number);
+          });
+          if (!s.assign || typeof s.assign !== "object") s.assign = {};
+          Object.keys(s.assign).forEach(function (wk) {
+            var wa = s.assign[wk];
+            if (!wa || typeof wa !== "object") {
+              s.assign[wk] = {};
+              return;
+            }
+            delete wa.mulmed; // v2.4 - Multimedia dilebur ke Presenter.
+            Object.keys(wa).forEach(function (rk) {
+              wa[rk] = schedToArr(wa[rk]);
+            });
+          });
+          if (!s.weekLabels || typeof s.weekLabels !== "object")
+            s.weekLabels = {};
+          return s;
+        }
+        function schedApplyRemote(v) {
+          if (v == null) {
+            if (scheduleRef) scheduleRef.set(schedClean(sched));
+            return;
+          }
+          if (!v.roster) return;
+          var meta = v.meta || {};
+          sched = schedNormalize(v);
+          try {
+            localStorage.setItem(SCHED_KEY, JSON.stringify(sched));
+          } catch (e) {}
+          schedCloudStatus("Realtime aktif");
+          if (
+            meta.by &&
+            meta.by !== schedWho() &&
+            Date.now() - (meta.at || 0) < 20000
+          )
+            toast("Jadwal diperbarui oleh " + meta.by, "info", 2600);
+          var pg = document.getElementById("schedulePage");
+          if (pg && pg.classList.contains("open")) {
+            // Jangan render ulang saat pengurus sedang mengetik di kolom Tambah.
+            var ae = document.activeElement;
+            if (ae && pg.contains(ae) && ae.tagName === "INPUT") {
+              clearTimeout(window.__schedRT);
+              window.__schedRT = setTimeout(renderSchedule, 4000);
+              return;
+            }
+            renderSchedule();
+          }
+        }
         function initScheduleCloud() {
           if (schedInited) return;
           if (
@@ -30643,43 +30854,40 @@
             typeof firebase === "undefined" ||
             !firebase.apps ||
             !firebase.apps.length
-          )
+          ) {
+            // v2.4 - cloud belum siap: coba lagi, jangan berhenti diam-diam.
+            schedCloudStatus("Menyambung...");
+            clearTimeout(window.__schedInitRT);
+            window.__schedInitRT = setTimeout(initScheduleCloud, 800);
             return;
+          }
           try {
             scheduleRef = firebase.database().ref("pujianYouth/schedule4");
             schedInited = true;
-            scheduleRef.on("value", function (snap) {
-              var v = snap.val();
-              if (v && v.roster) {
-                var meta = v.meta || {};
-                sched = v;
-                if (!sched.assign) sched.assign = {};
-                if (!sched.izin) sched.izin = {};
+            schedCloudStatus("Realtime aktif");
+            scheduleRef.on(
+              "value",
+              function (snap) {
                 try {
-                  localStorage.setItem(SCHED_KEY, JSON.stringify(sched));
-                } catch (e) {}
-                if (
-                  meta.by &&
-                  meta.by !== schedWho() &&
-                  Date.now() - (meta.at || 0) < 20000
-                )
-                  toast("Jadwal diperbarui oleh " + meta.by, "info", 2600);
-              } else if (v == null) {
-                scheduleRef.set(sched);
-              }
-              var pg = document.getElementById("schedulePage");
-              if (pg && pg.classList.contains("open")) {
-                // Jangan render ulang saat pengurus sedang mengetik di kolom Tambah.
-                var ae = document.activeElement;
-                if (ae && pg.contains(ae) && ae.tagName === "INPUT") {
-                  clearTimeout(window.__schedRT);
-                  window.__schedRT = setTimeout(renderSchedule, 4000);
-                  return;
+                  schedApplyRemote(snap.val());
+                } catch (e) {
+                  console.error("sinkron jadwal", e);
                 }
-                renderSchedule();
-              }
-            });
-          } catch (e) {}
+              },
+              function (err) {
+                console.error("sinkron jadwal gagal", err);
+                schedInited = false;
+                scheduleRef = null;
+                schedCloudStatus("Sinkron gagal - mencoba lagi");
+                clearTimeout(window.__schedInitRT);
+                window.__schedInitRT = setTimeout(initScheduleCloud, 3000);
+              },
+            );
+          } catch (e) {
+            console.error(e);
+            schedInited = false;
+            schedCloudStatus("Sinkron gagal");
+          }
         }
         function personById(id) {
           var f = null;
@@ -30973,11 +31181,9 @@
             // 2. Sound & Multimedia lebih dulu: pool terkecil & bebas H8 (H3)
             fill(w, "presenter", 1);
             fill(w, "presenterTrial", 1, true);
-            ["streaming", "sound", "camera", "liveReport", "mulmed"].forEach(
-              function (rk) {
-                fill(w, rk, 1);
-              },
-            );
+            TECH_ROLES.forEach(function (rk) {
+              fill(w, rk, 1);
+            });
             // 3. Hospitality (H1 + H2)
             fill(w, "usher", 3);
             fill(w, "doaBuka", 1);
@@ -31241,6 +31447,59 @@
           wrap.appendChild(dl);
           return wrap;
         }
+        // v2.4 - satu tempat pembuatan chip nama, dipakai semua baris.
+        function schedBuildChip(pid, wk, roleKey, admin) {
+          var chip = document.createElement("span");
+          var myRoles = rolesOfPersonInWeek(pid, wk);
+          var isDbl = myRoles.length >= 2;
+          chip.className =
+            "chip" + (isIzin(pid, wk) ? " warn" : "") + (isDbl ? " dbl" : "");
+          chip.textContent = personName(pid);
+          chip.setAttribute("data-pid", pid);
+          chip.setAttribute("data-wk", wk);
+          if (isDbl) {
+            chip.style.setProperty("--dblc", schedDblColor(pid));
+            chip.title =
+              personName(pid) +
+              " - Double Role (" +
+              myRoles.length +
+              " tugas): " +
+              myRoles
+                .map(function (rk2) {
+                  var r2 = schedRole(rk2);
+                  return r2 ? r2.label : rk2;
+                })
+                .join(", ");
+            var tag = document.createElement("i");
+            tag.className = "dblTag";
+            tag.textContent = String(myRoles.length);
+            chip.appendChild(tag);
+          }
+          chip.onmouseenter = function () {
+            schedHotLines(pid, wk, true);
+          };
+          chip.onmouseleave = function () {
+            schedHotLines(pid, wk, false);
+          };
+          chip.onclick = function () {
+            schedHotLines(pid, wk, true);
+            clearTimeout(window.__hotRT);
+            window.__hotRT = setTimeout(function () {
+              schedHotLines(pid, wk, false);
+            }, 2200);
+          };
+          if (admin) {
+            var x = document.createElement("b");
+            x.className = "chipX";
+            x.textContent = "x";
+            x.onclick = function () {
+              removeAssign(wk, roleKey, pid);
+              renderSchedule();
+            };
+            chip.appendChild(x);
+          }
+          return chip;
+        }
         function renderSchedGrid(body, admin) {
           var toolbar = document.createElement("div");
           toolbar.className = "schedToolbar";
@@ -31292,6 +31551,10 @@
           printBtn.textContent = "Cetak / PDF";
           printBtn.onclick = printSchedule;
           toolbar.appendChild(printBtn);
+          var syncPill = document.createElement("span");
+          syncPill.id = "schedSyncPill";
+          syncPill.textContent = window.__schedSyncTxt || "Menyambung...";
+          toolbar.appendChild(syncPill);
           body.appendChild(toolbar);
           var legend = document.createElement("div");
           legend.className = "schedLegend";
@@ -31349,75 +31612,51 @@
             tdh.textContent = team.label;
             trh.appendChild(tdh);
             tbody.appendChild(trh);
+            // v2.4 - role bertanda group digabung jadi SATU baris, berjejer.
+            var rows = [];
             team.roles.forEach(function (role) {
+              var last = rows[rows.length - 1];
+              if (role.group && last && last.group === role.group) {
+                last.roles.push(role);
+                return;
+              }
+              rows.push({
+                group: role.group || null,
+                label: role.group
+                  ? role.groupLabel || role.group
+                  : role.label +
+                    (role.slots > 1 ? " (x" + role.slots + ")" : ""),
+                roles: [role],
+              });
+            });
+            rows.forEach(function (row) {
               var tr = document.createElement("tr");
               var rl = document.createElement("td");
               rl.className = "roleCell";
-              rl.textContent =
-                role.label + (role.slots > 1 ? " (x" + role.slots + ")" : "");
+              rl.textContent = row.label;
               tr.appendChild(rl);
               for (var w2 = 1; w2 <= sched.weeks; w2++) {
                 (function (wk) {
                   var td = document.createElement("td");
-                  td.className = "cell";
-                  var arr = getAssign(wk, role.key);
-                  arr.forEach(function (pid) {
-                    var chip = document.createElement("span");
-                    var myRoles = rolesOfPersonInWeek(pid, wk);
-                    var isDbl = myRoles.length >= 2;
-                    chip.className =
-                      "chip" +
-                      (isIzin(pid, wk) ? " warn" : "") +
-                      (isDbl ? " dbl" : "");
-                    chip.textContent = personName(pid);
-                    chip.setAttribute("data-pid", pid);
-                    chip.setAttribute("data-wk", wk);
-                    if (isDbl) {
-                      chip.style.setProperty("--dblc", schedDblColor(pid));
-                      chip.title =
-                        personName(pid) +
-                        " - Double Role (" +
-                        myRoles.length +
-                        " tugas): " +
-                        myRoles
-                          .map(function (rk2) {
-                            var r2 = schedRole(rk2);
-                            return r2 ? r2.label : rk2;
-                          })
-                          .join(", ");
-                      var tag = document.createElement("i");
-                      tag.className = "dblTag";
-                      tag.textContent = String(myRoles.length);
-                      chip.appendChild(tag);
+                  td.className = "cell" + (row.group ? " musCell" : "");
+                  row.roles.forEach(function (role) {
+                    var box = td;
+                    if (row.group) {
+                      box = document.createElement("div");
+                      box.className = "musSlot";
+                      var lb = document.createElement("i");
+                      lb.className = "musLb";
+                      lb.textContent = role.label;
+                      box.appendChild(lb);
                     }
-                    chip.onmouseenter = function () {
-                      schedHotLines(pid, wk, true);
-                    };
-                    chip.onmouseleave = function () {
-                      schedHotLines(pid, wk, false);
-                    };
-                    chip.onclick = function () {
-                      schedHotLines(pid, wk, true);
-                      clearTimeout(window.__hotRT);
-                      window.__hotRT = setTimeout(function () {
-                        schedHotLines(pid, wk, false);
-                      }, 2200);
-                    };
-                    if (admin) {
-                      var x = document.createElement("b");
-                      x.className = "chipX";
-                      x.textContent = "x";
-                      x.onclick = function () {
-                        removeAssign(wk, role.key, pid);
-                        renderSchedule();
-                      };
-                      chip.appendChild(x);
-                    }
-                    td.appendChild(chip);
+                    var arr = getAssign(wk, role.key);
+                    arr.forEach(function (pid) {
+                      box.appendChild(schedBuildChip(pid, wk, role.key, admin));
+                    });
+                    if (admin && arr.length < (role.slots || 1))
+                      box.appendChild(buildAddPicker(wk, role.key, arr));
+                    if (row.group) td.appendChild(box);
                   });
-                  if (admin && arr.length < (role.slots || 1)) {
-                    td.appendChild(buildAddPicker(wk, role.key, arr));
-                  }
                   tr.appendChild(td);
                 })(w2);
               }
@@ -32677,7 +32916,18 @@
         // --- Info & pembaruan (release notes) ---
         var SEED_NOTES = [
           {
-            v: "v2.3",
+            v: "v2.4",
+            d: "28 Jul 2026",
+            items: [
+              "Pemusik jadi satu baris berjejer: Pianist - Guitarist - Bassist - Drummer.",
+              "Role Multimedia dihapus dan dilebur ke Presenter.",
+              "Perbaikan sinkronisasi realtime jadwal antar perangkat.",
+              "Ada lencana status sinkron di halaman jadwal.",
+            ],
+            t: 1785288000000,
+          },
+          {
+            v: "v2.4",
             d: "28 Jul 2026",
             items: [
               "Tim Sound & Multimedia kini terkunci: tidak merangkap tugas di P&W, Persembahan, atau Hospitality pada minggu yang sama.",
@@ -32689,7 +32939,7 @@
             t: 1785300000000,
           },
           {
-            v: "v2.3",
+            v: "v2.4",
             d: "28 Jul 2026",
             items: [
               "Jadwal otomatis memakai aturan resmi H1-H8 (bukan lagi coba-coba).",
