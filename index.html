@@ -2042,6 +2042,14 @@
       .noteAct.danger {
         color: var(--red);
       }
+      .noteEditedTag {
+        font-size: 10px;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.07);
+        color: #6b6b6b;
+        letter-spacing: 0.02em;
+      }
       .gridSearch {
         min-width: 150px;
         flex: 1;
@@ -28874,7 +28882,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v3.0</span>
+            <span class="verTag" id="appVer">v3.2</span>
           </p>
         </div>
         <button
@@ -29173,6 +29181,14 @@
         <p class="small">Fitur terbaru dan perubahan pada aplikasi.</p>
         <div id="infoList" class="infoList"></div>
         <div class="backupActions">
+          <button
+            class="actionBtn secondary"
+            id="restoreNotesBtn"
+            type="button"
+            style="display: none"
+          >
+            Pulihkan bawaan
+          </button>
           <button class="actionBtn secondary" id="closeInfoBtn" type="button">
             Tutup
           </button>
@@ -30001,6 +30017,7 @@
           lockRef = null,
           izinRef = null,
           notesRef = null,
+          noteOvRef = null,
           likesRef = null,
           noteLikes = {};
         // ==== AKUN PENGURUS (login username & password) ====
@@ -30096,12 +30113,26 @@
                 arr.sort(function (a, b) {
                   return (b.t || 0) - (a.t || 0);
                 });
-                RELEASE_NOTES = arr.concat(SEED_NOTES);
+                CLOUD_NOTES = arr;
               } else {
-                RELEASE_NOTES = SEED_NOTES.slice();
+                CLOUD_NOTES = [];
               }
-              renderInfoList();
-              updateNoteDot();
+              refreshInfoUI();
+            });
+            // v3.2 - lapisan penimpa untuk catatan bawaan, supaya hasil edit
+            // dan penghapusan ikut terbawa ke perangkat lain.
+            noteOvRef = firebase.database().ref("pujianYouth/noteOverrides");
+            noteOvRef.on("value", function (s) {
+              var v = s.val();
+              if (v && typeof v === "object") {
+                Object.keys(v).forEach(function (k) {
+                  noteOv[k] = v[k];
+                });
+                try {
+                  localStorage.setItem(NOTE_OV_KEY, JSON.stringify(noteOv));
+                } catch (e) {}
+                refreshInfoUI();
+              }
             });
             izinRef = firebase.database().ref("pujianYouth/config/izinOpen");
             izinRef.on("value", function (s) {
@@ -30225,7 +30256,15 @@
           document.getElementById("noteModal").classList.add("open");
         }
         function deleteNote(key) {
-          if (!isAdmin || !notesRef || !key) return;
+          if (!isAdmin || !key) return;
+          // Catatan bawaan tidak bisa dihapus dari Firebase karena memang
+          // tidak tersimpan di sana. Yang ditulis adalah penanda sembunyi.
+          if (isSeedKey(key)) {
+            saveNoteOv(key, { hidden: true });
+            toast("Catatan rilis dihapus.", "success");
+            return;
+          }
+          if (!notesRef) return;
           notesRef
             .child(key)
             .remove()
@@ -30243,7 +30282,7 @@
           document.getElementById("noteModal").classList.remove("open");
         }
         function submitNote() {
-          if (!isAdmin || !notesRef) return;
+          if (!isAdmin) return;
           var ver = document.getElementById("noteVer").value.trim();
           var items = document
             .getElementById("noteItems")
@@ -30285,6 +30324,23 @@
             items: items,
             t: noteEditKey ? noteEditT || now.getTime() : now.getTime(),
           };
+          if (isSeedKey(noteEditKey)) {
+            saveNoteOv(noteEditKey, payload);
+            if (msg) msg.textContent = "";
+            toast("Catatan rilis diperbarui.", "success");
+            noteEditKey = null;
+            noteEditT = 0;
+            document.getElementById("noteVer").value = "";
+            document.getElementById("noteItems").value = "";
+            closeNoteModal();
+            return;
+          }
+          if (!notesRef) {
+            if (msg)
+              msg.textContent =
+                "Cloud belum siap. Tunggu sebentar lalu ulangi.";
+            return;
+          }
           var op = noteEditKey
             ? notesRef.child(noteEditKey).set(payload)
             : notesRef.push(payload);
@@ -30681,6 +30737,14 @@
             alasan:
               "Worship Leader tidak merangkap Singers di sesi Persembahan",
           },
+          // v3.1 (H12) - yang sudah memegang alat musik di P&W tidak boleh
+          // naik sebagai WL atau Singers di Persembahan.
+          {
+            key: "musPNWvokalPsb",
+            roles: MUS_PNW_ROLES.concat(["wlPsb", "singPsb"]),
+            alasan:
+              "pemusik P&W tidak merangkap WL atau Singers di Persembahan",
+          },
         ];
         // Catatan: sesi P&W dan Persembahan sengaja DIPISAH menjadi dua
         // kelompok, karena merangkap antar sesi memang diperbolehkan - bahkan
@@ -30922,7 +30986,10 @@
             localStorage.setItem(SCHED_KEY, JSON.stringify(sched));
           } catch (e) {}
           if (cloudReady && scheduleRef) {
-            sched.meta = { by: schedWho(), at: Date.now() };
+            // v3.1 - catat cap waktu tulisan kita sendiri supaya gema
+            // (echo) dari Firebase bisa dikenali dan diabaikan.
+            window.__schedWriteAt = Date.now();
+            sched.meta = { by: schedWho(), at: window.__schedWriteAt };
             try {
               scheduleRef.set(schedClean(sched), function (err) {
                 if (err) {
@@ -30955,6 +31022,30 @@
             return "pengurus";
           }
         }
+        // v3.1 - tulis HANYA daftar pelayan, bukan seluruh objek jadwal.
+        // Menulis seluruh objek membuat Firebase memantulkan balik data besar
+        // yang lalu mengganti variabel `sched`, sehingga kartu pelayan yang
+        // sedang dibuka menunjuk ke objek usang.
+        function saveSchedRoster() {
+          try {
+            localStorage.setItem(SCHED_KEY, JSON.stringify(sched));
+          } catch (e) {}
+          if (cloudReady && scheduleRef) {
+            try {
+              window.__schedWriteAt = Date.now();
+              scheduleRef
+                .child("meta")
+                .set({ by: schedWho(), at: window.__schedWriteAt });
+              scheduleRef.child("roster").set(schedClean(sched.roster));
+              schedCloudStatus("Realtime aktif");
+            } catch (e) {
+              console.error("simpan pelayan gagal", e);
+              schedCloudStatus("Gagal simpan ke cloud");
+            }
+          } else {
+            initScheduleCloud();
+          }
+        }
         // v2.3 - tulis HANYA satu sel ke Firebase supaya beberapa pengurus bisa
         // mengedit bersamaan tanpa saling menimpa (penggabungan per-path).
         function saveSchedCell(wk, roleKey) {
@@ -30963,6 +31054,12 @@
           } catch (e) {}
           if (cloudReady && scheduleRef) {
             try {
+              // v3.1 - meta ditulis LEBIH DULU supaya setiap gema yang
+              // menyusul sudah membawa cap waktu kita dan bisa diabaikan.
+              window.__schedWriteAt = Date.now();
+              scheduleRef
+                .child("meta")
+                .set({ by: schedWho(), at: window.__schedWriteAt });
               scheduleRef
                 .child("assign/w" + wk + "/" + roleKey)
                 .set(schedClean(getAssign(wk, roleKey)), function (err) {
@@ -30972,7 +31069,6 @@
                     toast("Gagal menyimpan perubahan ke cloud.", "error");
                   } else schedCloudStatus("Realtime aktif");
                 });
-              scheduleRef.child("meta").set({ by: schedWho(), at: Date.now() });
             } catch (e) {
               console.error("simpan sel gagal", e);
             }
@@ -31077,7 +31173,9 @@
           var sibuk =
             ae &&
             pg.contains(ae) &&
-            (ae.tagName === "INPUT" ||
+            ((ae.tagName === "INPUT" &&
+              ae.type !== "checkbox" &&
+              ae.type !== "radio") ||
               ae.tagName === "SELECT" ||
               ae.tagName === "TEXTAREA");
           if (sibuk) {
@@ -31094,6 +31192,14 @@
           }
           if (!v.roster) return;
           var meta = v.meta || {};
+          // v3.1 - INI gema tulisan kita sendiri. Kalau tetap diproses,
+          // variabel `sched` diganti objek baru sehingga closure kartu
+          // pelayan menunjuk ke objek usang, dan centang yang baru dilepas
+          // muncul kembali. Keadaan lokal sudah benar, jadi berhenti di sini.
+          if (meta.at && meta.at === window.__schedWriteAt) {
+            schedCloudStatus("Realtime aktif");
+            return;
+          }
           sched = schedNormalize(v);
           PIDX = null;
           // Kalau perubahan datang dari pengurus LAIN, riwayat undo lokal
@@ -32599,14 +32705,18 @@
               cb.checked = p.roles.indexOf(role.key) >= 0;
               cb.disabled = !admin;
               cb.onchange = function () {
+                // v3.1 - ambil ulang dari sched.roster. Objek `p` bisa jadi
+                // salinan usang bila sempat ada pembaruan dari cloud.
+                var pv = personById(p.id) || p;
                 if (cb.checked) {
-                  if (p.roles.indexOf(role.key) < 0) p.roles.push(role.key);
+                  if (pv.roles.indexOf(role.key) < 0) pv.roles.push(role.key);
                 } else {
-                  p.roles = p.roles.filter(function (k) {
+                  pv.roles = pv.roles.filter(function (k) {
                     return k !== role.key;
                   });
                 }
-                saveSched(true);
+                p.roles = pv.roles;
+                saveSchedRoster();
               };
               lab.appendChild(cb);
               lab.appendChild(document.createTextNode(" " + role.label));
@@ -33955,7 +34065,114 @@
             ],
           },
         ];
-        var RELEASE_NOTES = SEED_NOTES.slice();
+        // ===== v3.2 - KONTROL PENUH ATAS CATATAN RILIS =====
+        // SEED_NOTES ditulis langsung di berkas ini setiap kali ada revisi,
+        // jadi catatan baru muncul otomatis. Supaya tetap bisa diedit dan
+        // dihapus dari web tanpa menyentuh berkas, setiap perubahan disimpan
+        // sebagai LAPISAN PENIMPA (override) yang ditempel di atas catatan
+        // bawaan saat digambar. Bawaan aslinya tidak pernah ikut berubah,
+        // sehingga "Pulihkan bawaan" selalu mungkin dilakukan.
+        var NOTE_OV_KEY = "ptNoteOverrides";
+        var noteOv = {};
+        var CLOUD_NOTES = [];
+        var RELEASE_NOTES = [];
+        function seedId(n) {
+          return (
+            "seed_" +
+            String(n.v || "").replace(/[^a-zA-Z0-9]/g, "_") +
+            "_" +
+            (n.t || 0)
+          );
+        }
+        function isSeedKey(k) {
+          return typeof k === "string" && k.indexOf("seed_") === 0;
+        }
+        function loadNoteOv() {
+          try {
+            noteOv =
+              JSON.parse(localStorage.getItem(NOTE_OV_KEY) || "{}") || {};
+          } catch (e) {
+            noteOv = {};
+          }
+        }
+        function refreshInfoUI() {
+          buildReleaseNotes();
+          renderInfoList();
+          updateNoteDot();
+          syncRestoreBtn();
+        }
+        // Lokal ditulis lebih dulu supaya kontrol penuh tetap jalan walau
+        // aturan Firebase menolak tulisan. Cloud sifatnya pelengkap agar
+        // perubahan ikut terlihat di perangkat lain.
+        function saveNoteOv(id, val) {
+          if (val === null) delete noteOv[id];
+          else noteOv[id] = val;
+          try {
+            localStorage.setItem(NOTE_OV_KEY, JSON.stringify(noteOv));
+          } catch (e) {}
+          if (noteOvRef) {
+            try {
+              if (val === null) noteOvRef.child(id).remove();
+              else noteOvRef.child(id).set(val);
+            } catch (e) {}
+          }
+          refreshInfoUI();
+        }
+        function buildReleaseNotes() {
+          var out = CLOUD_NOTES.slice();
+          SEED_NOTES.forEach(function (n) {
+            var id = seedId(n);
+            var o = noteOv[id];
+            if (o && o.hidden) return;
+            var base = o && o.items ? o : n;
+            out.push({
+              v: base.v,
+              d: base.d,
+              items: base.items || [],
+              t: base.t || n.t || 0,
+              _key: id,
+              _seed: true,
+              _edited: !!(o && o.items),
+            });
+          });
+          out.sort(function (a, b) {
+            return (b.t || 0) - (a.t || 0);
+          });
+          RELEASE_NOTES = out;
+        }
+        function noteOvCount() {
+          return Object.keys(noteOv || {}).length;
+        }
+        function syncRestoreBtn() {
+          var b = document.getElementById("restoreNotesBtn");
+          if (!b) return;
+          b.style.display = isAdmin && noteOvCount() ? "" : "none";
+        }
+        function restoreSeedNotes() {
+          if (!isAdmin) return;
+          if (
+            !confirm(
+              "Pulihkan semua catatan rilis bawaan? Hasil edit dan penghapusan pada catatan bawaan akan dibatalkan.",
+            )
+          )
+            return;
+          var ids = Object.keys(noteOv || {});
+          noteOv = {};
+          try {
+            localStorage.setItem(NOTE_OV_KEY, "{}");
+          } catch (e) {}
+          if (noteOvRef) {
+            try {
+              ids.forEach(function (id) {
+                noteOvRef.child(id).remove();
+              });
+            } catch (e) {}
+          }
+          refreshInfoUI();
+          toast("Catatan bawaan dipulihkan.", "success");
+        }
+        loadNoteOv();
+        buildReleaseNotes();
         function latestNoteVersion() {
           return RELEASE_NOTES.length ? RELEASE_NOTES[0].v : "";
         }
@@ -34032,6 +34249,12 @@
               toggleNoteLike(n);
             };
             head.appendChild(likeWrap);
+            if (n._edited) {
+              var em = document.createElement("span");
+              em.className = "noteEditedTag";
+              em.textContent = "diedit";
+              head.appendChild(em);
+            }
             if (isAdmin && n._key) {
               var act = document.createElement("span");
               act.className = "noteActs";
@@ -34085,7 +34308,9 @@
         }
         function openInfo() {
           closeMenu();
+          buildReleaseNotes();
           renderInfoList();
+          syncRestoreBtn();
           markNotesSeen();
           document.getElementById("infoModal").classList.add("open");
         }
@@ -35372,6 +35597,7 @@
           document.getElementById("closeSaranBtn").onclick = closeSaran;
           document.getElementById("openInfoBtn").onclick = openInfo;
           document.getElementById("closeInfoBtn").onclick = closeInfo;
+          document.getElementById("restoreNotesBtn").onclick = restoreSeedNotes;
           document.getElementById("adminLoginBtn").onclick = openLogin;
           document.getElementById("adminLogoutBtn").onclick = doLogout;
           document.getElementById("lockToggle").onclick = toggleLock;
