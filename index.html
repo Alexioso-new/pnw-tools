@@ -28874,7 +28874,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v2.7</span>
+            <span class="verTag" id="appVer">v2.8</span>
           </p>
         </div>
         <button
@@ -30656,6 +30656,24 @@
         var TECH_ROLES = ["streaming", "sound", "camera", "liveReport"];
         var MUS_PNW_ROLES = ["kbPNW", "gtPNW", "bsPNW", "drPNW"];
         var MUS_PSB_ROLES = ["kbPsb", "gtPsb", "bsPsb", "drPsb"];
+        // H10 - seluruh role alat musik (P&W + Persembahan) dianggap SATU
+        // kelompok eksklusif: satu orang maksimal memegang satu alat per hari.
+        var MUS_ALL_ROLES = MUS_PNW_ROLES.concat(MUS_PSB_ROLES);
+        // Mengembalikan key alat musik LAIN yang sudah dipegang orang ini di
+        // minggu tsb, atau null kalau tidak ada.
+        function musRoleLain(pid, wk, roleKey) {
+          if (MUS_ALL_ROLES.indexOf(roleKey) < 0) return null;
+          for (var im = 0; im < MUS_ALL_ROLES.length; im++) {
+            var rkm = MUS_ALL_ROLES[im];
+            if (rkm === roleKey) continue;
+            if (getAssign(wk, rkm).indexOf(pid) >= 0) return rkm;
+          }
+          return null;
+        }
+        function musRoleLabel(rk) {
+          var r = schedRole(rk);
+          return r && r.label ? r.label : rk;
+        }
         var LEGACY_CAP = {
           doaBuka: [
             "Martin",
@@ -31225,6 +31243,20 @@
             );
             return false;
           }
+          // H10 - satu pemusik satu alat musik per minggu. Diblokir keras,
+          // termasuk saat "Izinkan double role" sedang aktif.
+          var rkLain = musRoleLain(pid, wk, roleKey);
+          if (rkLain) {
+            toast(
+              personName(pid) +
+                " sudah memegang " +
+                musRoleLabel(rkLain) +
+                " minggu ini. Satu pemusik hanya boleh satu alat musik.",
+              "error",
+              4200,
+            );
+            return false;
+          }
           // Double role: beri PERINGATAN saja (tidak memblokir). Bisa dimatikan
           // lewat opsi "Izinkan double role" (sched.allowDouble).
           var existingRoles = rolesOfPersonInWeek(pid, wk);
@@ -31359,6 +31391,11 @@
               else hasOther = true;
             }
             if (isSoundMMRole(rk) ? hasOther : hasMM) return false;
+            // H10 - satu pemusik hanya boleh SATU alat musik per minggu,
+            // digabung lintas P&W dan Persembahan. Aturan KERAS: sengaja
+            // ditulis tanpa cek o.allowDouble / o.crossPool supaya tangga
+            // pelonggaran pun tidak bisa menembusnya.
+            if (musRoleLain(pid, w, rk)) return false;
             // H6 - musisi P&W senior, Persembahan junior
             if (MUS_PNW_ROLES.indexOf(rk) >= 0 && !schedNameIn(MUS_SENIOR, pid))
               return false;
@@ -33452,7 +33489,7 @@
         // --- Info & pembaruan (release notes) ---
         var SEED_NOTES = [
           {
-            v: "v2.7",
+            v: "v2.8",
             d: "28 Jul 2026",
             items: [
               "Tombol Kirim ke Sheets: jadwal langsung tertulis ke Google Sheets Jadwal Youth.",
@@ -33461,7 +33498,7 @@
             t: 1785293400000,
           },
           {
-            v: "v2.7",
+            v: "v2.8",
             d: "28 Jul 2026",
             items: [
               "Kolom + tambah kini bisa dicari di HP, lengkap dengan penanda tier.",
@@ -33473,7 +33510,7 @@
             t: 1785291600000,
           },
           {
-            v: "v2.7",
+            v: "v2.8",
             d: "28 Jul 2026",
             items: [
               "Pemusik jadi satu baris berjejer: Pianist - Guitarist - Bassist - Drummer.",
@@ -33486,7 +33523,7 @@
             t: 1785288000000,
           },
           {
-            v: "v2.7",
+            v: "v2.8",
             d: "28 Jul 2026",
             items: [
               "Tim Sound & Multimedia kini terkunci: tidak merangkap tugas di P&W, Persembahan, atau Hospitality pada minggu yang sama.",
@@ -33498,7 +33535,7 @@
             t: 1785300000000,
           },
           {
-            v: "v2.7",
+            v: "v2.8",
             d: "28 Jul 2026",
             items: [
               "Jadwal otomatis memakai aturan resmi H1-H8 (bukan lagi coba-coba).",
