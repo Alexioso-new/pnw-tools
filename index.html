@@ -28874,7 +28874,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v2.9</span>
+            <span class="verTag" id="appVer">v3.0</span>
           </p>
         </div>
         <button
@@ -30659,14 +30659,43 @@
         // H10 - seluruh role alat musik (P&W + Persembahan) dianggap SATU
         // kelompok eksklusif: satu orang maksimal memegang satu alat per hari.
         var MUS_ALL_ROLES = MUS_PNW_ROLES.concat(MUS_PSB_ROLES);
-        // Mengembalikan key alat musik LAIN yang sudah dipegang orang ini di
-        // minggu tsb, atau null kalau tidak ada.
-        function musRoleLain(pid, wk, roleKey) {
-          if (MUS_ALL_ROLES.indexOf(roleKey) < 0) return null;
-          for (var im = 0; im < MUS_ALL_ROLES.length; im++) {
-            var rkm = MUS_ALL_ROLES[im];
-            if (rkm === roleKey) continue;
-            if (getAssign(wk, rkm).indexOf(pid) >= 0) return rkm;
+        // ===== v3.0 - KELOMPOK EKSKLUSIF =====
+        // Prinsipnya satu: dalam satu kelompok, satu orang hanya boleh memegang
+        // SATU role per minggu. Aturan fisik yang mustahil dilanggar, jadi
+        // dibuat KERAS - tidak bisa ditembus opsi Double Role maupun tangga
+        // pelonggaran penjadwal. Menambah aturan sejenis cukup di daftar ini.
+        var EXCLUSIVE_GROUPS = [
+          {
+            key: "musik",
+            roles: MUS_ALL_ROLES,
+            alasan: "satu orang hanya bisa memainkan satu alat musik",
+          },
+          {
+            key: "vokalPNW",
+            roles: ["wlPNW", "singPNW"],
+            alasan: "Worship Leader tidak merangkap Singers di sesi P&W",
+          },
+          {
+            key: "vokalPsb",
+            roles: ["wlPsb", "singPsb"],
+            alasan:
+              "Worship Leader tidak merangkap Singers di sesi Persembahan",
+          },
+        ];
+        // Catatan: sesi P&W dan Persembahan sengaja DIPISAH menjadi dua
+        // kelompok, karena merangkap antar sesi memang diperbolehkan - bahkan
+        // H5 mewajibkan WL Persembahan diambil dari Singers P&W.
+        // Mengembalikan { rk, alasan } bila bentrok, atau null bila aman.
+        function konflikEksklusif(pid, wk, roleKey) {
+          for (var ig = 0; ig < EXCLUSIVE_GROUPS.length; ig++) {
+            var g = EXCLUSIVE_GROUPS[ig];
+            if (g.roles.indexOf(roleKey) < 0) continue;
+            for (var ir = 0; ir < g.roles.length; ir++) {
+              var rk2 = g.roles[ir];
+              if (rk2 === roleKey) continue;
+              if (getAssign(wk, rk2).indexOf(pid) >= 0)
+                return { rk: rk2, alasan: g.alasan };
+            }
           }
           return null;
         }
@@ -31326,17 +31355,19 @@
             );
             return false;
           }
-          // H10 - satu pemusik satu alat musik per minggu. Diblokir keras,
-          // termasuk saat "Izinkan double role" sedang aktif.
-          var rkLain = musRoleLain(pid, wk, roleKey);
-          if (rkLain) {
+          // H10/H11 - kelompok eksklusif. Diblokir keras, termasuk saat
+          // opsi "Izinkan double role" sedang aktif.
+          var kfl = konflikEksklusif(pid, wk, roleKey);
+          if (kfl) {
             toast(
               personName(pid) +
-                " sudah memegang " +
-                musRoleLabel(rkLain) +
-                " minggu ini. Satu pemusik hanya boleh satu alat musik.",
+                " sudah mengambil " +
+                musRoleLabel(kfl.rk) +
+                " minggu ini - " +
+                kfl.alasan +
+                ".",
               "error",
-              4200,
+              4600,
             );
             return false;
           }
@@ -31393,22 +31424,51 @@
           return SOUND_MM_ROLES.indexOf(rk) >= 0;
         }
         // v2.3 - penjadwal berbasis constraint (H1-H8) + fallback berjenjang.
-        function autoSchedule() {
+        // mode "lanjut" (bawaan) = pertahankan semua nama yang sudah ada,
+        // termasuk isian manual, dan hanya isi slot yang masih kosong.
+        // mode "ulang" = susun dari nol.
+        function autoSchedule(mode) {
           if (!canEdit()) {
             toast("Hanya admin yang bisa membuat jadwal.", "error");
             return;
           }
+          mode = mode === "ulang" ? "ulang" : "lanjut";
+          var weeks = sched.weeks;
+          var adaIsi = false;
+          for (var cw = 1; cw <= weeks; cw++) {
+            allSchedRoles().forEach(function (r) {
+              if (getAssign(cw, r.key).length) adaIsi = true;
+            });
+          }
           if (
             !confirm(
-              "Buat jadwal otomatis dengan aturan H1-H8 (rantai hospitality, pengurus, presenter, senior/junior, selang-seling)? Ini menimpa jadwal saat ini.",
+              mode === "ulang"
+                ? "Susun ulang jadwal dari nol? SEMUA nama yang ada sekarang, termasuk isian manual, akan dihapus dan diganti."
+                : adaIsi
+                  ? "Lengkapi jadwal otomatis? Nama yang sudah ada (termasuk isian manual) DIPERTAHANKAN di tempatnya, hanya kolom kosong yang diisi."
+                  : "Buat jadwal otomatis dengan aturan H1-H11 (hospitality, pengurus, presenter, senior/junior, selang-seling, satu alat musik, WL bukan singers)?",
             )
           )
             return;
-          var weeks = sched.weeks;
-          sched.assign = {};
           var lastServed = {};
           var roleUse = {};
           var load = {};
+          if (mode === "ulang") {
+            sched.assign = {};
+          } else {
+            // Hitung beban dari nama yang SUDAH terpasang. Tanpa ini penilaian
+            // keadilan menganggap mereka belum pernah melayani, sehingga orang
+            // yang sudah diisi manual bisa dipilih lagi berkali-kali.
+            for (var sw = 1; sw <= weeks; sw++) {
+              allSchedRoles().forEach(function (r) {
+                getAssign(sw, r.key).forEach(function (pid) {
+                  roleUse[pid + "|" + r.key] =
+                    (roleUse[pid + "|" + r.key] || 0) + 1;
+                  load[pid] = (load[pid] || 0) + 1;
+                });
+              });
+            }
+          }
           var empties = [];
           var relaxed = [];
 
@@ -31418,6 +31478,9 @@
           function place(w, rk, pid) {
             var arr = getAssign(w, rk);
             if (arr.indexOf(pid) >= 0) return false;
+            // Jaring pengaman terakhir: request khusus tidak melewati
+            // eligible(), jadi bentrok kelompok tetap harus ditolak di sini.
+            if (konflikEksklusif(pid, w, rk)) return false;
             arr.push(pid);
             setAssign(w, rk, arr);
             roleUse[pid + "|" + rk] = (roleUse[pid + "|" + rk] || 0) + 1;
@@ -31474,11 +31537,10 @@
               else hasOther = true;
             }
             if (isSoundMMRole(rk) ? hasOther : hasMM) return false;
-            // H10 - satu pemusik hanya boleh SATU alat musik per minggu,
-            // digabung lintas P&W dan Persembahan. Aturan KERAS: sengaja
-            // ditulis tanpa cek o.allowDouble / o.crossPool supaya tangga
-            // pelonggaran pun tidak bisa menembusnya.
-            if (musRoleLain(pid, w, rk)) return false;
+            // H10/H11 - kelompok eksklusif. Sengaja ditulis tanpa cek
+            // o.allowDouble / o.crossPool supaya tangga pelonggaran pun tidak
+            // bisa menembusnya.
+            if (konflikEksklusif(pid, w, rk)) return false;
             // H6 - musisi P&W senior, Persembahan junior
             if (MUS_PNW_ROLES.indexOf(rk) >= 0 && !schedNameIn(MUS_SENIOR, pid))
               return false;
@@ -31530,14 +31592,26 @@
             { relaxH8: true, crossPool: true },
             { relaxH8: true, crossPool: true, allowDouble: true },
           ];
+          // Tangga khusus WL Persembahan. H5 mewajibkan orangnya diambil dari
+          // Singers P&W, dan orang itu pasti sudah punya 1 tugas - jadi tanpa
+          // allowDouble dia selalu tertahan cek cntWeek. Dengan tangga biasa,
+          // tahap crossPool (yang membuang syarat singPNW) selalu berhasil
+          // lebih dulu, sehingga H5 tidak pernah terpenuhi. Di sini
+          // allowDouble sengaja didahulukan daripada crossPool.
+          var LADDER_WLPSB = [
+            { allowDouble: true },
+            { relaxH8: true, allowDouble: true },
+            { relaxH8: true, crossPool: true, allowDouble: true },
+          ];
           function fill(w, rk, n, soft) {
             // Role yang ditutup tidak diisi dan tidak dihitung sebagai kosong.
             if (isRoleClosed(w, rk)) return;
+            var LD = rk === "wlPsb" ? LADDER_WLPSB : LADDER;
             for (var k = getAssign(w, rk).length; k < n; k++) {
               var got = null,
                 step = 0;
-              for (var li = 0; li < LADDER.length && !got; li++) {
-                got = pickBest(w, rk, LADDER[li]);
+              for (var li = 0; li < LD.length && !got; li++) {
+                got = pickBest(w, rk, LD[li]);
                 step = li;
               }
               if (got) {
@@ -31619,7 +31693,9 @@
             );
           } else {
             toast(
-              "Jadwal otomatis dibuat - semua aturan H1-H8 terpenuhi.",
+              (mode === "ulang"
+                ? "Jadwal disusun ulang"
+                : "Jadwal dilengkapi") + " - semua aturan H1-H11 terpenuhi.",
               "success",
             );
           }
@@ -32153,8 +32229,23 @@
             var autoBtn = document.createElement("button");
             autoBtn.className = "actionBtn";
             autoBtn.textContent = "Buat jadwal otomatis";
-            autoBtn.onclick = autoSchedule;
+            autoBtn.title =
+              "Isi kolom yang masih kosong. Nama yang sudah ada dipertahankan.";
+            // Dibungkus fungsi: kalau dipasang langsung, objek event terkirim
+            // sebagai argumen mode.
+            autoBtn.onclick = function () {
+              autoSchedule("lanjut");
+            };
             toolbar.appendChild(autoBtn);
+            var ulangBtn = document.createElement("button");
+            ulangBtn.className = "actionBtn secondary";
+            ulangBtn.id = "schedUlangBtn";
+            ulangBtn.textContent = "Susun ulang";
+            ulangBtn.title = "Hapus semua nama lalu susun jadwal dari nol.";
+            ulangBtn.onclick = function () {
+              autoSchedule("ulang");
+            };
+            toolbar.appendChild(ulangBtn);
             var clearBtn = document.createElement("button");
             clearBtn.className = "actionBtn secondary";
             clearBtn.textContent = "Kosongkan";
@@ -33697,7 +33788,7 @@
         // --- Info & pembaruan (release notes) ---
         var SEED_NOTES = [
           {
-            v: "v2.9",
+            v: "v3.0",
             d: "28 Jul 2026",
             items: [
               "Tombol Kirim ke Sheets: jadwal langsung tertulis ke Google Sheets Jadwal Youth.",
@@ -33706,7 +33797,7 @@
             t: 1785293400000,
           },
           {
-            v: "v2.9",
+            v: "v3.0",
             d: "28 Jul 2026",
             items: [
               "Kolom + tambah kini bisa dicari di HP, lengkap dengan penanda tier.",
@@ -33718,7 +33809,7 @@
             t: 1785291600000,
           },
           {
-            v: "v2.9",
+            v: "v3.0",
             d: "28 Jul 2026",
             items: [
               "Pemusik jadi satu baris berjejer: Pianist - Guitarist - Bassist - Drummer.",
@@ -33731,7 +33822,7 @@
             t: 1785288000000,
           },
           {
-            v: "v2.9",
+            v: "v3.0",
             d: "28 Jul 2026",
             items: [
               "Tim Sound & Multimedia kini terkunci: tidak merangkap tugas di P&W, Persembahan, atau Hospitality pada minggu yang sama.",
@@ -33743,7 +33834,7 @@
             t: 1785300000000,
           },
           {
-            v: "v2.9",
+            v: "v3.0",
             d: "28 Jul 2026",
             items: [
               "Jadwal otomatis memakai aturan resmi H1-H8 (bukan lagi coba-coba).",
