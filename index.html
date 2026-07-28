@@ -30457,7 +30457,7 @@
             label: "Worship - Praise & Worship",
             roles: [
               { key: "wlPNW", label: "Worship Leader", slots: 2, dbl: true },
-              { key: "singPNW", label: "Singers", slots: 2, dbl: true },
+              { key: "singPNW", label: "Singers", slots: 3, dbl: true },
               {
                 key: "kbPNW",
                 label: "Pianist",
@@ -30497,7 +30497,7 @@
             label: "Worship - Persembahan",
             roles: [
               { key: "wlPsb", label: "Worship Leader", slots: 1, dbl: true },
-              { key: "singPsb", label: "Singers", slots: 2, dbl: true },
+              { key: "singPsb", label: "Singers", slots: 3, dbl: true },
               {
                 key: "kbPsb",
                 label: "Pianist",
@@ -31946,17 +31946,12 @@
           xlsBtn.textContent = "Ekspor Excel";
           xlsBtn.onclick = exportSchedExcel;
           toolbar.appendChild(xlsBtn);
-          // v2.6 - menulis ke Google Sheets adalah aksi ubah data, jadi
-          // tombolnya hanya untuk pengurus. Cetak & Excel tetap boleh dilihat
-          // member karena keduanya sekadar membaca.
-          if (admin) {
-            var shBtn = document.createElement("button");
-            shBtn.className = "actionBtn";
-            shBtn.id = "schedSheetBtn";
-            shBtn.textContent = "Kirim ke Sheets";
-            shBtn.onclick = sendSchedToSheets;
-            toolbar.appendChild(shBtn);
-          }
+          var shBtn = document.createElement("button");
+          shBtn.className = "actionBtn";
+          shBtn.id = "schedSheetBtn";
+          shBtn.textContent = "Kirim ke Sheets";
+          shBtn.onclick = sendSchedToSheets;
+          toolbar.appendChild(shBtn);
           var syncPill = document.createElement("span");
           syncPill.id = "schedSyncPill";
           syncPill.textContent = window.__schedSyncTxt || "Menyambung...";
