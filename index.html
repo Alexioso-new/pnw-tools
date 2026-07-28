@@ -28606,7 +28606,7 @@
     </script>
 
     <style>
-      /* v2.2 - legenda & garis penghubung Double Role */
+      /* v2.3 - legenda & garis penghubung Double Role */
       .schedLegend {
         display: flex;
         gap: 14px;
@@ -28633,29 +28633,54 @@
       .schedScroll {
         position: relative;
       }
-      svg.dblLines {
-        position: absolute;
-        left: 0;
-        top: 0;
-        pointer-events: none;
-        overflow: visible;
-        z-index: 4;
+      .cell .chip.dbl {
+        border-left: 4px solid var(--dblc, #f59e0b);
       }
-      svg.dblLines path.dbl3d {
-        fill: none;
-        stroke: url(#dblGrad);
-        stroke-width: 3;
-        stroke-linejoin: round;
-        stroke-linecap: round;
-        filter: url(#dblShadow);
-        opacity: 0.7;
+      .cell .chip .dblTag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 15px;
+        height: 15px;
+        margin-left: 5px;
+        border-radius: 8px;
+        background: var(--dblc, #f59e0b);
+        color: #fff;
+        font-size: 9px;
+        font-style: normal;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .cell .chip {
         transition:
-          opacity 0.15s ease,
-          stroke-width 0.15s ease;
+          opacity 0.12s ease,
+          transform 0.12s ease;
       }
-      svg.dblLines path.dbl3d.hot {
+      .schedScroll.dimOn .cell .chip {
+        opacity: 0.28;
+      }
+      .schedScroll.dimOn .cell .chip.hot {
         opacity: 1;
-        stroke-width: 5;
+        transform: scale(1.08);
+        outline: 2px solid var(--dblc, #f59e0b);
+        outline-offset: 1px;
+        position: relative;
+        z-index: 3;
+      }
+      .schedRO {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        background: #eef2ff;
+        color: #3730a3;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      body.dark .schedRO {
+        background: #26304d;
+        color: #c7d2fe;
       }
     </style>
   </head>
@@ -28673,7 +28698,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v2.2</span>
+            <span class="verTag" id="appVer">v2.3</span>
           </p>
         </div>
         <button
@@ -29830,7 +29855,7 @@
           var loginBtn = document.getElementById("adminLoginBtn");
           if (loginBtn) loginBtn.style.display = isAdmin ? "none" : "";
           var schedSec = document.getElementById("schedMenuSec");
-          if (schedSec) schedSec.style.display = isAdmin ? "" : "none";
+          if (schedSec) schedSec.style.display = "";
           var lt = document.getElementById("lockToggle");
           if (lt) lt.checked = locked;
           var ls = document.getElementById("lockStatus");
@@ -30368,7 +30393,7 @@
           sound: { t1: ["George", "Sadrian"], t2: ["Alex"], t3: ["Joshua"] },
         };
         // Role tanpa data prioritas baru -> pakai daftar lama sebagai tier 1.
-        // v2.2 - tingkat & pool khusus (tabel senior/junior)
+        // v2.3 - tingkat & pool khusus (tabel senior/junior)
         var WL_SENIOR = [
           "Gilberth",
           "Joshua",
@@ -30568,6 +30593,7 @@
           } catch (e) {}
           if (cloudReady && scheduleRef) {
             try {
+              sched.meta = { by: schedWho(), at: Date.now() };
               scheduleRef.set(sched);
             } catch (e) {}
           }
@@ -30579,6 +30605,35 @@
                 if (sp) sp.textContent = "";
               }, 1500);
             }
+          }
+        }
+        function schedWho() {
+          try {
+            return localStorage.getItem("ptAdminUser") || "pengurus";
+          } catch (e) {
+            return "pengurus";
+          }
+        }
+        // v2.3 - tulis HANYA satu sel ke Firebase supaya beberapa pengurus bisa
+        // mengedit bersamaan tanpa saling menimpa (penggabungan per-path).
+        function saveSchedCell(wk, roleKey) {
+          try {
+            localStorage.setItem(SCHED_KEY, JSON.stringify(sched));
+          } catch (e) {}
+          if (cloudReady && scheduleRef) {
+            try {
+              scheduleRef
+                .child("assign/w" + wk + "/" + roleKey)
+                .set(getAssign(wk, roleKey));
+              scheduleRef.child("meta").set({ by: schedWho(), at: Date.now() });
+            } catch (e) {}
+          }
+          var sp = document.getElementById("schedSaveStatus");
+          if (sp) {
+            sp.textContent = "Tersimpan";
+            setTimeout(function () {
+              if (sp) sp.textContent = "";
+            }, 1500);
           }
         }
         function initScheduleCloud() {
@@ -30596,15 +30651,33 @@
             scheduleRef.on("value", function (snap) {
               var v = snap.val();
               if (v && v.roster) {
+                var meta = v.meta || {};
                 sched = v;
+                if (!sched.assign) sched.assign = {};
+                if (!sched.izin) sched.izin = {};
                 try {
                   localStorage.setItem(SCHED_KEY, JSON.stringify(sched));
                 } catch (e) {}
+                if (
+                  meta.by &&
+                  meta.by !== schedWho() &&
+                  Date.now() - (meta.at || 0) < 20000
+                )
+                  toast("Jadwal diperbarui oleh " + meta.by, "info", 2600);
               } else if (v == null) {
                 scheduleRef.set(sched);
               }
               var pg = document.getElementById("schedulePage");
-              if (pg && pg.classList.contains("open")) renderSchedule();
+              if (pg && pg.classList.contains("open")) {
+                // Jangan render ulang saat pengurus sedang mengetik di kolom Tambah.
+                var ae = document.activeElement;
+                if (ae && pg.contains(ae) && ae.tagName === "INPUT") {
+                  clearTimeout(window.__schedRT);
+                  window.__schedRT = setTimeout(renderSchedule, 4000);
+                  return;
+                }
+                renderSchedule();
+              }
             });
           } catch (e) {}
         }
@@ -30695,7 +30768,7 @@
               4000,
             );
           }
-          saveSched();
+          saveSchedCell(wk, roleKey);
           return true;
         }
         function removeAssign(wk, roleKey, pid) {
@@ -30703,7 +30776,7 @@
             return x !== pid;
           });
           setAssign(wk, roleKey, arr);
-          saveSched();
+          saveSchedCell(wk, roleKey);
         }
         function personTier(pid, roleKey) {
           var p = personById(pid);
@@ -30718,7 +30791,7 @@
         function isSoundMMRole(rk) {
           return SOUND_MM_ROLES.indexOf(rk) >= 0;
         }
-        // v2.2 - penjadwal berbasis constraint (H1-H8) + fallback berjenjang.
+        // v2.3 - penjadwal berbasis constraint (H1-H8) + fallback berjenjang.
         function autoSchedule() {
           if (!canEdit()) {
             toast("Hanya admin yang bisa membuat jadwal.", "error");
@@ -30798,6 +30871,16 @@
               )
                 return false;
             }
+            // H9 - tim Sound & Multimedia terkunci penuh: tidak boleh merangkap
+            // tugas di tim lain (P&W, Persembahan, Hospitality) pada minggu sama.
+            var rpW = rolesOfPersonInWeek(pid, w);
+            var hasMM = false,
+              hasOther = false;
+            for (var j9 = 0; j9 < rpW.length; j9++) {
+              if (isSoundMMRole(rpW[j9])) hasMM = true;
+              else hasOther = true;
+            }
+            if (isSoundMMRole(rk) ? hasOther : hasMM) return false;
             // H6 - musisi P&W senior, Persembahan junior
             if (MUS_PNW_ROLES.indexOf(rk) >= 0 && !schedNameIn(MUS_SENIOR, pid))
               return false;
@@ -30944,258 +31027,26 @@
             );
           }
         }
-        // v2.2 - garis penghubung 3D untuk Double Role (orthogonal, hindari box lain)
-        function schedHotLines(pid, wk, on) {
-          var svg = document.querySelector("#schedulePage svg.dblLines");
-          if (!svg) return;
-          var key = wk + "|" + pid;
-          svg.querySelectorAll("path.dbl3d").forEach(function (p) {
-            if (p.getAttribute("data-key") === key)
-              p.classList.toggle("hot", !!on);
-          });
+        // v2.3 - garis penghubung 3D untuk Double Role (orthogonal, hindari box lain)
+        // v2.3 - penanda Double Role ringan: warna tetap per orang + sorot terkait.
+        // Menggantikan garis SVG 3D (path-finding) yang berat dan berantakan.
+        function schedDblColor(pid) {
+          var h = 0;
+          for (var i = 0; i < pid.length; i++)
+            h = (h * 31 + pid.charCodeAt(i)) % 12;
+          return "hsl(" + h * 30 + ", 78%, 42%)";
         }
-        function schedDrawDblLines() {
+        function schedHotLines(pid, wk, on) {
           var wrap = document.querySelector("#schedulePage .schedScroll");
           if (!wrap) return;
-          var old = wrap.querySelector("svg.dblLines");
-          if (old) old.parentNode.removeChild(old);
-          var chips = wrap.querySelectorAll(".chip[data-pid]");
-          if (!chips.length) return;
-          var wr = wrap.getBoundingClientRect();
-          var boxes = [],
-            groups = {};
-          Array.prototype.forEach.call(chips, function (c) {
-            var r = c.getBoundingClientRect();
-            var b = {
-              x: r.left - wr.left + wrap.scrollLeft,
-              y: r.top - wr.top + wrap.scrollTop,
-              w: r.width,
-              h: r.height,
-              pid: c.getAttribute("data-pid"),
-              wk: c.getAttribute("data-wk"),
-            };
-            boxes.push(b);
-            var k = b.wk + "|" + b.pid;
-            (groups[k] = groups[k] || []).push(b);
-          });
-          var pairs = [];
-          Object.keys(groups).forEach(function (k) {
-            var g = groups[k];
-            if (g.length < 2) return;
-            g.sort(function (a, b) {
-              return a.y - b.y || a.x - b.x;
-            });
-            for (var i = 0; i + 1 < g.length; i++)
-              pairs.push({ a: g[i], b: g[i + 1], key: k });
-          });
-          if (!pairs.length) return;
-          var W = Math.max(wrap.scrollWidth, 1),
-            H = Math.max(wrap.scrollHeight, 1);
-          var CELL = 10;
-          var cols = Math.ceil(W / CELL),
-            rows = Math.ceil(H / CELL);
-          if (cols * rows > 200000) return;
-          function mark(arr, b, val) {
-            var c0 = Math.max(0, Math.floor((b.x - 4) / CELL)),
-              c1 = Math.min(cols - 1, Math.floor((b.x + b.w + 4) / CELL)),
-              r0 = Math.max(0, Math.floor((b.y - 4) / CELL)),
-              r1 = Math.min(rows - 1, Math.floor((b.y + b.h + 4) / CELL));
-            for (var r = r0; r <= r1; r++)
-              for (var c = c0; c <= c1; c++) arr[r * cols + c] = val;
-          }
-          var base = new Uint8Array(cols * rows);
-          boxes.forEach(function (b) {
-            mark(base, b, 1);
-          });
-          var DR = [
-            [1, 0],
-            [-1, 0],
-            [0, 1],
-            [0, -1],
-          ];
-          function route(a, b) {
-            var blocked = base.slice();
-            mark(blocked, a, 0);
-            mark(blocked, b, 0);
-            var sc = Math.min(
-                cols - 1,
-                Math.max(0, Math.round((a.x + a.w / 2) / CELL)),
-              ),
-              sr = Math.min(
-                rows - 1,
-                Math.max(0, Math.round((a.y + a.h / 2) / CELL)),
-              ),
-              tc = Math.min(
-                cols - 1,
-                Math.max(0, Math.round((b.x + b.w / 2) / CELL)),
-              ),
-              tr = Math.min(
-                rows - 1,
-                Math.max(0, Math.round((b.y + b.h / 2) / CELL)),
-              );
-            var N = cols * rows,
-              INF = 1e9;
-            var dist = new Int32Array(N * 4).fill(INF);
-            var prev = new Int32Array(N * 4).fill(-1);
-            var heap = [];
-            function push(st, d) {
-              heap.push([d, st]);
-              var i = heap.length - 1;
-              while (i > 0) {
-                var p = (i - 1) >> 1;
-                if (heap[p][0] <= heap[i][0]) break;
-                var t = heap[p];
-                heap[p] = heap[i];
-                heap[i] = t;
-                i = p;
-              }
-            }
-            function pop() {
-              var top = heap[0],
-                last = heap.pop();
-              if (heap.length) {
-                heap[0] = last;
-                var i = 0;
-                for (;;) {
-                  var l = i * 2 + 1,
-                    r = l + 1,
-                    m = i;
-                  if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
-                  if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
-                  if (m === i) break;
-                  var t = heap[m];
-                  heap[m] = heap[i];
-                  heap[i] = t;
-                  i = m;
-                }
-              }
-              return top;
-            }
-            var start = sr * cols + sc,
-              goal = tr * cols + tc;
-            for (var d0 = 0; d0 < 4; d0++) {
-              dist[start * 4 + d0] = 0;
-              push(start * 4 + d0, 0);
-            }
-            var found = -1;
-            while (heap.length) {
-              var cur = pop();
-              var cd = cur[0],
-                st = cur[1];
-              if (cd > dist[st]) continue;
-              var cell = st >> 2,
-                dir = st & 3;
-              if (cell === goal) {
-                found = st;
-                break;
-              }
-              var cr = (cell / cols) | 0,
-                cc = cell % cols;
-              for (var k = 0; k < 4; k++) {
-                var nr = cr + DR[k][1],
-                  nc = cc + DR[k][0];
-                if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
-                var ni = nr * cols + nc;
-                if (blocked[ni]) continue;
-                var nd = cd + 1 + (k === dir ? 0 : 4);
-                var ns = ni * 4 + k;
-                if (nd < dist[ns]) {
-                  dist[ns] = nd;
-                  prev[ns] = st;
-                  push(ns, nd);
-                }
-              }
-            }
-            if (found < 0) return null;
-            var pts = [],
-              s = found;
-            while (s >= 0) {
-              var cl = s >> 2;
-              pts.push({
-                x: ((cl % cols) + 0.5) * CELL,
-                y: (((cl / cols) | 0) + 0.5) * CELL,
-              });
-              s = prev[s];
-            }
-            pts.reverse();
-            var out = [pts[0]];
-            for (var i2 = 1; i2 < pts.length - 1; i2++) {
-              var p0 = out[out.length - 1],
-                p1 = pts[i2],
-                p2 = pts[i2 + 1];
-              if (
-                (p0.x === p1.x && p1.x === p2.x) ||
-                (p0.y === p1.y && p1.y === p2.y)
-              )
-                continue;
-              out.push(p1);
-            }
-            out.push(pts[pts.length - 1]);
-            return out;
-          }
-          function ptsToPath(pts, bev) {
-            if (!pts || pts.length < 2) return "";
-            var d = "M" + pts[0].x.toFixed(1) + "," + pts[0].y.toFixed(1);
-            for (var i = 1; i < pts.length - 1; i++) {
-              var p0 = pts[i - 1],
-                p1 = pts[i],
-                p2 = pts[i + 1];
-              var v1x = p1.x - p0.x,
-                v1y = p1.y - p0.y,
-                v2x = p2.x - p1.x,
-                v2y = p2.y - p1.y;
-              var l1 = Math.sqrt(v1x * v1x + v1y * v1y) || 1,
-                l2 = Math.sqrt(v2x * v2x + v2y * v2y) || 1;
-              var b = Math.min(bev, l1 / 2, l2 / 2);
-              d +=
-                "L" +
-                (p1.x - (v1x / l1) * b).toFixed(1) +
-                "," +
-                (p1.y - (v1y / l1) * b).toFixed(1) +
-                "Q" +
-                p1.x.toFixed(1) +
-                "," +
-                p1.y.toFixed(1) +
-                " " +
-                (p1.x + (v2x / l2) * b).toFixed(1) +
-                "," +
-                (p1.y + (v2y / l2) * b).toFixed(1);
-            }
-            var e = pts[pts.length - 1];
-            d += "L" + e.x.toFixed(1) + "," + e.y.toFixed(1);
-            return d;
-          }
-          var NS = "http://www.w3.org/2000/svg";
-          var svg = document.createElementNS(NS, "svg");
-          svg.setAttribute("class", "dblLines");
-          svg.setAttribute("width", W);
-          svg.setAttribute("height", H);
-          svg.innerHTML =
-            '<defs><linearGradient id="dblGrad" x1="0" y1="0" x2="1" y2="1">' +
-            '<stop offset="0%" stop-color="#fbbf24"/><stop offset="55%" stop-color="#f59e0b"/>' +
-            '<stop offset="100%" stop-color="#b45309"/></linearGradient>' +
-            '<filter id="dblShadow" x="-50%" y="-50%" width="200%" height="200%">' +
-            '<feDropShadow dx="0" dy="2" stdDeviation="1.6" flood-color="#000" flood-opacity="0.45"/>' +
-            "</filter></defs>";
-          var drawn = 0;
-          pairs.forEach(function (pr) {
-            var pts = route(pr.a, pr.b);
-            if (!pts) return;
-            var path = document.createElementNS(NS, "path");
-            path.setAttribute("class", "dbl3d");
-            path.setAttribute("data-key", pr.key);
-            path.setAttribute("d", ptsToPath(pts, 6));
-            svg.appendChild(path);
-            drawn++;
-          });
-          if (!drawn) return;
-          wrap.appendChild(svg);
-          if (!window.__dblResizeBound) {
-            window.__dblResizeBound = true;
-            window.addEventListener("resize", function () {
-              clearTimeout(window.__dblRT);
-              window.__dblRT = setTimeout(schedDrawDblLines, 200);
-            });
+          wrap.classList.toggle("dimOn", !!on);
+          var list = wrap.querySelectorAll(".chip[data-pid]");
+          for (var i = 0; i < list.length; i++) {
+            var c = list[i];
+            var m =
+              c.getAttribute("data-pid") === pid &&
+              c.getAttribute("data-wk") === String(wk);
+            c.classList.toggle("hot", !!on && m);
           }
         }
         function schedTeamPrintClass(key) {
@@ -31274,13 +31125,12 @@
         }
         function openSchedulePage() {
           closeMenu();
-          if (!isAdmin) {
+          if (!isAdmin)
             toast(
-              "Fitur penjadwalan khusus admin. Silakan login admin dulu.",
-              "error",
+              "Mode lihat saja. Login pengurus untuk mengubah jadwal.",
+              "info",
+              3000,
             );
-            return;
-          }
           initScheduleCloud();
           document.getElementById("schedulePage").classList.add("open");
           renderSchedule();
@@ -31300,7 +31150,8 @@
             var b = document.getElementById("schedTab_" + t);
             if (b) b.classList.toggle("on", schedTab === t);
           });
-          var admin = canEdit();
+          // v2.3 - hak edit jadwal mengikuti status pengurus, bukan gembok lagu.
+          var admin = isAdmin;
           var wc = document.getElementById("schedWeekCount");
           if (wc) wc.value = String(sched.weeks);
           var body = document.getElementById("schedBody");
@@ -31447,7 +31298,10 @@
           legend.innerHTML =
             '<span class="lgItem"><i class="lgSw dbl"></i>Double Role</span>' +
             '<span class="lgItem"><i class="lgSw warn"></i>Sedang izin</span>' +
-            '<span class="lgItem">Garis 3D menghubungkan nama yang sama dalam satu minggu.</span>';
+            '<span class="lgItem">Angka kecil = jumlah tugas orang itu di minggu tersebut. Arahkan kursor atau ketuk nama untuk menyorot semua tugasnya.</span>' +
+            (admin
+              ? '<span class="lgItem">Perubahan tersimpan realtime untuk semua pengurus.</span>'
+              : '<span class="schedRO">Mode lihat saja</span>');
           body.appendChild(legend);
           var wrap = document.createElement("div");
           wrap.className = "schedScroll";
@@ -31509,26 +31363,45 @@
                   var arr = getAssign(wk, role.key);
                   arr.forEach(function (pid) {
                     var chip = document.createElement("span");
-                    var isDbl = rolesOfPersonInWeek(pid, wk).length >= 2;
+                    var myRoles = rolesOfPersonInWeek(pid, wk);
+                    var isDbl = myRoles.length >= 2;
                     chip.className =
                       "chip" +
                       (isIzin(pid, wk) ? " warn" : "") +
                       (isDbl ? " dbl" : "");
-                    if (isDbl)
-                      chip.title =
-                        personName(pid) +
-                        " punya lebih dari satu tugas minggu ini";
                     chip.textContent = personName(pid);
                     chip.setAttribute("data-pid", pid);
                     chip.setAttribute("data-wk", wk);
-                    if (isDbl)
+                    if (isDbl) {
+                      chip.style.setProperty("--dblc", schedDblColor(pid));
                       chip.title =
-                        personName(pid) + " - Double Role minggu ini";
+                        personName(pid) +
+                        " - Double Role (" +
+                        myRoles.length +
+                        " tugas): " +
+                        myRoles
+                          .map(function (rk2) {
+                            var r2 = schedRole(rk2);
+                            return r2 ? r2.label : rk2;
+                          })
+                          .join(", ");
+                      var tag = document.createElement("i");
+                      tag.className = "dblTag";
+                      tag.textContent = String(myRoles.length);
+                      chip.appendChild(tag);
+                    }
                     chip.onmouseenter = function () {
                       schedHotLines(pid, wk, true);
                     };
                     chip.onmouseleave = function () {
                       schedHotLines(pid, wk, false);
+                    };
+                    chip.onclick = function () {
+                      schedHotLines(pid, wk, true);
+                      clearTimeout(window.__hotRT);
+                      window.__hotRT = setTimeout(function () {
+                        schedHotLines(pid, wk, false);
+                      }, 2200);
                     };
                     if (admin) {
                       var x = document.createElement("b");
@@ -31554,7 +31427,6 @@
           table.appendChild(tbody);
           wrap.appendChild(table);
           body.appendChild(wrap);
-          setTimeout(schedDrawDblLines, 30);
         }
         function renderSchedRoster(body, admin) {
           var info = document.createElement("p");
@@ -32805,7 +32677,19 @@
         // --- Info & pembaruan (release notes) ---
         var SEED_NOTES = [
           {
-            v: "v2.2",
+            v: "v2.3",
+            d: "28 Jul 2026",
+            items: [
+              "Tim Sound & Multimedia kini terkunci: tidak merangkap tugas di P&W, Persembahan, atau Hospitality pada minggu yang sama.",
+              "Penanda Double Role diganti dari garis 3D menjadi warna tetap per orang + angka jumlah tugas.",
+              "Arahkan kursor atau ketuk sebuah nama untuk menyorot semua tugasnya di minggu itu.",
+              "Jadwal kini realtime: beberapa pengurus bisa mengedit bersamaan tanpa saling menimpa.",
+              "Member sekarang bisa membuka jadwal dalam mode lihat saja.",
+            ],
+            t: 1785300000000,
+          },
+          {
+            v: "v2.3",
             d: "28 Jul 2026",
             items: [
               "Jadwal otomatis memakai aturan resmi H1-H8 (bukan lagi coba-coba).",
