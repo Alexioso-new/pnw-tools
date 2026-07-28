@@ -31114,6 +31114,28 @@
             );
             return false;
           }
+          // H9 - tim Sound & Multimedia tidak boleh merangkap ke tim lain pada
+          // minggu yang sama, dan sebaliknya. Ini aturan KERAS, jadi pengisian
+          // manual ikut diblokir - sebelumnya hanya penjadwal otomatis yang
+          // memeriksanya, sehingga admin masih bisa melanggar lewat + tambah.
+          var rpW9 = rolesOfPersonInWeek(pid, wk);
+          var hasMM9 = false,
+            hasOther9 = false;
+          for (var i9 = 0; i9 < rpW9.length; i9++) {
+            if (isSoundMMRole(rpW9[i9])) hasMM9 = true;
+            else hasOther9 = true;
+          }
+          if (isSoundMMRole(roleKey) ? hasOther9 : hasMM9) {
+            toast(
+              personName(pid) +
+                (isSoundMMRole(roleKey)
+                  ? " sudah bertugas di tim lain minggu ini, jadi tidak bisa masuk Sound & Multimedia."
+                  : " ada di tim Sound & Multimedia minggu ini, jadi tidak bisa merangkap tugas di tim lain."),
+              "error",
+              4200,
+            );
+            return false;
+          }
           // Double role: beri PERINGATAN saja (tidak memblokir). Bisa dimatikan
           // lewat opsi "Izinkan double role" (sched.allowDouble).
           var existingRoles = rolesOfPersonInWeek(pid, wk);
