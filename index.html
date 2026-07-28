@@ -28874,7 +28874,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v2.5</span>
+            <span class="verTag" id="appVer">v2.6</span>
           </p>
         </div>
         <button
@@ -31792,6 +31792,103 @@
             toast("Gagal membuat berkas Excel.", "error");
           }
         }
+        // v2.6 - kirim jadwal jadi ke Google Sheets lewat Apps Script yang
+        // sudah dipakai form izin & saran. Muatan dikirim per blok tim supaya
+        // Apps Script bisa menulis ulang sheet lengkap dengan warnanya.
+        function schedSheetPayload() {
+          var COL = {
+            hosp: "#f6c445",
+            mm: "#7ec8f2",
+            wPNW: "#f2a2c0",
+            wPsb: "#c3a6e0",
+            wUmum: "#a8d5a2",
+          };
+          var n = sched.weeks;
+          var head = ["SYNERGY"];
+          for (var w = 1; w <= n; w++)
+            head.push(
+              (sched.weekLabels && sched.weekLabels[w]) || "Minggu " + w,
+            );
+          var blocks = [];
+          SCHED_TEAMS.forEach(function (team) {
+            var b = {
+              tim: team.label,
+              warna: COL[team.key] || "#dddddd",
+              baris: [],
+            };
+            team.roles.forEach(function (role) {
+              var sel = [];
+              for (var w2 = 1; w2 <= n; w2++)
+                sel.push(getAssign(w2, role.key).map(personName).join(", "));
+              b.baris.push({ role: role.label, sel: sel });
+            });
+            blocks.push(b);
+          });
+          return {
+            type: "jadwal",
+            sheet: "Jadwal Youth",
+            judul: "HOSANA YOUTH SYNERGY",
+            minggu: n,
+            head: head,
+            blocks: blocks,
+            oleh: schedWho(),
+            waktu: new Date().toLocaleString("id-ID"),
+          };
+        }
+        function sendSchedToSheets() {
+          if (!IZIN_ENDPOINT) {
+            toast("Alamat Google Sheets belum diatur.", "error", 6000);
+            return;
+          }
+          var btn = document.getElementById("schedSheetBtn");
+          function busy(on) {
+            if (!btn) return;
+            btn.disabled = on;
+            btn.textContent = on ? "Mengirim..." : "Kirim ke Sheets";
+          }
+          function done(ok, msg) {
+            busy(false);
+            toast(msg, ok ? "success" : "error", ok ? 3600 : 8000);
+          }
+          busy(true);
+          var body = JSON.stringify(schedSheetPayload());
+          fetch(IZIN_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: body,
+          })
+            .then(function (r) {
+              return r.text();
+            })
+            .then(function (t) {
+              if (/ok/i.test(t)) done(true, "Jadwal masuk ke Google Sheets.");
+              else
+                done(
+                  false,
+                  "Apps Script menolak: " + String(t || "").slice(0, 140),
+                );
+            })
+            .catch(function () {
+              // Sebagian browser memblokir pembacaan balasan Apps Script.
+              // Kirim ulang tanpa membaca balasan. Apps Script menulis ulang
+              // sheet yang sama, jadi kiriman ganda tidak menggandakan data.
+              fetch(IZIN_ENDPOINT, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: body,
+              })
+                .then(function () {
+                  done(
+                    true,
+                    "Jadwal dikirim. Silakan cek Google Sheets untuk memastikan.",
+                  );
+                })
+                .catch(function () {
+                  done(false, "Gagal mengirim ke Google Sheets.");
+                });
+            });
+        }
         function renderSchedGrid(body, admin) {
           var toolbar = document.createElement("div");
           toolbar.className = "schedToolbar";
@@ -31849,6 +31946,17 @@
           xlsBtn.textContent = "Ekspor Excel";
           xlsBtn.onclick = exportSchedExcel;
           toolbar.appendChild(xlsBtn);
+          // v2.6 - menulis ke Google Sheets adalah aksi ubah data, jadi
+          // tombolnya hanya untuk pengurus. Cetak & Excel tetap boleh dilihat
+          // member karena keduanya sekadar membaca.
+          if (admin) {
+            var shBtn = document.createElement("button");
+            shBtn.className = "actionBtn";
+            shBtn.id = "schedSheetBtn";
+            shBtn.textContent = "Kirim ke Sheets";
+            shBtn.onclick = sendSchedToSheets;
+            toolbar.appendChild(shBtn);
+          }
           var syncPill = document.createElement("span");
           syncPill.id = "schedSyncPill";
           syncPill.textContent = window.__schedSyncTxt || "Menyambung...";
@@ -33214,7 +33322,16 @@
         // --- Info & pembaruan (release notes) ---
         var SEED_NOTES = [
           {
-            v: "v2.5",
+            v: "v2.6",
+            d: "28 Jul 2026",
+            items: [
+              "Tombol Kirim ke Sheets: jadwal langsung tertulis ke Google Sheets Jadwal Youth.",
+              "Ekspor Excel tetap ada sebagai cadangan bila sedang offline.",
+            ],
+            t: 1785293400000,
+          },
+          {
+            v: "v2.6",
             d: "28 Jul 2026",
             items: [
               "Kolom + tambah kini bisa dicari di HP, lengkap dengan penanda tier.",
@@ -33226,7 +33343,7 @@
             t: 1785291600000,
           },
           {
-            v: "v2.5",
+            v: "v2.6",
             d: "28 Jul 2026",
             items: [
               "Pemusik jadi satu baris berjejer: Pianist - Guitarist - Bassist - Drummer.",
@@ -33239,7 +33356,7 @@
             t: 1785288000000,
           },
           {
-            v: "v2.5",
+            v: "v2.6",
             d: "28 Jul 2026",
             items: [
               "Tim Sound & Multimedia kini terkunci: tidak merangkap tugas di P&W, Persembahan, atau Hospitality pada minggu yang sama.",
@@ -33251,7 +33368,7 @@
             t: 1785300000000,
           },
           {
-            v: "v2.5",
+            v: "v2.6",
             d: "28 Jul 2026",
             items: [
               "Jadwal otomatis memakai aturan resmi H1-H8 (bukan lagi coba-coba).",
