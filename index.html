@@ -29047,7 +29047,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v3.8.1</span>
+            <span class="verTag" id="appVer">v3.9.1</span>
           </p>
         </div>
         <button
@@ -34970,6 +34970,59 @@
             noteOv = {};
           }
         }
+        // v3.9 - dulu kegagalan kirim ke server HILANG TANPA JEJAK.
+        //
+        // Penyebabnya: penulisan cloud dibungkus try/catch, padahal Firebase
+        // menolak lewat promise yang ditolak - bukan error yang dilempar. Jadi
+        // admin melihat perubahannya (tersimpan lokal) sementara member tidak
+        // pernah menerimanya, dan tidak ada peringatan sama sekali. Sekarang
+        // status kirim dilacak dan ditampilkan.
+        var noteOvPending = false;
+        function noteOvBelumSampai() {
+          return isAdmin && noteOvCount() > 0 && (noteOvPending || !noteOvRef);
+        }
+        function kirimUlangNoteOv() {
+          if (!isAdmin) return;
+          if (!noteOvRef) {
+            toast(
+              "Belum tersambung ke server. Tunggu tulisan Realtime aktif lalu coba lagi.",
+              "error",
+              5000,
+            );
+            return;
+          }
+          var ids = Object.keys(noteOv || {});
+          if (!ids.length) return;
+          toast("Mengirim ulang " + ids.length + " perubahan...", "loading");
+          var sisa = ids.length,
+            error = 0;
+          ids.forEach(function (id) {
+            noteOvRef
+              .child(id)
+              .set(noteOv[id])
+              .then(function () {
+                sisa--;
+                if (!sisa) selesaiKirim(error);
+              })
+              .catch(function () {
+                error++;
+                sisa--;
+                if (!sisa) selesaiKirim(error);
+              });
+          });
+        }
+        function selesaiKirim(error) {
+          noteOvPending = error > 0;
+          if (error)
+            toast(
+              error +
+                " perubahan masih ditolak server. Periksa Firebase Rules untuk pujianYouth/noteOverrides.",
+              "error",
+              7000,
+            );
+          else toast("Semua perubahan sudah terkirim ke member.", "success");
+          refreshInfoUI();
+        }
         function refreshInfoUI() {
           buildReleaseNotes();
           renderInfoList();
@@ -34986,10 +35039,32 @@
             localStorage.setItem(NOTE_OV_KEY, JSON.stringify(noteOv));
           } catch (e) {}
           if (noteOvRef) {
-            try {
-              if (val === null) noteOvRef.child(id).remove();
-              else noteOvRef.child(id).set(val);
-            } catch (e) {}
+            // Ditangkap lewat .catch, BUKAN try/catch: penolakan Firebase
+            // datang sebagai promise yang ditolak sehingga try/catch buta.
+            var opOv =
+              val === null
+                ? noteOvRef.child(id).remove()
+                : noteOvRef.child(id).set(val);
+            if (opOv && opOv.then) {
+              opOv
+                .then(function () {
+                  noteOvPending = false;
+                  refreshInfoUI();
+                })
+                .catch(function (err) {
+                  noteOvPending = true;
+                  toast(
+                    "Tersimpan di perangkat ini, tapi GAGAL dikirim ke server - member belum melihatnya. " +
+                      ((err && err.message) || ""),
+                    "error",
+                    7000,
+                  );
+                  refreshInfoUI();
+                });
+            }
+          } else {
+            // Tanpa sambungan, perubahan ini baru ada di perangkat ini saja.
+            noteOvPending = true;
           }
           refreshInfoUI();
         }
@@ -35104,6 +35179,33 @@
           var host = document.getElementById("infoList");
           if (!host) return;
           host.innerHTML = "";
+          // Spanduk khusus admin. Member tidak perlu melihat urusan teknis ini,
+          // yang penting mereka menerima isinya.
+          if (noteOvBelumSampai()) {
+            var warn = document.createElement("div");
+            warn.id = "noteOvWarn";
+            warn.style.cssText =
+              "border:1px solid #f59e0b;background:#fffbeb;color:#92400e;" +
+              "border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;line-height:1.5";
+            var wt = document.createElement("div");
+            wt.innerHTML =
+              "<b>" +
+              noteOvCount() +
+              " perubahan belum sampai ke member.</b> Perubahan ini baru tersimpan di perangkat ini.";
+            var wb = document.createElement("button");
+            wb.type = "button";
+            wb.id = "noteOvRetry";
+            wb.className = "ovRetryBtn";
+            wb.textContent = "Kirim ulang ke server";
+            wb.style.cssText =
+              "margin-top:8px;border:1px solid #b45309;background:#fff;" +
+              "color:#92400e;border-radius:8px;padding:5px 10px;" +
+              "font-size:11px;cursor:pointer";
+            wb.onclick = kirimUlangNoteOv;
+            warn.appendChild(wt);
+            warn.appendChild(wb);
+            host.appendChild(warn);
+          }
           RELEASE_NOTES.forEach(function (n) {
             var item = document.createElement("div");
             item.className = "infoItem";
