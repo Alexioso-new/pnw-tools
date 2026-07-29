@@ -28882,7 +28882,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v3.4</span>
+            <span class="verTag" id="appVer">v3.5</span>
           </p>
         </div>
         <button
@@ -30781,7 +30781,19 @@
           },
         ];
         // Mengembalikan { rk, alasan } bila bentrok, atau null bila aman.
-        function konflikEksklusif(pid, wk, roleKey) {
+        // v3.5 - sesi dari sebuah role musik: "PNW", "Psb", atau null.
+        function musSesi(rk) {
+          if (MUS_PNW_ROLES.indexOf(rk) >= 0) return "PNW";
+          if (MUS_PSB_ROLES.indexOf(rk) >= 0) return "Psb";
+          return null;
+        }
+        // v3.5 - opts.musLintasSesi dipakai HANYA oleh pengisian manual dan
+        // melonggarkan aturan alat SEBATAS kedua role berada di sesi berbeda.
+        // Di dalam satu sesi larangan tetap mutlak, karena tangan memang hanya
+        // sepasang. Penjadwal otomatis memanggil fungsi ini TANPA opts, jadi
+        // logika penyusunan otomatis sama sekali tidak berubah.
+        function konflikEksklusif(pid, wk, roleKey, opts) {
+          opts = opts || {};
           // 1. Alat musik: alat sama di dua sesi boleh, alat berbeda tidak.
           var ins = musInstrumen(roleKey);
           if (ins) {
@@ -30789,11 +30801,15 @@
               var rkm = MUS_ALL_ROLES[im];
               if (rkm === roleKey) continue;
               if (musInstrumen(rkm) === ins) continue;
-              if (getAssign(wk, rkm).indexOf(pid) >= 0)
+              if (getAssign(wk, rkm).indexOf(pid) >= 0) {
+                var sA = musSesi(rkm),
+                  sB = musSesi(roleKey);
+                if (opts.musLintasSesi && sA && sB && sA !== sB) continue;
                 return {
                   rk: rkm,
                   alasan: "satu orang hanya bisa memainkan satu alat musik",
                 };
+              }
             }
           }
           // 2. Kelompok datar.
@@ -31028,6 +31044,7 @@
             assign: {},
             auto: false,
             allowDouble: false,
+            allowMusLintasSesi: false,
             weekLabels: {},
             requests: REQUESTS.slice(),
           };
@@ -31525,7 +31542,9 @@
           }
           // H10/H11 - kelompok eksklusif. Diblokir keras, termasuk saat
           // opsi "Izinkan double role" sedang aktif.
-          var kfl = konflikEksklusif(pid, wk, roleKey);
+          var kfl = konflikEksklusif(pid, wk, roleKey, {
+            musLintasSesi: !!sched.allowMusLintasSesi,
+          });
           if (kfl) {
             toast(
               personName(pid) +
@@ -32487,6 +32506,31 @@
             dblLab.appendChild(dblCb);
             dblLab.appendChild(document.createTextNode(" Izinkan double role"));
             toolbar.appendChild(dblLab);
+            // v3.5 - sakelar terpisah dari "Izinkan double role" supaya bisa
+            // dinyalakan tanpa ikut mematikan peringatan rangkap.
+            var musLab = document.createElement("label");
+            musLab.className = "dblToggle";
+            musLab.title =
+              "Hanya untuk pengisian manual. Jadwal otomatis tetap memakai aturan lama.";
+            var musCb = document.createElement("input");
+            musCb.type = "checkbox";
+            musCb.id = "schedMusLintasCb";
+            musCb.checked = !!sched.allowMusLintasSesi;
+            musCb.onchange = function () {
+              sched.allowMusLintasSesi = musCb.checked;
+              saveSched(true);
+              toast(
+                musCb.checked
+                  ? "Pemusik P&W kini boleh mengisi alat berbeda di Persembahan (isi manual)."
+                  : "Pemusik kembali dibatasi satu alat per hari.",
+                "info",
+                4200,
+              );
+              renderSchedule();
+            };
+            musLab.appendChild(musCb);
+            musLab.appendChild(document.createTextNode(" Pemusik lintas sesi"));
+            toolbar.appendChild(musLab);
           } else {
             var note = document.createElement("span");
             note.className = "small";
