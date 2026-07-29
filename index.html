@@ -1847,6 +1847,73 @@
         background: #f9f8f7;
         font-weight: 700;
       }
+      .tbGrp {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .tbGrp + .tbGrp {
+        padding-left: 10px;
+        border-left: 1px solid rgba(0, 0, 0, 0.12);
+      }
+      .tbShare {
+        margin-left: auto;
+      }
+      .tbGrp .actionBtn {
+        padding: 6px 11px;
+        font-size: 12px;
+      }
+      .weekTutup {
+        background: #f3f4f6;
+        vertical-align: middle;
+        text-align: center;
+      }
+      .wkTutupBox {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 5px;
+      }
+      .wkTutupInp {
+        width: 100%;
+        min-width: 92px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 5px 7px;
+        font-size: 11px;
+        font-family: inherit;
+        resize: vertical;
+        background: #fff;
+        color: #374151;
+      }
+      .wkTutupTxt {
+        font-size: 11px;
+        font-style: italic;
+        color: #6b7280;
+        white-space: pre-wrap;
+      }
+      body.dark .weekTutup {
+        background: #1f2937;
+      }
+      body.dark .wkTutupInp {
+        background: #111827;
+        color: #e5e7eb;
+        border-color: #374151;
+      }
+      body.dark .tbGrp + .tbGrp {
+        border-left-color: rgba(255, 255, 255, 0.14);
+      }
+      @media (max-width: 600px) {
+        .tbGrp + .tbGrp {
+          padding-left: 0;
+          border-left: 0;
+        }
+        .tbShare {
+          margin-left: 0;
+        }
+      }
       table.schedGrid tr.teamRow td {
         background: #eef4fb;
         font-weight: 700;
@@ -28882,7 +28949,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v3.5</span>
+            <span class="verTag" id="appVer">v3.6</span>
           </p>
         </div>
         <button
@@ -30847,7 +30914,28 @@
         }
         // ===== v2.9 - role yang ditutup per minggu =====
         // Bentuk data: sched.closed = { "w1": { "tamb": true } }
+        // v3.6 - penutupan SATU MINGGU penuh. Disimpan terpisah dari
+        // sched.closed (per role) supaya saat minggu dibuka kembali,
+        // penutupan per role yang dipasang manual tidak ikut hilang.
+        function isWeekClosed(wk) {
+          return !!(sched.closedWeek && sched.closedWeek["w" + wk]);
+        }
+        function setWeekClosed(wk, on) {
+          if (!sched.closedWeek) sched.closedWeek = {};
+          if (on) sched.closedWeek["w" + wk] = true;
+          else delete sched.closedWeek["w" + wk];
+        }
+        function weekReason(wk) {
+          return (sched.closedNote && sched.closedNote["w" + wk]) || "";
+        }
+        function setWeekReason(wk, txt) {
+          if (!sched.closedNote) sched.closedNote = {};
+          sched.closedNote["w" + wk] = txt;
+        }
         function isRoleClosed(wk, roleKey) {
+          // Minggu yang ditutup penuh menutup SEMUA role minggu itu, termasuk
+          // bagi penjadwal otomatis - fill() memakai fungsi ini.
+          if (isWeekClosed(wk)) return true;
           var c = sched.closed && sched.closed["w" + wk];
           return !!(c && c[roleKey]);
         }
@@ -30857,6 +30945,80 @@
           if (!sched.closed[k]) sched.closed[k] = {};
           if (on) sched.closed[k][roleKey] = true;
           else delete sched.closed[k][roleKey];
+        }
+        function buildTutupMingguBtn(wk) {
+          var b = document.createElement("button");
+          b.type = "button";
+          var tutup = isWeekClosed(wk);
+          b.className = "tutupBtn wkTutupBtn" + (tutup ? " on" : "");
+          b.textContent = tutup ? "Buka minggu" : "Tutup minggu";
+          b.title = tutup
+            ? "Buka kembali seluruh pelayanan di minggu ini"
+            : "Tutup seluruh pelayanan minggu ini, dari Doa Pembuka sampai Banners";
+          b.style.cssText =
+            "margin-top:5px;width:100%;padding:2px 7px;border-radius:7px;" +
+            "border:1px solid " +
+            (tutup ? "#0d9488" : "#d1d5db") +
+            ";background:" +
+            (tutup ? "#ccfbf1" : "transparent") +
+            ";color:" +
+            (tutup ? "#0f766e" : "#9ca3af") +
+            ";font-size:10px;cursor:pointer";
+          b.onclick = function () {
+            var akan = !tutup;
+            if (akan) {
+              var jml = 0;
+              allSchedRoles().forEach(function (r) {
+                jml += getAssign(wk, r.key).length;
+              });
+              if (
+                jml &&
+                !confirm(
+                  "Tutup seluruh Minggu " +
+                    wk +
+                    "? " +
+                    jml +
+                    " nama yang sudah terpasang hanya disembunyikan, tidak dihapus - akan muncul lagi kalau minggu ini dibuka.",
+                )
+              )
+                return;
+            }
+            setWeekClosed(wk, akan);
+            if (akan && !weekReason(wk)) setWeekReason(wk, "Tidak ada ibadah");
+            saveSched(true);
+            schedHistPush();
+            renderSchedule();
+          };
+          return b;
+        }
+        function buildWeekReason(wk, admin) {
+          var box = document.createElement("div");
+          box.className = "wkTutupBox";
+          var tg = document.createElement("span");
+          tg.className = "tutupTag";
+          tg.textContent = "Minggu ditutup";
+          tg.style.cssText =
+            "display:inline-block;padding:2px 8px;border-radius:8px;" +
+            "background:#e5e7eb;color:#6b7280;font-size:11px;font-style:italic";
+          box.appendChild(tg);
+          if (admin) {
+            var ta = document.createElement("textarea");
+            ta.className = "wkTutupInp";
+            ta.rows = 3;
+            ta.placeholder = "Alasan ditutup (dibaca semua member)...";
+            ta.value = weekReason(wk);
+            ta.onchange = function () {
+              setWeekReason(wk, ta.value);
+              saveSched(true);
+            };
+            box.appendChild(ta);
+          } else {
+            var pv = document.createElement("div");
+            pv.className = "wkTutupTxt";
+            pv.textContent = weekReason(wk) || "-";
+            box.appendChild(pv);
+          }
+          return box;
         }
         function buildTutupBtn(wk, roleKey, tutup) {
           var b = document.createElement("button");
@@ -31502,17 +31664,39 @@
           var wa = weekAssignments(wk);
           return (wa[roleKey] || []).slice();
         }
+        // v3.6 (aturan A & B) - kuota LUNAK. Tiap role di Sound & Multimedia
+        // dan di tim Worship idealnya diisi sesuai kuota, tapi admin boleh
+        // menambah SATU orang lagi di atas kuota dengan peringatan.
+        // Hospitality tetap keras (usher 3, doa, pengumuman).
+        function bolehSlotLebih(rk) {
+          return (
+            SOUND_MM_ROLES.indexOf(rk) >= 0 ||
+            WORSHIP_ALL_ROLES.indexOf(rk) >= 0 ||
+            rk === "tamb" ||
+            rk === "ban"
+          );
+        }
+        function batasSlot(rk) {
+          var r = schedRole(rk);
+          var sl = (r && r.slots) || 1;
+          return bolehSlotLebih(rk) ? sl + 1 : sl;
+        }
         function assignPerson(wk, roleKey, pid) {
           var arr = getAssign(wk, roleKey);
           if (arr.indexOf(pid) >= 0) return false;
           var role = schedRole(roleKey);
           var slots = (role && role.slots) || 1;
-          if (arr.length >= slots) {
+          var batas = batasSlot(roleKey);
+          // Ditandai SEBELUM push, tapi toastnya baru muncul setelah semua
+          // gerbang aturan lolos - supaya tidak ada peringatan kuota untuk
+          // penempatan yang ujungnya ditolak H9/H10/H11.
+          var lebihKuota = arr.length >= slots;
+          if (arr.length >= batas) {
             toast(
               "Slot " +
                 (role ? role.label : roleKey) +
                 " sudah penuh (" +
-                slots +
+                batas +
                 ").",
               "info",
             );
@@ -31577,6 +31761,17 @@
           }
           arr.push(pid);
           setAssign(wk, roleKey, arr);
+          if (lebihKuota)
+            toast(
+              (role ? role.label : roleKey) +
+                " minggu ini kini diisi " +
+                arr.length +
+                " orang - di atas kuota " +
+                slots +
+                ". Pastikan ini memang disengaja.",
+              "info",
+              5000,
+            );
           if (sched.auto && !schedAutoWarned) {
             schedAutoWarned = true;
             toast(
@@ -31648,6 +31843,33 @@
             )
           )
             return;
+          // v3.6 - jaring pembersih. Mode "lanjut" mempertahankan nama yang
+          // sudah terpasang, jadi orang yang centang rolenya baru dilepas di
+          // tab Pelayan (atau yang kini izin) akan bertahan di kolomnya karena
+          // tidak pernah diperiksa lagi. Dibersihkan lebih dulu supaya tab
+          // Pelayan dan jadwal selalu satu sumber kebenaran.
+          var dibuang = 0;
+          for (var pw = 1; pw <= weeks; pw++) {
+            (function (w) {
+              allSchedRoles().forEach(function (r) {
+                var isi = getAssign(w, r.key);
+                var sisa = isi.filter(function (pid) {
+                  return personTier(pid, r.key) !== 0 && !isIzin(pid, w);
+                });
+                if (sisa.length !== isi.length) {
+                  dibuang += isi.length - sisa.length;
+                  setAssign(w, r.key, sisa);
+                }
+              });
+            })(pw);
+          }
+          if (dibuang)
+            toast(
+              dibuang +
+                " nama dikeluarkan karena pelayanannya sudah tidak dicentang atau sedang izin.",
+              "info",
+              5000,
+            );
           var lastServed = {};
           var roleUse = {};
           var load = {};
@@ -32430,6 +32652,39 @@
                 });
             });
         }
+        // v3.6 - toolbar dirapikan TANPA mengubah tombolnya: anak-anak
+        // toolbar dipindah ke gugus (aksi / riwayat / aturan / bagikan /
+        // status) supaya tidak berderet panjang jadi satu baris membingungkan.
+        // Gugus bagikan + status didorong ke kanan.
+        function schedRapikanToolbar(tb) {
+          var anak = [].slice.call(tb.children);
+          var urut = ["aksi", "riwayat", "aturan", "bagikan", "status"];
+          var g = {};
+          urut.forEach(function (k) {
+            g[k] = document.createElement("div");
+            g[k].className = "tbGrp" + (k === "bagikan" ? " tbShare" : "");
+          });
+          anak.forEach(function (el) {
+            var id = el.id || "";
+            var t = (el.textContent || "").trim();
+            var grup = "status";
+            if (id === "schedUndoBtn" || id === "schedRedoBtn")
+              grup = "riwayat";
+            else if (el.classList && el.classList.contains("dblToggle"))
+              grup = "aturan";
+            else if (
+              id === "schedXlsBtn" ||
+              id === "schedSheetBtn" ||
+              t === "Cetak / PDF"
+            )
+              grup = "bagikan";
+            else if (el.tagName === "BUTTON") grup = "aksi";
+            g[grup].appendChild(el);
+          });
+          urut.forEach(function (k) {
+            if (g[k].children.length) tb.appendChild(g[k]);
+          });
+        }
         function renderSchedGrid(body, admin) {
           if (!schedHist.stack.length) schedHistReset();
           var toolbar = document.createElement("div");
@@ -32558,6 +32813,7 @@
           syncPill.id = "schedSyncPill";
           syncPill.textContent = window.__schedSyncTxt || "Menyambung...";
           toolbar.appendChild(syncPill);
+          schedRapikanToolbar(toolbar);
           body.appendChild(toolbar);
           var legend = document.createElement("div");
           legend.className = "schedLegend";
@@ -32601,6 +32857,14 @@
                 wl.textContent = sched.weekLabels[wk];
                 th.appendChild(wl);
               }
+              // v3.6 - tutup/buka seluruh kolom minggu dari header.
+              if (admin) th.appendChild(buildTutupMingguBtn(wk));
+              else if (isWeekClosed(wk)) {
+                var wt = document.createElement("div");
+                wt.className = "wkLabelText";
+                wt.textContent = "Ditutup";
+                th.appendChild(wt);
+              }
               htr.appendChild(th);
             })(w);
           }
@@ -32613,6 +32877,7 @@
             var tdh = document.createElement("td");
             tdh.colSpan = sched.weeks + 1;
             tdh.textContent = team.label;
+            tdh.style.textAlign = "center";
             trh.appendChild(tdh);
             tbody.appendChild(trh);
             // v2.4 - role bertanda group digabung jadi SATU baris, berjejer.
@@ -32632,7 +32897,7 @@
                 roles: [role],
               });
             });
-            rows.forEach(function (row) {
+            rows.forEach(function (row, ri) {
               var tr = document.createElement("tr");
               var rl = document.createElement("td");
               rl.className = "roleCell";
@@ -32640,6 +32905,21 @@
               tr.appendChild(rl);
               for (var w2 = 1; w2 <= sched.weeks; w2++) {
                 (function (wk) {
+                  // v3.6 - minggu yang ditutup dari header tidak digambar per
+                  // sel. Tiap blok tim memakai SATU sel gabungan (rowSpan)
+                  // berisi alasan yang bisa diedit admin. Digabung per tim,
+                  // bukan satu sel untuk seluruh tabel, karena baris judul tim
+                  // memakai colSpan penuh sehingga rowSpan tidak bisa
+                  // melewatinya.
+                  if (isWeekClosed(wk)) {
+                    if (ri !== 0) return;
+                    var tdW = document.createElement("td");
+                    tdW.className = "cell cellTutup weekTutup";
+                    tdW.rowSpan = rows.length;
+                    tdW.appendChild(buildWeekReason(wk, admin));
+                    tr.appendChild(tdW);
+                    return;
+                  }
                   var td = document.createElement("td");
                   td.className = "cell" + (row.group ? " musCell" : "");
                   row.roles.forEach(function (role) {
@@ -32669,7 +32949,7 @@
                           schedBuildChip(pid, wk, role.key, admin),
                         );
                       });
-                      if (admin && arr.length < (role.slots || 1))
+                      if (admin && arr.length < batasSlot(role.key))
                         box.appendChild(buildAddPicker(wk, role.key, arr));
                     }
                     if (admin)
