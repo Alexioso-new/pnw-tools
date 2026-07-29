@@ -29078,7 +29078,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v4.1</span>
+            <span class="verTag" id="appVer">v4.1.1</span>
           </p>
         </div>
         <button
@@ -30166,6 +30166,9 @@
             // v4.1 - SELALU sediakan jalan keluar dari spinner.
             var _syncDone = false;
             var _syncTimer = null;
+            // v4.1.1 - null = belum tahu, true/false = hasil .info/connected
+            window.__fbKonek = null;
+            window.__syncLambat = false;
             window.__syncBeres = function (pesanPill) {
               if (_syncDone) return;
               _syncDone = true;
@@ -30180,11 +30183,21 @@
               if (pesanPill) setCloudPill(pesanPill);
             };
             _syncTimer = setTimeout(function () {
-              window.__syncBeres("Lambat / offline - memakai data perangkat");
+              window.__syncLambat = true;
+              // Kalau .info/connected saja tidak pernah menjawab, berarti jalur
+              // ke server benar-benar tertutup (jaringan ATAU CSP memblokir).
+              var tersambung = window.__fbKonek === true;
+              window.__syncBeres(
+                tersambung
+                  ? "Tersambung - data lambat masuk"
+                  : "Belum tersambung - memakai data perangkat",
+              );
               toast(
-                "Server lambat menjawab. Sementara memakai data di perangkat ini.",
+                tersambung
+                  ? "Sudah tersambung, tapi data lambat masuk. Sementara memakai data di perangkat ini."
+                  : "Belum tersambung ke server. Aplikasi tetap jalan memakai data di perangkat ini, dan akan menyusul begitu tersambung.",
                 "info",
-                4600,
+                5200,
               );
             }, 12000);
             // Kalau koneksi akhirnya terbentuk / terputus, perbarui status.
@@ -30193,12 +30206,19 @@
                 .database()
                 .ref(".info/connected")
                 .on("value", function (cs) {
+                  var ok = cs.val() === true;
+                  window.__fbKonek = ok;
                   if (!_syncDone) return;
                   setCloudPill(
-                    cs.val() === true
+                    ok
                       ? "Online - tersinkron"
                       : "Offline - memakai data perangkat",
                   );
+                  // Peringatan "belum tersambung" tadi sudah tidak berlaku.
+                  if (ok && window.__syncLambat) {
+                    window.__syncLambat = false;
+                    toast("Sudah tersambung ke server.", "success", 3200);
+                  }
                 });
             } catch (e) {}
             dbRef.on(

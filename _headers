@@ -8,6 +8,12 @@
 # jadi 'unsafe-inline' harus diizinkan. Pemeriksa akan hijau, tapi perlindungan
 # nyatanya sedang - bukan setinggi kesan nilainya. Lima header lain untung penuh.
 #
+# v4.1.1 - PENTING: host Firebase wajib ada di script-src DAN frame-src, bukan
+# hanya connect-src. Kalau jaringan memblokir WebSocket, Firebase beralih ke
+# long-polling yang memakai iframe + <script> ke host database itu. Tanpa dua
+# izin ini, sinkron gagal SENYAP di jaringan seluler dan aplikasi hanya memakai
+# data lokal (gejalanya: toast "Server lambat menjawab").
+#
 # Kalau nanti muncul domain baru (misalnya CDN gambar), tambahkan ke baris yang
 # sesuai. Gejala kalau lupa: fitur berhenti bekerja dan konsol browser menulis
 # "Refused to load ... Content Security Policy".
@@ -18,4 +24,4 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; manifest-src 'self'; worker-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn-uicons.flaticon.com; font-src 'self' data: https://fonts.gstatic.com https://cdn-uicons.flaticon.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; connect-src 'self' https://chord-youth-hosana-default-rtdb.asia-southeast1.firebasedatabase.app wss://chord-youth-hosana-default-rtdb.asia-southeast1.firebasedatabase.app https://*.googleapis.com https://www.gstatic.com https://script.google.com https://script.googleusercontent.com https://cdnjs.cloudflare.com https://cdn-uicons.flaticon.com https://www.youtube.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; manifest-src 'self'; worker-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com https://chord-youth-hosana-default-rtdb.asia-southeast1.firebasedatabase.app; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn-uicons.flaticon.com; font-src 'self' data: https://fonts.gstatic.com https://cdn-uicons.flaticon.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; connect-src 'self' https://chord-youth-hosana-default-rtdb.asia-southeast1.firebasedatabase.app wss://chord-youth-hosana-default-rtdb.asia-southeast1.firebasedatabase.app https://*.googleapis.com https://www.gstatic.com https://script.google.com https://script.googleusercontent.com https://cdnjs.cloudflare.com https://cdn-uicons.flaticon.com https://www.youtube.com; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://chord-youth-hosana-default-rtdb.asia-southeast1.firebasedatabase.app
