@@ -28882,7 +28882,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v3.3</span>
+            <span class="verTag" id="appVer">v3.4</span>
           </p>
         </div>
         <button
@@ -31578,12 +31578,23 @@
           saveSchedCell(wk, roleKey);
           schedHistPush();
         }
+        // v3.4 - p.roles adalah SATU-SATUNYA sumber kebenaran untuk
+        // "apakah orang ini boleh mengisi role tsb". Sebelumnya p.tiers
+        // diperiksa LEBIH DULU, sehingga role yang baru dilepas centangnya di
+        // tab Pelayan masih dianggap sah - centang hanya mengubah p.roles dan
+        // tidak pernah menyentuh p.tiers. Itu sebabnya menghapus nama lalu
+        // membuat ulang "berhasil" (orang baru tidak punya p.tiers sama
+        // sekali), padahal melepas centang tidak berpengaruh.
+        // p.tiers sengaja TIDAK dihapus: dia disimpan sebagai ingatan
+        // prioritas, jadi kalau role dicentang lagi tingkat aslinya
+        // (hijau/kuning/oranye) kembali seperti semula.
         function personTier(pid, roleKey) {
           var p = personById(pid);
           if (!p) return 0;
+          var punya = !!p.roles && p.roles.indexOf(roleKey) >= 0;
+          if (!punya) return 0;
           if (p.tiers && p.tiers[roleKey]) return p.tiers[roleKey];
-          if (p.roles && p.roles.indexOf(roleKey) >= 0) return 2;
-          return 0;
+          return 2;
         }
         function schedNameIn(list, pid) {
           return !!list && list.indexOf(personName(pid)) >= 0;
