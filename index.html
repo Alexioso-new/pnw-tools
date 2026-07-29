@@ -1847,6 +1847,104 @@
         background: #f9f8f7;
         font-weight: 700;
       }
+      .reqPanel {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin: 8px 0 12px;
+        background: #fafafa;
+      }
+      .reqPanelHead {
+        font-weight: 600;
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+      .reqStatus {
+        font-size: 11.5px;
+        color: #6b7280;
+        line-height: 1.5;
+      }
+      .reqStatus.pend {
+        color: #92400e;
+        background: #fef3c7;
+        border-radius: 8px;
+        padding: 5px 8px;
+        margin-top: 6px;
+      }
+      .reqRow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+      .reqNote {
+        flex: 1;
+        min-width: 150px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 6px 9px;
+        font-size: 12px;
+        font-family: inherit;
+      }
+      .reqItem {
+        border-top: 1px solid #e5e7eb;
+        padding-top: 8px;
+        margin-top: 8px;
+      }
+      .reqItemHead {
+        font-size: 13px;
+      }
+      .reqChips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 5px;
+      }
+      .reqChip {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        color: #4b5563;
+      }
+      .reqChip.add {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .reqChip.del {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .rosterCard.sayaCard {
+        border: 2px solid #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+      }
+      .sayaTag {
+        margin-left: 8px;
+        font-size: 10.5px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #e0e7ff;
+        color: #3730a3;
+      }
+      .reqBox {
+        border-top: 1px dashed #d1d5db;
+        margin-top: 8px;
+        padding-top: 8px;
+      }
+      body.dark .reqPanel {
+        background: #111827;
+        border-color: #374151;
+      }
+      body.dark .reqNote {
+        background: #0b1220;
+        color: #e5e7eb;
+        border-color: #374151;
+      }
+      body.dark .reqItem {
+        border-top-color: #374151;
+      }
       .tbGrp {
         display: flex;
         align-items: center;
@@ -28949,7 +29047,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v3.6</span>
+            <span class="verTag" id="appVer">v3.7</span>
           </p>
         </div>
         <button
@@ -32966,12 +33064,260 @@
           wrap.appendChild(table);
           body.appendChild(wrap);
         }
+        // v3.7 - enam nama role muncul di dua sesi (Worship Leader, Singers,
+        // Pianist, Guitarist, Bassist, Drummer). Di tab Pelayan tidak ada baris
+        // judul tim seperti di tabel jadwal, jadi keterangan sesi ditempelkan
+        // ke labelnya supaya tidak ada dua checkbox bernama sama.
+        var ROLE_SESI_SUFFIX = { PNW: " (P&W)", Psb: " (Persembahan)" };
+        function schedRoleLabelPenuh(rk) {
+          var r = schedRole(rk);
+          var lb = r ? r.label : rk;
+          var m = /(PNW|Psb)$/.exec(rk);
+          return lb + (m ? ROLE_SESI_SUFFIX[m[1]] : "");
+        }
+        // v3.7 - permintaan role dari member. Member TIDAK pernah menulis ke
+        // roster: centangannya dikirim sebagai USULAN ke sched.roleReq, dan
+        // baru masuk ke roster kalau pengurus menyetujui. Ini yang menahan
+        // orang usil tanpa perlu sistem login untuk tiap member.
+        function sayaPid() {
+          return localStorage.getItem("ptSayaPid") || "";
+        }
+        function setSayaPid(v) {
+          if (v) localStorage.setItem("ptSayaPid", v);
+          else localStorage.removeItem("ptSayaPid");
+        }
+        function roleReqAll() {
+          return sched.roleReq || {};
+        }
+        function roleReqOf(pid) {
+          return roleReqAll()[pid] || null;
+        }
+        function roleReqDiff(pid, minta) {
+          var p = personById(pid);
+          var punya = (p && p.roles) || [];
+          return {
+            tambah: minta.filter(function (k) {
+              return punya.indexOf(k) < 0;
+            }),
+            hapus: punya.filter(function (k) {
+              return minta.indexOf(k) < 0;
+            }),
+          };
+        }
+        function reqAmbilCentang(kartu) {
+          return [].slice
+            .call(kartu.querySelectorAll(".roleCheck input[type=checkbox]"))
+            .filter(function (c) {
+              return c.checked;
+            })
+            .map(function (c) {
+              return c.getAttribute("data-rk");
+            });
+        }
+        // Panel pengurus: daftar permintaan + selisihnya, bukan sekadar daftar
+        // role, supaya sekali lihat langsung paham apa yang berubah.
+        function buildReqPanel() {
+          var reqs = roleReqAll();
+          var ids = Object.keys(reqs);
+          var box = document.createElement("div");
+          box.className = "reqPanel";
+          var h = document.createElement("div");
+          h.className = "reqPanelHead";
+          h.textContent =
+            "Permintaan pelayanan dari member" +
+            (ids.length ? " (" + ids.length + " menunggu)" : "");
+          box.appendChild(h);
+          if (!ids.length) {
+            var kos = document.createElement("div");
+            kos.className = "reqStatus";
+            kos.textContent =
+              "Belum ada permintaan. Kalau member mengubah centangan pelayanannya, permintaannya muncul di sini untuk kamu setujui.";
+            box.appendChild(kos);
+            return box;
+          }
+          ids.forEach(function (pid) {
+            var r = reqs[pid] || {};
+            var p = personById(pid);
+            var d = roleReqDiff(pid, r.roles || []);
+            var it = document.createElement("div");
+            it.className = "reqItem";
+            var top = document.createElement("div");
+            top.className = "reqItemHead";
+            var nm = document.createElement("b");
+            nm.textContent = (p && p.name) || r.name || pid;
+            top.appendChild(nm);
+            it.appendChild(top);
+            var chips = document.createElement("div");
+            chips.className = "reqChips";
+            d.tambah.forEach(function (k) {
+              var c = document.createElement("span");
+              c.className = "reqChip add";
+              c.textContent = "+ " + schedRoleLabelPenuh(k);
+              chips.appendChild(c);
+            });
+            d.hapus.forEach(function (k) {
+              var c = document.createElement("span");
+              c.className = "reqChip del";
+              c.textContent = "− " + schedRoleLabelPenuh(k);
+              chips.appendChild(c);
+            });
+            if (!d.tambah.length && !d.hapus.length) {
+              var c0 = document.createElement("span");
+              c0.className = "reqChip";
+              c0.textContent = "Tidak ada perubahan";
+              chips.appendChild(c0);
+            }
+            it.appendChild(chips);
+            if (r.note) {
+              var nt = document.createElement("div");
+              nt.className = "reqStatus";
+              nt.textContent = "Catatan member: " + r.note;
+              it.appendChild(nt);
+            }
+            var act = document.createElement("div");
+            act.className = "reqRow";
+            var ya = document.createElement("button");
+            ya.className = "actionBtn";
+            ya.textContent = "Setujui";
+            ya.onclick = function () {
+              var pv = personById(pid);
+              if (pv) {
+                pv.roles = (r.roles || []).slice();
+                saveSchedRoster();
+              }
+              if (sched.roleReq) delete sched.roleReq[pid];
+              saveSched(true);
+              toast(
+                ((pv && pv.name) || "Pelayan") +
+                  ": permintaan disetujui, pelayanannya sudah diperbarui.",
+                "success",
+                4600,
+              );
+              renderSchedule();
+            };
+            var no = document.createElement("button");
+            no.className = "actionBtn secondary";
+            no.textContent = "Tolak";
+            no.onclick = function () {
+              if (sched.roleReq) delete sched.roleReq[pid];
+              saveSched(true);
+              toast("Permintaan ditolak. Roster tidak diubah.", "info");
+              renderSchedule();
+            };
+            act.appendChild(ya);
+            act.appendChild(no);
+            it.appendChild(act);
+            box.appendChild(it);
+          });
+          return box;
+        }
+        // Panel member: pilih identitas dulu. Tanpa login per member, ini cara
+        // paling sederhana yang tetap aman - efeknya hanya usulan.
+        function buildSayaBar() {
+          var box = document.createElement("div");
+          box.className = "reqPanel";
+          var h = document.createElement("div");
+          h.className = "reqPanelHead";
+          h.textContent = "Ubah pelayanan saya";
+          box.appendChild(h);
+          var st = document.createElement("div");
+          st.className = "reqStatus";
+          st.textContent =
+            "Pilih namamu, centang pelayanan yang kamu bisa, lalu tekan Kirim permintaan. Perubahan baru berlaku setelah disetujui pengurus. Kartu orang lain tidak bisa kamu ubah.";
+          box.appendChild(st);
+          var row = document.createElement("div");
+          row.className = "reqRow";
+          var lb = document.createElement("span");
+          lb.className = "small";
+          lb.textContent = "Saya adalah:";
+          var sel = document.createElement("select");
+          var op0 = document.createElement("option");
+          op0.value = "";
+          op0.textContent = "- pilih nama -";
+          sel.appendChild(op0);
+          sched.roster
+            .slice()
+            .sort(function (a, b) {
+              return (a.name || "").localeCompare(b.name || "");
+            })
+            .forEach(function (p) {
+              var op = document.createElement("option");
+              op.value = p.id;
+              op.textContent = p.name;
+              sel.appendChild(op);
+            });
+          sel.value = sayaPid();
+          sel.onchange = function () {
+            setSayaPid(sel.value);
+            renderSchedule();
+          };
+          row.appendChild(lb);
+          row.appendChild(sel);
+          box.appendChild(row);
+          var ada = roleReqOf(sayaPid());
+          if (ada) {
+            var pend = document.createElement("div");
+            pend.className = "reqStatus pend";
+            pend.textContent =
+              "Permintaanmu sudah terkirim dan sedang menunggu persetujuan pengurus.";
+            box.appendChild(pend);
+          }
+          return box;
+        }
+        function buildKirimReq(p, card) {
+          var box = document.createElement("div");
+          box.className = "reqBox";
+          var ada = roleReqOf(p.id);
+          var st = document.createElement("div");
+          st.className = "reqStatus" + (ada ? " pend" : "");
+          st.textContent = ada
+            ? "Menunggu persetujuan pengurus. Kamu masih bisa mengubah centangan lalu mengirim ulang."
+            : "Ubah centangan di atas, lalu kirim untuk ditinjau pengurus.";
+          box.appendChild(st);
+          var row = document.createElement("div");
+          row.className = "reqRow";
+          var note = document.createElement("input");
+          note.className = "reqNote";
+          note.placeholder = "Catatan untuk pengurus (opsional)";
+          note.value = ada ? ada.note || "" : "";
+          var btn = document.createElement("button");
+          btn.className = "actionBtn reqSend";
+          btn.textContent = "Kirim permintaan";
+          // Mati sampai benar-benar ada perubahan, supaya tidak ada permintaan
+          // kosong yang membebani pengurus.
+          btn.disabled = true;
+          btn.onclick = function () {
+            var minta = reqAmbilCentang(card);
+            if (!sched.roleReq) sched.roleReq = {};
+            sched.roleReq[p.id] = {
+              roles: minta,
+              note: (note.value || "").trim(),
+              at: Date.now(),
+              name: p.name,
+            };
+            saveSched(true);
+            toast(
+              "Permintaan terkirim. Pengurus akan meninjau centanganmu.",
+              "success",
+              4600,
+            );
+            renderSchedule();
+          };
+          row.appendChild(note);
+          row.appendChild(btn);
+          box.appendChild(row);
+          return box;
+        }
         function renderSchedRoster(body, admin) {
           var info = document.createElement("p");
           info.className = "small";
-          info.textContent =
-            "Centang pelayanan yang bisa dilakukan tiap orang. Kemampuan awal diisi dari jadwal Juli - silakan verifikasi & sesuaikan.";
+          info.textContent = admin
+            ? "Centang pelayanan yang bisa dilakukan tiap orang. Perubahan langsung dipakai oleh jadwal otomatis."
+            : "Kamu bisa mengusulkan perubahan pelayanan untuk dirimu sendiri. Pengurus yang menyetujui.";
           body.appendChild(info);
+          // v3.7 - pengurus melihat kotak persetujuan, member melihat pemilih
+          // identitas untuk mengusulkan pelayanannya sendiri.
+          body.appendChild(admin ? buildReqPanel() : buildSayaBar());
           var searchRow = document.createElement("div");
           searchRow.className = "schedToolbar";
           var searchInp = document.createElement("input");
@@ -33034,7 +33380,7 @@
           allSchedRoles().forEach(function (r) {
             var op = document.createElement("option");
             op.value = r.key;
-            op.textContent = r.label;
+            op.textContent = schedRoleLabelPenuh(r.key);
             roleSel.appendChild(op);
           });
           roleSel.value = rosterRoleFilter;
@@ -33110,9 +33456,34 @@
               lab.className = "roleCheck";
               var cb = document.createElement("input");
               cb.type = "checkbox";
-              cb.checked = p.roles.indexOf(role.key) >= 0;
-              cb.disabled = !admin;
+              cb.setAttribute("data-rk", role.key);
+              var akuSendiri = !admin && p.id === sayaPid();
+              // Kalau sudah ada permintaan menunggu, yang ditampilkan ke member
+              // adalah usulannya sendiri - bukan roster resmi - supaya dia tahu
+              // apa yang sedang ditunggu.
+              var reqSaya = akuSendiri ? roleReqOf(p.id) : null;
+              var dasar = reqSaya && reqSaya.roles ? reqSaya.roles : p.roles;
+              cb.checked = dasar.indexOf(role.key) >= 0;
+              cb.disabled = !admin && !akuSendiri;
               cb.onchange = function () {
+                if (!admin) {
+                  // Member: centangan TIDAK menyentuh roster sama sekali.
+                  // Hanya menyalakan tombol kirim kalau memang ada bedanya.
+                  var kartu =
+                    lab.parentElement && lab.parentElement.parentElement;
+                  if (!kartu) return;
+                  var kini = reqAmbilCentang(kartu).slice().sort().join(",");
+                  var asli = (kartu.getAttribute("data-asli") || "")
+                    .split(",")
+                    .filter(function (x) {
+                      return x;
+                    })
+                    .sort()
+                    .join(",");
+                  var b = kartu.querySelector(".reqSend");
+                  if (b) b.disabled = kini === asli;
+                  return;
+                }
                 // v3.1 - ambil ulang dari sched.roster. Objek `p` bisa jadi
                 // salinan usang bila sempat ada pembaruan dari cloud.
                 var pv = personById(p.id) || p;
@@ -33127,10 +33498,24 @@
                 saveSchedRoster();
               };
               lab.appendChild(cb);
-              lab.appendChild(document.createTextNode(" " + role.label));
+              lab.appendChild(
+                document.createTextNode(" " + schedRoleLabelPenuh(role.key)),
+              );
               rolesWrap.appendChild(lab);
             });
             card.appendChild(rolesWrap);
+            if (!admin && p.id === sayaPid()) {
+              card.classList.add("sayaCard");
+              card.setAttribute(
+                "data-asli",
+                (p.roles || []).slice().sort().join(","),
+              );
+              var tag = document.createElement("span");
+              tag.className = "sayaTag";
+              tag.textContent = "Kartu saya";
+              head.appendChild(tag);
+              card.appendChild(buildKirimReq(p, card));
+            }
             listWrap.appendChild(card);
           }
           function drawRoster() {
