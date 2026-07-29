@@ -29047,7 +29047,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v3.8</span>
+            <span class="verTag" id="appVer">v3.8.1</span>
           </p>
         </div>
         <button
@@ -32007,20 +32007,42 @@
           // tidak pernah diperiksa lagi. Dibersihkan lebih dulu supaya tab
           // Pelayan dan jadwal selalu satu sumber kebenaran.
           var dibuang = 0;
-          for (var pw = 1; pw <= weeks; pw++) {
-            (function (w) {
-              allSchedRoles().forEach(function (r) {
-                var isi = getAssign(w, r.key);
-                var sisa = isi.filter(function (pid) {
-                  return personTier(pid, r.key) !== 0 && !isIzin(pid, w);
-                });
-                if (sisa.length !== isi.length) {
-                  dibuang += isi.length - sisa.length;
-                  setAssign(w, r.key, sisa);
-                }
-              });
-            })(pw);
+          // v3.8.1 - doaBuka & pengumuman TIDAK dinilai dari centangan role.
+          // eligible() mengisinya dari daftar usher minggu itu (H1), jadi
+          // menghakiminya pakai personTier akan mengeluarkan orang yang sah.
+          function bersihSah(pid, w, rk) {
+            if (isIzin(pid, w)) return false;
+            if (rk === "doaBuka" || rk === "pengumuman")
+              return getAssign(w, "usher").indexOf(pid) >= 0;
+            return personTier(pid, rk) !== 0;
           }
+          // Dua tahap: usher dibersihkan lebih dulu supaya penilaian
+          // doaBuka/pengumuman memakai daftar usher yang sudah bersih.
+          var TAHAP_BERSIH = [
+            function (rk) {
+              return rk !== "doaBuka" && rk !== "pengumuman";
+            },
+            function (rk) {
+              return rk === "doaBuka" || rk === "pengumuman";
+            },
+          ];
+          TAHAP_BERSIH.forEach(function (pilih) {
+            for (var pw = 1; pw <= weeks; pw++) {
+              (function (w) {
+                allSchedRoles().forEach(function (r) {
+                  if (!pilih(r.key)) return;
+                  var isi = getAssign(w, r.key);
+                  var sisa = isi.filter(function (pid) {
+                    return bersihSah(pid, w, r.key);
+                  });
+                  if (sisa.length !== isi.length) {
+                    dibuang += isi.length - sisa.length;
+                    setAssign(w, r.key, sisa);
+                  }
+                });
+              })(pw);
+            }
+          });
           if (dibuang)
             toast(
               dibuang +
