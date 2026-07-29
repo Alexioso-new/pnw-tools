@@ -29047,7 +29047,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v3.7</span>
+            <span class="verTag" id="appVer">v3.8</span>
           </p>
         </div>
         <button
@@ -29584,6 +29584,13 @@
         <h2>&#128221; Tambah catatan rilis</h2>
         <div class="field">
           <label>Versi</label><input id="noteVer" placeholder="mis. 1.4" />
+        </div>
+        <div class="field">
+          <label>Tanggal</label><input id="noteDate" type="date" />
+          <p class="small">
+            Urutan daftar Info &amp; Pembaruan mengikuti tanggal ini - yang
+            terbaru selalu di atas.
+          </p>
         </div>
         <div class="field">
           <label>Perubahan (satu per baris)</label
@@ -30399,6 +30406,65 @@
         }
         var noteEditKey = null,
           noteEditT = 0;
+        // v3.8 - tanggal catatan rilis kini bisa diedit.
+        //
+        // Dulu ada DUA sumber yang tidak pernah bertemu: `d` hanya teks hiasan
+        // yang dicetak saat menyimpan, sedangkan pengurutan daftar memakai `t`
+        // (waktu simpan). Akibatnya mengedit tanggal tidak mungkin dan urutan
+        // selalu mengikuti kapan tombol Simpan ditekan. Sekarang keduanya
+        // dihitung dari satu tanggal yang sama, jadi daftar otomatis tersortir
+        // mengikuti tanggal yang kamu isi.
+        var NOTE_MONTHS = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "Mei",
+          "Jun",
+          "Jul",
+          "Agu",
+          "Sep",
+          "Okt",
+          "Nov",
+          "Des",
+        ];
+        function noteFmtTanggal(ts) {
+          var dt = new Date(ts);
+          return (
+            dt.getDate() +
+            " " +
+            NOTE_MONTHS[dt.getMonth()] +
+            " " +
+            dt.getFullYear()
+          );
+        }
+        function noteInputVal(ts) {
+          var dt = new Date(ts);
+          var m = dt.getMonth() + 1,
+            d = dt.getDate();
+          return (
+            dt.getFullYear() +
+            "-" +
+            (m < 10 ? "0" + m : m) +
+            "-" +
+            (d < 10 ? "0" + d : d)
+          );
+        }
+        // Jamnya diwarisi dari catatan aslinya, bukan direset ke 00:00. Tanpa
+        // ini dua catatan bertanggal sama akan bertukar posisi tiap disimpan.
+        function noteTsDari(str, jamRef) {
+          var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str || "");
+          if (!m) return 0;
+          var j = jamRef ? new Date(jamRef) : new Date();
+          return new Date(
+            +m[1],
+            +m[2] - 1,
+            +m[3],
+            j.getHours(),
+            j.getMinutes(),
+            j.getSeconds(),
+          ).getTime();
+        }
         function openNoteModal(note) {
           if (!isAdmin) return;
           closeMenu();
@@ -30412,6 +30478,9 @@
             document.getElementById("noteItems").value = (
               note.items || []
             ).join("\n");
+            document.getElementById("noteDate").value = noteInputVal(
+              note.t || Date.now(),
+            );
             if (h) h.textContent = "Edit catatan rilis";
             if (sb) sb.textContent = "Simpan perubahan";
           } else {
@@ -30419,6 +30488,9 @@
             noteEditT = 0;
             document.getElementById("noteVer").value = "";
             document.getElementById("noteItems").value = "";
+            document.getElementById("noteDate").value = noteInputVal(
+              Date.now(),
+            );
             if (h) h.textContent = "Tambah catatan rilis";
             if (sb) sb.textContent = "Publikasikan";
           }
@@ -30466,33 +30538,21 @@
             return;
           }
           var now = new Date();
-          var months = [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "Mei",
-            "Jun",
-            "Jul",
-            "Agu",
-            "Sep",
-            "Okt",
-            "Nov",
-            "Des",
-          ];
-          var d =
-            now.getDate() +
-            " " +
-            months[now.getMonth()] +
-            " " +
-            now.getFullYear();
+          // v3.8 - tanggal diambil dari kolom Tanggal, bukan dari waktu simpan.
+          // `d` (yang tampil) dan `t` (yang dipakai mengurutkan) dihitung dari
+          // angka yang sama, jadi tampilan dan urutan tidak mungkin berbeda.
+          var tglInp = document.getElementById("noteDate");
+          var ts = noteTsDari(
+            tglInp && tglInp.value,
+            noteEditT || now.getTime(),
+          );
+          if (!ts) {
+            if (msg) msg.textContent = "Tanggal belum diisi atau tidak valid.";
+            return;
+          }
+          var d = noteFmtTanggal(ts);
           if (msg) msg.textContent = "Menyimpan...";
-          var payload = {
-            v: ver,
-            d: d,
-            items: items,
-            t: noteEditKey ? noteEditT || now.getTime() : now.getTime(),
-          };
+          var payload = { v: ver, d: d, items: items, t: ts };
           if (isSeedKey(noteEditKey)) {
             saveNoteOv(noteEditKey, payload);
             if (msg) msg.textContent = "";
@@ -34928,8 +34988,18 @@
               _edited: !!(o && o.items),
             });
           });
+          // Terbaru di atas. Kalau tanggalnya sama persis, versi yang lebih
+          // besar didahulukan supaya urutannya tidak berubah sendiri.
           out.sort(function (a, b) {
-            return (b.t || 0) - (a.t || 0);
+            var s = (b.t || 0) - (a.t || 0);
+            if (s) return s;
+            return String(b.v || "").localeCompare(
+              String(a.v || ""),
+              undefined,
+              {
+                numeric: true,
+              },
+            );
           });
           RELEASE_NOTES = out;
         }
