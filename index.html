@@ -28882,7 +28882,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v3.2</span>
+            <span class="verTag" id="appVer">v3.3</span>
           </p>
         </div>
         <button
@@ -29925,6 +29925,10 @@
         function initCloud() {
           if (!firebaseConfig.databaseURL || typeof firebase === "undefined") {
             setCloudPill("Mode lokal (perangkat ini)");
+            // v3.2 - status admin HARUS tetap dipulihkan walau Firebase gagal
+            // dimuat (offline / CDN diblokir). Tanpa ini pengurus kehilangan
+            // hak edit padahal sudah login.
+            initAuthLock();
             return;
           }
           try {
@@ -30712,20 +30716,32 @@
         var TECH_ROLES = ["streaming", "sound", "camera", "liveReport"];
         var MUS_PNW_ROLES = ["kbPNW", "gtPNW", "bsPNW", "drPNW"];
         var MUS_PSB_ROLES = ["kbPsb", "gtPsb", "bsPsb", "drPsb"];
-        // H10 - seluruh role alat musik (P&W + Persembahan) dianggap SATU
-        // kelompok eksklusif: satu orang maksimal memegang satu alat per hari.
         var MUS_ALL_ROLES = MUS_PNW_ROLES.concat(MUS_PSB_ROLES);
-        // ===== v3.0 - KELOMPOK EKSKLUSIF =====
-        // Prinsipnya satu: dalam satu kelompok, satu orang hanya boleh memegang
-        // SATU role per minggu. Aturan fisik yang mustahil dilanggar, jadi
-        // dibuat KERAS - tidak bisa ditembus opsi Double Role maupun tangga
-        // pelonggaran penjadwal. Menambah aturan sejenis cukup di daftar ini.
+        // v3.3 - pemetaan role musik ke ALAT-nya. Satu orang boleh memegang
+        // alat yang SAMA di dua sesi (Drum P&W + Drum Persembahan), tetapi
+        // tidak boleh dua alat berbeda karena tangannya hanya sepasang.
+        var MUS_INSTRUMEN = {
+          keyboard: ["kbPNW", "kbPsb"],
+          gitar: ["gtPNW", "gtPsb"],
+          bass: ["bsPNW", "bsPsb"],
+          drum: ["drPNW", "drPsb"],
+        };
+        function musInstrumen(rk) {
+          for (var k in MUS_INSTRUMEN)
+            if (MUS_INSTRUMEN[k].indexOf(rk) >= 0) return k;
+          return null;
+        }
+        // Seluruh role tim Worship (kedua sesi). Dipakai aturan role mandiri.
+        var WORSHIP_ALL_ROLES = ["wlPNW", "singPNW"]
+          .concat(MUS_PNW_ROLES)
+          .concat(["wlPsb", "singPsb"])
+          .concat(MUS_PSB_ROLES);
+        // ===== v3.0 - KELOMPOK EKSKLUSIF (datar) =====
+        // Dalam satu kelompok, satu orang hanya boleh memegang SATU role per
+        // minggu. Sesi P&W dan Persembahan sengaja DIPISAH, karena merangkap
+        // antar sesi memang boleh - bahkan H5 mewajibkan WL Persembahan
+        // diambil dari Singers P&W.
         var EXCLUSIVE_GROUPS = [
-          {
-            key: "musik",
-            roles: MUS_ALL_ROLES,
-            alasan: "satu orang hanya bisa memainkan satu alat musik",
-          },
           {
             key: "vokalPNW",
             roles: ["wlPNW", "singPNW"],
@@ -30737,20 +30753,50 @@
             alasan:
               "Worship Leader tidak merangkap Singers di sesi Persembahan",
           },
-          // v3.1 (H12) - yang sudah memegang alat musik di P&W tidak boleh
-          // naik sebagai WL atau Singers di Persembahan.
+        ];
+        // ===== v3.3 - PASANGAN SILANG =====
+        // Bentuk aturan yang berbeda: tidak boleh memegang role dari sisi A
+        // DAN sisi B sekaligus, sementara di dalam masing-masing sisi aturan
+        // lain tetap berlaku. Kelompok datar tidak bisa menyatakan ini -
+        // memaksakannya akan ikut melarang rangkap antar sesi yang justru
+        // diwajibkan H5.
+        var EXCLUSIVE_PAIRS = [
+          // H12 - pemusik P&W tidak naik sebagai WL/Singers di Persembahan.
           {
             key: "musPNWvokalPsb",
-            roles: MUS_PNW_ROLES.concat(["wlPsb", "singPsb"]),
+            a: MUS_PNW_ROLES,
+            b: ["wlPsb", "singPsb"],
             alasan:
               "pemusik P&W tidak merangkap WL atau Singers di Persembahan",
           },
+          // H13 - Tambourine dan Banners adalah role mandiri: siapa pun yang
+          // sudah melayani di tim Worship (sesi mana pun) tidak boleh masuk
+          // ke sini, dan sebaliknya.
+          {
+            key: "mandiriTambBan",
+            a: WORSHIP_ALL_ROLES,
+            b: ["tamb", "ban"],
+            alasan:
+              "Tambourine dan Banners role mandiri, tidak merangkap tim Worship",
+          },
         ];
-        // Catatan: sesi P&W dan Persembahan sengaja DIPISAH menjadi dua
-        // kelompok, karena merangkap antar sesi memang diperbolehkan - bahkan
-        // H5 mewajibkan WL Persembahan diambil dari Singers P&W.
         // Mengembalikan { rk, alasan } bila bentrok, atau null bila aman.
         function konflikEksklusif(pid, wk, roleKey) {
+          // 1. Alat musik: alat sama di dua sesi boleh, alat berbeda tidak.
+          var ins = musInstrumen(roleKey);
+          if (ins) {
+            for (var im = 0; im < MUS_ALL_ROLES.length; im++) {
+              var rkm = MUS_ALL_ROLES[im];
+              if (rkm === roleKey) continue;
+              if (musInstrumen(rkm) === ins) continue;
+              if (getAssign(wk, rkm).indexOf(pid) >= 0)
+                return {
+                  rk: rkm,
+                  alasan: "satu orang hanya bisa memainkan satu alat musik",
+                };
+            }
+          }
+          // 2. Kelompok datar.
           for (var ig = 0; ig < EXCLUSIVE_GROUPS.length; ig++) {
             var g = EXCLUSIVE_GROUPS[ig];
             if (g.roles.indexOf(roleKey) < 0) continue;
@@ -30759,6 +30805,22 @@
               if (rk2 === roleKey) continue;
               if (getAssign(wk, rk2).indexOf(pid) >= 0)
                 return { rk: rk2, alasan: g.alasan };
+            }
+          }
+          // 3. Pasangan silang.
+          for (var ip = 0; ip < EXCLUSIVE_PAIRS.length; ip++) {
+            var pr = EXCLUSIVE_PAIRS[ip];
+            var sisi =
+              pr.a.indexOf(roleKey) >= 0
+                ? pr.b
+                : pr.b.indexOf(roleKey) >= 0
+                  ? pr.a
+                  : null;
+            if (!sisi) continue;
+            for (var is = 0; is < sisi.length; is++) {
+              if (sisi[is] === roleKey) continue;
+              if (getAssign(wk, sisi[is]).indexOf(pid) >= 0)
+                return { rk: sisi[is], alasan: pr.alasan };
             }
           }
           return null;
@@ -31671,6 +31733,17 @@
             var last = lastServed[pid];
             var gap = last ? w - last : 99;
             var s = gap * 10 - cntWeek(pid, w) * 5;
+            // v3.3 - kalau orang ini sudah memegang alat yang sama di sesi
+            // lain, dia masih SAH tetapi harus kalah dari siapa pun yang
+            // belum bertugas. Penaltinya besar supaya benar-benar cadangan.
+            var _ins = musInstrumen(rk);
+            if (_ins) {
+              var _pas = MUS_INSTRUMEN[_ins];
+              for (var _ip = 0; _ip < _pas.length; _ip++) {
+                if (_pas[_ip] === rk) continue;
+                if (getAssign(w, _pas[_ip]).indexOf(pid) >= 0) s -= 40;
+              }
+            }
             s -= (roleUse[pid + "|" + rk] || 0) * 7;
             s -= (load[pid] || 0) * 2;
             var t = personTier(pid, rk);
