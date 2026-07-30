@@ -6615,7 +6615,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v4.3.3</span>
+            <span class="verTag" id="appVer">v4.3.4</span>
           </p>
         </div>
         <button
@@ -7954,6 +7954,7 @@
           closeMenu();
           document.getElementById("loginMsg").textContent = "";
           document.getElementById("loginModal").classList.add("open");
+          initLottieIcons();
         }
         function closeLogin() {
           document.getElementById("loginModal").classList.remove("open");
@@ -12165,6 +12166,7 @@
         // --- Menu (laci kanan atas) ---
         function openMenu() {
           document.getElementById("menuBackdrop").classList.add("open");
+          initLottieIcons();
         }
         function closeMenu() {
           document.getElementById("menuBackdrop").classList.remove("open");
@@ -12241,35 +12243,47 @@
             anim.goToAndPlay(0, true);
           } catch (e) {}
         }
+        function _icoVisible(el) {
+          // v4.3.4 - deteksi terlihat pakai ukuran nyata (bukan offsetParent,
+          // yang selalu null untuk elemen di dalam kontainer position:fixed).
+          var r = el.getBoundingClientRect();
+          return r.width > 0.5 && r.height > 0.5;
+        }
         function loadLottieIcon(el, data) {
+          // v4.3.4 - gaya v3.9.2: putar terus-menerus (autoplay + loop) supaya
+          // ikon tidak pernah membeku di frame kosong. Tidak lagi bergantung
+          // pada IntersectionObserver yang kadang gagal memicu di sebagian HP.
+          var sekali = el.classList.contains("lkIco");
           var anim = lottie.loadAnimation({
             container: el,
             renderer: "svg",
-            loop: true,
-            autoplay: false,
+            loop: !sekali,
+            autoplay: true,
             animationData: data,
+            rendererSettings: { preserveAspectRatio: "xMidYMid meet" },
           });
-          anim._times = el.classList.contains("lkIco") ? 1 : 2;
           try {
-            anim.setSpeed(0.75);
+            anim.setSpeed(0.7);
           } catch (e) {}
-          anim.addEventListener("loopComplete", function () {
-            anim._loops = (anim._loops || 0) + 1;
-            if (anim._loops >= (anim._times || 2)) anim.loop = false;
-          });
           el._lottie = anim;
-          playLottieTwice(anim);
-          var io = getIO();
-          if (io) io.observe(el);
+          el._builtHidden = !_icoVisible(el);
         }
         function initLottieIcons() {
           if (typeof lottie === "undefined") return;
           var list = document.querySelectorAll(".lottieIco");
           for (var i = 0; i < list.length; i++) {
             var el = list[i];
-            if (el.getAttribute("data-loaded")) continue;
             var data = animData(el.getAttribute("data-anim"));
             if (!data) continue;
+            // v4.3.4 - bangun ulang kalau: belum pernah dibuat, tidak ada <svg>,
+            // atau dulu dibuat saat tersembunyi lalu kini terlihat (renderer SVG
+            // sering menghasilkan gambar 0x0 kalau dibuat di modal display:none).
+            var terlihat = _icoVisible(el);
+            var perlu =
+              !el._lottie ||
+              !el.querySelector("svg") ||
+              (el._builtHidden && terlihat);
+            if (!perlu) continue;
             el.setAttribute("data-loaded", "1");
             el.innerHTML = "";
             try {
@@ -13155,6 +13169,7 @@
           syncRestoreBtn();
           markNotesSeen();
           document.getElementById("infoModal").classList.add("open");
+          initLottieIcons();
         }
         function closeInfo() {
           document.getElementById("infoModal").classList.remove("open");
