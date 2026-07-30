@@ -2298,6 +2298,18 @@
         height: 30px;
         filter: drop-shadow(0 0 3px rgba(47, 128, 237, 0.55));
       }
+      /* v4.3.2 - tampilan ikon cadangan kalau animasi gagal dirender */
+      .icoFallback {
+        font-size: 17px;
+        line-height: 22px;
+        text-align: center;
+        font-style: normal;
+        filter: none;
+      }
+      .lottieLg.icoFallback {
+        font-size: 23px;
+        line-height: 30px;
+      }
       .lottieH2 {
         width: 30px;
         height: 30px;
@@ -6579,7 +6591,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v4.3.1</span>
+            <span class="verTag" id="appVer">v4.3.2</span>
           </p>
         </div>
         <button
@@ -12262,6 +12274,38 @@
             }, 300);
           }
         }
+        // v4.3.2 - JARING PENGAMAN IKON.
+        // Sebelumnya, kalau Lottie gagal dengan alasan apa pun (library tidak
+        // jalan, data animasi hilang, renderer ditolak), <span> ikon tetap
+        // kosong sehingga tombol terlihat tanpa ikon sama sekali. Sekarang
+        // setiap ikon yang tidak menghasilkan <svg> diisi lambang statis.
+        var ICON_FALLBACK = {
+          calendar: "\uD83D\uDCC5",
+          songbank: "\uD83D\uDCC1",
+          adminlogin: "\u270F\uFE0F",
+          layer: "\uD83D\uDDC2\uFE0F",
+          layerPop: "\uD83D\uDDC2\uFE0F",
+          talking: "\uD83D\uDCAC",
+          chat: "\uD83D\uDCAC",
+          like: "\u2764\uFE0F",
+          pencil: "\u2709\uFE0F",
+          loading: "\u23F3",
+          centang: "\u2705",
+        };
+        function applyIconFallback() {
+          var list = document.querySelectorAll(".lottieIco");
+          for (var i = 0; i < list.length; i++) {
+            var el = list[i];
+            if (el.getAttribute("data-fallback")) continue;
+            if (el.querySelector("svg")) continue;
+            el.setAttribute("data-fallback", "1");
+            el.classList.add("icoFallback");
+            el.textContent =
+              ICON_FALLBACK[el.getAttribute("data-anim")] || "\u25CF";
+          }
+        }
+        setTimeout(applyIconFallback, 2500);
+        setTimeout(applyIconFallback, 6000);
         // ---- Loading overlay (loading.json -> centang) ----
         var _loadInst = null;
         // v4.2 - batas waktu keras untuk layar "Memproses login...".
