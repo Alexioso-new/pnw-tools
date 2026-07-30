@@ -2396,10 +2396,10 @@
       rel="stylesheet"
       href="https://cdn-uicons.flaticon.com/uicons-solid-straight/css/uicons-solid-straight.css"
     />
-    <script
-      defer
-      src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"
-    ></script>
+    <!-- v4.2.3: Lottie di-host sendiri (anti-gagal). Tidak lagi bergantung cdnjs;
+         kalau CDN diblokir/lambat, ikon animasi tetap muncul. File lottie.min.js
+         WAJIB ikut diunggah ke repo, satu folder dengan index.html. -->
+    <script defer src="./lottie.min.js"></script>
     <script>
       window.__ANIM_SARAN = {
         v: "5.12.1",
@@ -29078,7 +29078,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v4.2.2</span>
+            <span class="verTag" id="appVer">v4.2.3</span>
           </p>
         </div>
         <button
