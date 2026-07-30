@@ -2315,6 +2315,30 @@
         height: 30px;
         margin-right: 6px;
       }
+      /* v4.3.3 - PAKSA KONTRAS IKON.
+         Akar masalah ikon "tidak muncul": animasi Lordicon tergambar normal,
+         tetapi goresannya gelap di atas tombol biru pekat #2516c7 (rasio
+         kontras 1,74) atau terang di atas permukaan putih. Ikon ada, hanya
+         tidak kasatmata. Kelas di bawah memaksa ikon jadi putih penuh di
+         latar gelap dan hampir hitam di latar terang. */
+      .lottieIco.icoLight {
+        filter: brightness(0) invert(1);
+      }
+      .lottieIco.icoDark {
+        filter: brightness(0) invert(0.14);
+      }
+      .lottieLg.icoLight {
+        filter: brightness(0) invert(1)
+          drop-shadow(0 0 3px rgba(0, 0, 0, 0.35));
+      }
+      .lottieLg.icoDark {
+        filter: brightness(0) invert(0.14)
+          drop-shadow(0 0 3px rgba(37, 22, 199, 0.35));
+      }
+      /* ikon cadangan berupa emoji tidak boleh ikut diwarnai */
+      .lottieIco.icoFallback {
+        filter: none !important;
+      }
       .noteLike {
         display: inline-flex;
         align-items: center;
@@ -6591,7 +6615,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v4.3.2</span>
+            <span class="verTag" id="appVer">v4.3.3</span>
           </p>
         </div>
         <button
@@ -12268,12 +12292,56 @@
         }
         function ensureLottie(tries) {
           initLottieIcons();
+          applyIconContrast();
           if (typeof lottie === "undefined" && (tries || 0) < 25) {
             setTimeout(function () {
               ensureLottie((tries || 0) + 1);
             }, 300);
           }
         }
+        // v4.3.3 - hitung latar sebenarnya di belakang tiap ikon, lalu pilih
+        // putih atau gelap supaya selalu kontras. Otomatis benar di mode
+        // gelap dan kalau palet diubah lagi di kemudian hari.
+        function _icoBg(el) {
+          var n = el;
+          while (n && n.nodeType === 1) {
+            var c = "";
+            try {
+              c = window.getComputedStyle(n).backgroundColor;
+            } catch (e) {}
+            if (
+              c &&
+              c !== "transparent" &&
+              c.replace(/\s/g, "") !== "rgba(0,0,0,0)"
+            )
+              return c;
+            n = n.parentElement;
+          }
+          return "rgb(255,255,255)";
+        }
+        function _icoLum(c) {
+          var m = String(c).match(/[\d.]+/g);
+          if (!m || m.length < 3) return 1;
+          function f(v) {
+            v = v / 255;
+            return v <= 0.03928
+              ? v / 12.92
+              : Math.pow((v + 0.055) / 1.055, 2.4);
+          }
+          return 0.2126 * f(+m[0]) + 0.7152 * f(+m[1]) + 0.0722 * f(+m[2]);
+        }
+        function applyIconContrast() {
+          var list = document.querySelectorAll(".lottieIco");
+          for (var i = 0; i < list.length; i++) {
+            var el = list[i];
+            var terang = _icoLum(_icoBg(el)) >= 0.4;
+            el.classList.remove(terang ? "icoLight" : "icoDark");
+            el.classList.add(terang ? "icoDark" : "icoLight");
+          }
+        }
+        setTimeout(applyIconContrast, 1200);
+        setTimeout(applyIconContrast, 3000);
+        setTimeout(applyIconContrast, 7000);
         // v4.3.2 - JARING PENGAMAN IKON.
         // Sebelumnya, kalau Lottie gagal dengan alasan apa pun (library tidak
         // jalan, data animasi hilang, renderer ditolak), <span> ikon tetap
