@@ -29078,7 +29078,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v4.1.1</span>
+            <span class="verTag" id="appVer">v4.2</span>
           </p>
         </div>
         <button
@@ -30100,9 +30100,7 @@
             localStorage.setItem(bankKey, JSON.stringify(bankSongs));
           } catch (e) {}
           if (cloudReady && bankRef && !applyingRemote) {
-            try {
-              bankRef.set(bankSongs);
-            } catch (e) {}
+            cloudGuard(bankRef.set(bankSongs), "bank lagu");
           }
         }
         function seedBankFromSongs() {
@@ -30110,9 +30108,7 @@
           songs.forEach(mirrorToBank);
           saveBank();
           if (cloudReady && dbRef && !applyingRemote) {
-            try {
-              dbRef.set(songs);
-            } catch (e) {}
+            cloudGuard(dbRef.set(songs), "daftar lagu");
           }
           refreshLibrary();
         }
@@ -30245,7 +30241,12 @@
                   }
                   window.__syncBeres("Online - tersinkron");
                 } else {
-                  dbRef.set(songs);
+                  // v4.2 - path cloud kosong. Menanam data lokal ke server
+                  // hanya boleh dilakukan admin/pengurus. Kalau member biasa
+                  // yang membaca path kosong (rules menolak, data ter-reset,
+                  // atau baca parsial), menulis balik data perangkatnya bisa
+                  // menyebarkan data usang ke semua orang.
+                  if (isAdmin) cloudGuard(dbRef.set(songs), "daftar lagu");
                   window.__syncBeres("Online - tersinkron");
                 }
               },
@@ -30480,7 +30481,7 @@
         }
         function toggleLock() {
           if (!isAdmin || !lockRef) return;
-          lockRef.set(!locked);
+          cloudGuard(lockRef.set(!locked), "kunci daftar lagu");
           toast(
             !locked ? "Daftar lagu dikunci." : "Daftar lagu dibuka.",
             "success",
@@ -30695,15 +30696,17 @@
           var now = Date.now();
           if (now - liveThrottle < 180) return;
           liveThrottle = now;
-          try {
+          cloudGuard(
             liveRef.set({
               active: true,
               songId: selectedSongId,
               key: selectedKey,
               scroll: currentScrollFrac(),
               t: now,
-            });
-          } catch (e) {}
+            }),
+            "spectate",
+            true,
+          );
         }
         function applyLive(v) {
           var banner = document.getElementById("liveBanner");
@@ -30739,9 +30742,11 @@
           if (spectateOn) {
             broadcastLive();
           } else if (liveRef) {
-            try {
-              liveRef.set({ active: false, t: Date.now() });
-            } catch (e) {}
+            cloudGuard(
+              liveRef.set({ active: false, t: Date.now() }),
+              "spectate",
+              true,
+            );
           }
           var t = document.getElementById("spectateToggle");
           if (t) t.checked = spectateOn;
@@ -30750,6 +30755,42 @@
             st.textContent = spectateOn
               ? "Spectate AKTIF - layar member mengikuti Anda."
               : "";
+        }
+        // v4.2 - PENJAGA TULISAN CLOUD.
+        //
+        // Firebase menolak lewat promise yang DITOLAK, bukan lewat error yang
+        // dilempar. Karena itu try/catch buta dan kegagalan kirim hilang tanpa
+        // jejak: admin melihat perubahan (tersimpan lokal), member tidak pernah
+        // menerimanya. Semua tulisan cloud sekarang melewati fungsi ini.
+        //
+        //   op     : hasil .set()/.remove()/.push() (boleh bukan promise)
+        //   label  : nama data untuk pesan ke pengurus
+        //   diam   : true = cukup catat di konsol, jangan munculkan toast
+        //            (dipakai broadcast spectate yang menulis sangat sering)
+        var _cloudGagalT = 0;
+        function cloudGuard(op, label, diam) {
+          try {
+            if (op && typeof op.then === "function") {
+              op.catch(function (err) {
+                console.error("tulis cloud gagal: " + label, err);
+                if (diam) return;
+                // Jangan menghujani layar kalau banyak tulisan gagal beruntun.
+                var now = Date.now();
+                if (now - _cloudGagalT < 6000) return;
+                _cloudGagalT = now;
+                toast(
+                  "Tersimpan di perangkat ini, tapi GAGAL dikirim ke server (" +
+                    label +
+                    "). Perangkat lain belum melihatnya.",
+                  "error",
+                  7000,
+                );
+              });
+            }
+          } catch (e) {
+            console.error("tulis cloud gagal: " + label, e);
+          }
+          return op;
         }
         function toast(msg, type, ms) {
           var wrap = document.getElementById("toastWrap");
@@ -30780,7 +30821,12 @@
           var dur = ms == null ? 2600 : ms;
           var handle = {
             el: el,
+            _wd: null,
             close: function () {
+              if (handle._wd) {
+                clearTimeout(handle._wd);
+                handle._wd = null;
+              }
               if (!el.parentNode) return;
               el.classList.remove("show");
               setTimeout(function () {
@@ -30789,6 +30835,25 @@
             },
           };
           if (type !== "loading" && dur > 0) setTimeout(handle.close, dur);
+          // v4.2 - JARING PENGAMAN SPINNER.
+          //
+          // toast bertipe "loading" memang tidak menutup sendiri; penutupan
+          // adalah tanggung jawab pemanggil. Kalau promise Firebase tidak
+          // pernah selesai (jaringan seluler lambat), baris penutup itu tidak
+          // pernah dijalankan dan spinner menggantung selamanya. Sekarang ada
+          // batas waktu keras.
+          if (type === "loading") {
+            handle._wd = setTimeout(function () {
+              handle._wd = null;
+              if (!el.parentNode) return;
+              handle.close();
+              toast(
+                "Server belum menjawab. Prosesnya dihentikan supaya layar tidak tertahan.",
+                "info",
+                5200,
+              );
+            }, 25000);
+          }
           return handle;
         }
         // ===== FASE C: Penjadwal Pelayanan =====
@@ -31514,11 +31579,28 @@
           if (cloudReady && scheduleRef) {
             try {
               window.__schedWriteAt = Date.now();
-              scheduleRef
-                .child("meta")
-                .set({ by: schedWho(), at: window.__schedWriteAt });
-              scheduleRef.child("roster").set(schedClean(sched.roster));
-              schedCloudStatus("Realtime aktif");
+              cloudGuard(
+                scheduleRef
+                  .child("meta")
+                  .set({ by: schedWho(), at: window.__schedWriteAt }),
+                "catatan perubahan jadwal",
+                true,
+              );
+              // v4.2 - status "Realtime aktif" baru boleh muncul SETELAH
+              // server menerima. Versi lama menampilkannya seketika, jadi
+              // penolakan Firebase terlihat seperti berhasil.
+              var opRoster = scheduleRef
+                .child("roster")
+                .set(schedClean(sched.roster));
+              cloudGuard(opRoster, "daftar pelayan");
+              if (opRoster && opRoster.then) {
+                opRoster.then(function () {
+                  schedCloudStatus("Realtime aktif");
+                });
+                opRoster.catch(function () {
+                  schedCloudStatus("Gagal simpan ke cloud");
+                });
+              } else schedCloudStatus("Realtime aktif");
             } catch (e) {
               console.error("simpan pelayan gagal", e);
               schedCloudStatus("Gagal simpan ke cloud");
@@ -31642,6 +31724,13 @@
             if (!s.closed[wk] || typeof s.closed[wk] !== "object")
               s.closed[wk] = {};
           });
+          // v4.2 - penutupan satu minggu penuh juga harus dinormalkan. Kalau
+          // Firebase mengembalikannya sebagai null/array (node dihapus atau
+          // berkunci angka), fungsi isWeekClosed() bisa salah baca.
+          if (!s.closedWeek || typeof s.closedWeek !== "object")
+            s.closedWeek = {};
+          if (!s.closedNote || typeof s.closedNote !== "object")
+            s.closedNote = {};
           return s;
         }
         // v2.9 - render ulang akibat sinkronisasi ditunda SELAMA pengurus masih
@@ -31668,7 +31757,11 @@
         }
         function schedApplyRemote(v) {
           if (v == null) {
-            if (scheduleRef) scheduleRef.set(schedClean(sched));
+            // v4.2 - sama seperti daftar lagu: hanya admin yang boleh menanam
+            // jadwal lokal ke path cloud yang kosong. Member yang membawa
+            // jadwal usang tidak boleh menimpa data semua orang.
+            if (scheduleRef && isAdmin)
+              cloudGuard(scheduleRef.set(schedClean(sched)), "jadwal");
             return;
           }
           if (!v.roster) return;
@@ -31813,13 +31906,22 @@
         function schedSnap() {
           // v2.9 - cuplikan mencakup penempatan DAN peta role tertutup,
           // supaya menutup/membuka role juga bisa dibatalkan.
+          //
+          // v4.2 - AKAR qa_v29. Dulu cuplikan hanya membawa `assign` dan
+          // `closed`, sedangkan penutupan SATU MINGGU penuh (v3.6) disimpan
+          // di `closedWeek` + `closedNote`. Akibatnya status "tutup minggu"
+          // tidak pernah ikut Undo/Redo: ia tetap tersimpan walau aksinya
+          // sudah dibatalkan, dan isRoleClosed() tetap mengembalikan true
+          // karena membaca closedWeek. Sekarang keduanya ikut dicuplik.
           try {
             return JSON.stringify({
               a: sched.assign || {},
               c: sched.closed || {},
+              cw: sched.closedWeek || {},
+              cn: sched.closedNote || {},
             });
           } catch (e) {
-            return '{"a":{},"c":{}}';
+            return '{"a":{},"c":{},"cw":{},"cn":{}}';
           }
         }
         function schedHistReset() {
@@ -31845,9 +31947,13 @@
             var o = JSON.parse(snap) || {};
             sched.assign = o.a || {};
             sched.closed = o.c || {};
+            sched.closedWeek = o.cw || {};
+            sched.closedNote = o.cn || {};
           } catch (e) {
             sched.assign = {};
             sched.closed = {};
+            sched.closedWeek = {};
+            sched.closedNote = {};
           }
           // Undo mengubah banyak sel sekaligus, jadi simpan PENUH ke cloud;
           // saveSchedCell yang per-sel tidak cukup untuk kasus ini.
@@ -33769,9 +33875,7 @@
           songs.forEach(mirrorToBank);
           saveBank();
           if (cloudReady && dbRef && !applyingRemote) {
-            try {
-              dbRef.set(songs);
-            } catch (e) {}
+            cloudGuard(dbRef.set(songs), "daftar lagu");
           } else {
             try {
               localStorage.setItem(storageKey, JSON.stringify(songs));
@@ -34541,7 +34645,7 @@
           if (!isAdmin) return;
           var want = document.getElementById("izinOpenToggle").checked;
           izinFormOpen = want;
-          if (izinRef) izinRef.set(want);
+          if (izinRef) cloudGuard(izinRef.set(want), "status form izin");
           applyIzinUI();
           toast(
             want
@@ -34652,6 +34756,11 @@
         }
         // ---- Loading overlay (loading.json -> centang) ----
         var _loadInst = null;
+        // v4.2 - batas waktu keras untuk layar "Memproses login...".
+        // Kalau animasi Lottie gagal memicu "complete" atau server tidak
+        // menjawab, overlay ini dulu menutupi layar selamanya (gejala: "bug
+        // loading admin"). Sekarang selalu ada jalan keluar.
+        var _loadWD = null;
         function showLoading(msg) {
           var ov = document.getElementById("loadOverlay");
           var host = document.getElementById("loadAnim");
@@ -34659,6 +34768,17 @@
           var m = document.getElementById("loadMsg");
           if (m) m.textContent = msg || "Memuat...";
           ov.classList.add("on");
+          clearTimeout(_loadWD);
+          _loadWD = setTimeout(function () {
+            _loadWD = null;
+            if (!ov.classList.contains("on")) return;
+            hideLoading();
+            toast(
+              "Proses terlalu lama. Layar dibuka kembali - silakan coba lagi.",
+              "error",
+              5600,
+            );
+          }, 9000);
           host.innerHTML = "";
           _loadInst = null;
           var data = animData("loading");
@@ -34717,6 +34837,10 @@
           }, 850);
         }
         function hideLoading() {
+          if (_loadWD) {
+            clearTimeout(_loadWD);
+            _loadWD = null;
+          }
           var ov = document.getElementById("loadOverlay");
           if (ov) ov.classList.remove("on");
           if (_loadInst) {
@@ -34801,16 +34925,19 @@
                 firebase.apps &&
                 firebase.apps.length
               ) {
-                firebase
-                  .database()
-                  .ref("pujianYouth/saran")
-                  .push({
-                    nama: payload.nama,
-                    saran: payload.saran,
-                    foto: foto || null,
-                    waktu: payload.waktu,
-                    t: Date.now(),
-                  });
+                cloudGuard(
+                  firebase
+                    .database()
+                    .ref("pujianYouth/saran")
+                    .push({
+                      nama: payload.nama,
+                      saran: payload.saran,
+                      foto: foto || null,
+                      waktu: payload.waktu,
+                      t: Date.now(),
+                    }),
+                  "saran",
+                );
                 sentSomething = true;
               }
             } catch (e) {}
