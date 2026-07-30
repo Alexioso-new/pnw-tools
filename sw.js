@@ -1,7 +1,7 @@
 /* HOSANA YOUTH TOOLS - service worker
    PENTING: naikkan angka versi CACHE setiap deploy index.html baru
    supaya cache lama dibuang dan file terbaru dipakai. */
-const CACHE = "pnw-tools-v39";
+const CACHE = "pnw-tools-v41";
 const APP_SHELL = ["./", "./index.html", "./privacy.html", "./terms.html", "./manifest.json", "./icon-192.png"];
 
 self.addEventListener("install", (event) => {
@@ -26,6 +26,13 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  // v4.2.2 - JANGAN cegat permintaan lintas-asal (Google Fonts, CDN, Firebase,
+  // YouTube). Dulu service worker mem-fetch ulang aset ini; fetch dari konteks
+  // SW tunduk pada connect-src, sehingga font gstatic diblokir CSP lalu handler
+  // mengembalikan undefined -> "Failed to convert value to 'Response'" dan
+  // ERR_FAILED beruntun (ikut merusak long-polling Firebase). Biarkan browser
+  // menanganinya langsung; aset pihak ketiga tetap punya cache HTTP sendiri.
+  if (url.origin !== self.location.origin) return;
   const isHTML =
     req.mode === "navigate" ||
     req.destination === "document" ||
@@ -44,7 +51,12 @@ self.addEventListener("fetch", (event) => {
             .catch(() => {});
           return res;
         })
-        .catch(() => caches.match("./index.html").then((r) => r || caches.match("./"))),
+        .catch(() =>
+          caches
+            .match("./index.html")
+            .then((r) => r || caches.match("./"))
+            .then((r) => r || Response.error()),
+        ),
     );
     return;
   }
@@ -63,7 +75,7 @@ self.addEventListener("fetch", (event) => {
           }
           return res;
         })
-        .catch(() => cached);
+        .catch(() => cached || Response.error());
       return cached || network;
     }),
   );

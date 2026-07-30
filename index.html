@@ -29078,7 +29078,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v4.2</span>
+            <span class="verTag" id="appVer">v4.2.2</span>
           </p>
         </div>
         <button
@@ -34797,6 +34797,12 @@
         function loadingSuccess(msg, done) {
           var ov = document.getElementById("loadOverlay");
           var host = document.getElementById("loadAnim");
+          // v4.2.1 - matikan watchdog "Memproses..." dari showLoading supaya
+          // login yang SUKSES tidak salah memunculkan toast "Proses terlalu lama".
+          if (_loadWD) {
+            clearTimeout(_loadWD);
+            _loadWD = null;
+          }
           if (!ov || !host) {
             if (done) done();
             return;
@@ -34810,6 +34816,18 @@
             _loadInst = null;
           }
           host.innerHTML = "";
+          // v4.2.1 - SATU jalan keluar yang pasti. Dulu overlay hanya menutup
+          // saat animasi Lottie memicu "complete"; kalau event itu tak pernah
+          // datang (sering di HP atau tab latar), layar "Berhasil masuk!"
+          // menggantung. Sekarang timer pasti menutupnya, penjaga _sudah
+          // memastikan hanya berjalan sekali.
+          var _sudah = false;
+          function _tutupSukses() {
+            if (_sudah) return;
+            _sudah = true;
+            hideLoading();
+            if (done) done();
+          }
           var data = animData("centang") || animData("check");
           if (typeof lottie !== "undefined" && data) {
             try {
@@ -34821,20 +34839,16 @@
                 animationData: data,
               });
               a.addEventListener("complete", function () {
-                setTimeout(function () {
-                  hideLoading();
-                  if (done) done();
-                }, 400);
+                setTimeout(_tutupSukses, 400);
               });
+              // Jaring pengaman: tutup paling lama 1,8 detik apa pun keadaannya.
+              setTimeout(_tutupSukses, 1800);
               return;
             } catch (e) {}
           }
           host.innerHTML =
             '<i class="fi fi-sr-check" style="font-size:60px;color:var(--green);line-height:96px"></i>';
-          setTimeout(function () {
-            hideLoading();
-            if (done) done();
-          }, 850);
+          setTimeout(_tutupSukses, 850);
         }
         function hideLoading() {
           if (_loadWD) {
