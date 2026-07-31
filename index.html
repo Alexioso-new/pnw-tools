@@ -311,6 +311,7 @@
         <div class="bankPageHead">
           <b>Song Bank</b>
           <div style="display: flex; gap: 8px; align-items: center">
+            <button id="onlineOpenBtn" type="button">🔎 Cari online</button>
             <button id="bankAddBtn" type="button">+ Daftarkan lagu</button>
             <button class="xBtn" id="bankPageClose" type="button">
               &#10005;
@@ -328,6 +329,29 @@
           <summary>Tambah lagu dari koleksi populer</summary>
           <div class="bankList" id="songBank" style="margin-top: 10px"></div>
         </details>
+      </div>
+    </div>
+    <div class="bankPage no-print" id="onlinePage">
+      <div class="bankPageInner">
+        <div class="bankPageHead">
+          <b>Cari Lagu Online</b>
+          <button class="xBtn" id="onlineClose" type="button">&#10005;</button>
+        </div>
+        <div class="onlineSearchBar">
+          <input
+            class="bankSearch2"
+            id="onlineQuery"
+            type="search"
+            placeholder="Judul lagu / artis..."
+          />
+          <button class="scBtn primary" id="onlineGo" type="button">Cari</button>
+        </div>
+        <p class="small">
+          Sumber: iTunes (pratinjau 30 detik) + lirik otomatis dari lyrics.ovh.
+          Chord &amp; nada dasar diisi manual setelah lagu ditambahkan. Lagu masuk
+          ke folder Lainnya.
+        </p>
+        <div class="bankGrid" id="onlineResults"></div>
       </div>
     </div>
     <div class="modalBackdrop no-print" id="saranModal">

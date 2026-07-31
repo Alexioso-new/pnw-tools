@@ -6418,6 +6418,190 @@
               box.appendChild(it);
             });
         }
+        // ===== Cari lagu online (iTunes + lyrics.ovh) — v48 =====
+        var _olAudio = null,
+          _olBtn = null;
+        function openOnlineSearch() {
+          closeMenu();
+          var box = document.getElementById("onlineResults");
+          if (box) box.innerHTML = "";
+          var qi = document.getElementById("onlineQuery");
+          if (qi) qi.value = "";
+          var pg = document.getElementById("onlinePage");
+          if (pg) pg.classList.add("open");
+          if (qi) setTimeout(function () { qi.focus(); }, 80);
+        }
+        function closeOnlineSearch() {
+          if (_olAudio) { try { _olAudio.pause(); } catch (e) {} }
+          if (_olBtn) _olBtn.textContent = "▶";
+          var pg = document.getElementById("onlinePage");
+          if (pg) pg.classList.remove("open");
+        }
+        function itunesSearch(term, cb) {
+          var cbName = "__itunesCb" + Date.now();
+          var sc = document.createElement("script");
+          var timer = setTimeout(function () { cleanup(); cb(null, "timeout"); }, 12000);
+          function cleanup() {
+            clearTimeout(timer);
+            try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+            if (sc.parentNode) sc.parentNode.removeChild(sc);
+          }
+          window[cbName] = function (data) {
+            cleanup();
+            cb(data && data.results ? data.results : [], null);
+          };
+          sc.onerror = function () { cleanup(); cb(null, "network"); };
+          sc.src =
+            "https://itunes.apple.com/search?media=music&entity=song&limit=24&term=" +
+            encodeURIComponent(term) + "&callback=" + cbName;
+          document.body.appendChild(sc);
+        }
+        function fetchLyrics(artist, title) {
+          return new Promise(function (resolve) {
+            var url =
+              "https://api.lyrics.ovh/v1/" +
+              encodeURIComponent(artist) + "/" + encodeURIComponent(title);
+            var ctrl =
+              typeof AbortController !== "undefined" ? new AbortController() : null;
+            var to = setTimeout(function () { if (ctrl) ctrl.abort(); resolve(null); }, 8000);
+            fetch(url, ctrl ? { signal: ctrl.signal } : {})
+              .then(function (r) { return r && r.ok ? r.json() : null; })
+              .then(function (j) { clearTimeout(to); resolve(j && j.lyrics ? j.lyrics : null); })
+              .catch(function () { clearTimeout(to); resolve(null); });
+          });
+        }
+        function olPlay(url, btn) {
+          if (!url) { toast("Pratinjau tidak tersedia untuk lagu ini.", "info"); return; }
+          if (_olAudio && _olBtn === btn) {
+            if (_olAudio.paused) { _olAudio.play(); btn.textContent = "⏸"; }
+            else { _olAudio.pause(); btn.textContent = "▶"; }
+            return;
+          }
+          if (_olAudio) { try { _olAudio.pause(); } catch (e) {} if (_olBtn) _olBtn.textContent = "▶"; }
+          _olAudio = new Audio(url);
+          _olBtn = btn;
+          _olAudio.onended = function () { btn.textContent = "▶"; };
+          var p = _olAudio.play();
+          if (p && p.then)
+            p.then(function () { btn.textContent = "⏸"; }).catch(function () {
+              toast("Gagal memutar pratinjau.", "error");
+            });
+          else btn.textContent = "⏸";
+        }
+        function olAddToBank(item, btn) {
+          var title =
+            (item.trackName || "Lagu") +
+            (item.artistName ? " (" + item.artistName + ")" : "");
+          if (btn) { btn.disabled = true; btn.textContent = "Menambahkan..."; }
+          var master = {
+            bankId: "bank-" + Date.now() + "-" + Math.floor(Math.random() * 100000),
+            title: title,
+            num: "",
+            originalKey: "C",
+            source:
+              "iTunes: " + (item.artistName || "") +
+              (item.collectionName ? " — " + item.collectionName : ""),
+            youtube: "",
+            lines: ["(Lirik sedang diambil...)"],
+            cat: "other",
+          };
+          bankSongs.push(master);
+          saveBank();
+          fetchLyrics(item.artistName || "", item.trackName || "").then(function (lyr) {
+            var i = bankSongs.findIndex(function (x) {
+              return x && x.bankId === master.bankId;
+            });
+            if (i < 0) return;
+            if (lyr) {
+              var lines = lyr.split(/\r?\n/).map(function (x) {
+                return x.replace(/\s+$/, "");
+              });
+              while (lines.length && !lines[0].trim()) lines.shift();
+              while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+              bankSongs[i].lines = lines.length ? lines : ["(Lirik kosong — isi manual)"];
+            } else {
+              bankSongs[i].lines = [
+                "Bait :",
+                "(Lirik tidak ditemukan otomatis — isi manual di sini)",
+              ];
+            }
+            saveBank();
+            try { backupMaybe("bank"); } catch (e) {}
+            refreshLibrary();
+            toast("'" + title + "' ditambahkan ke Bank (folder Lainnya).", "success");
+            if (btn) { btn.textContent = "✓ Ditambahkan"; }
+          });
+        }
+        function renderOnlineResults(list) {
+          var box = document.getElementById("onlineResults");
+          if (!box) return;
+          box.innerHTML = "";
+          if (list === null) {
+            var e0 = document.createElement("p");
+            e0.className = "small bankEmpty";
+            e0.textContent = "Gagal terhubung ke sumber pencarian. Periksa koneksi lalu coba lagi.";
+            box.appendChild(e0);
+            return;
+          }
+          if (!list.length) {
+            var e1 = document.createElement("p");
+            e1.className = "small bankEmpty";
+            e1.textContent = "Tidak ada hasil.";
+            box.appendChild(e1);
+            return;
+          }
+          list.forEach(function (item) {
+            var card = document.createElement("div");
+            card.className = "olCard";
+            if (item.artworkUrl100) {
+              var img = document.createElement("img");
+              img.className = "olArt";
+              img.src = item.artworkUrl100;
+              img.alt = "";
+              img.loading = "lazy";
+              card.appendChild(img);
+            }
+            var info = document.createElement("div");
+            info.className = "olInfo scInfo";
+            var t = document.createElement("b");
+            t.textContent = item.trackName || "(Tanpa judul)";
+            var m = document.createElement("span");
+            m.textContent =
+              (item.artistName || "") +
+              (item.collectionName ? " • " + item.collectionName : "");
+            info.appendChild(t);
+            info.appendChild(m);
+            var btns = document.createElement("div");
+            btns.className = "scBtns";
+            var play = document.createElement("button");
+            play.type = "button";
+            play.className = "scBtn";
+            play.textContent = "▶";
+            play.onclick = function () { olPlay(item.previewUrl, play); };
+            var add = document.createElement("button");
+            add.type = "button";
+            add.className = "scBtn primary";
+            add.textContent = "+ Bank";
+            add.onclick = function () { olAddToBank(item, add); };
+            btns.appendChild(play);
+            btns.appendChild(add);
+            card.appendChild(info);
+            card.appendChild(btns);
+            box.appendChild(card);
+          });
+        }
+        function onlineSearchGo() {
+          var qi = document.getElementById("onlineQuery");
+          if (!qi) return;
+          var term = (qi.value || "").trim();
+          var box = document.getElementById("onlineResults");
+          if (!term) { if (box) box.innerHTML = ""; return; }
+          if (box) box.innerHTML = "<p class='small bankEmpty'>Mencari...</p>";
+          itunesSearch(term, function (results, err) {
+            if (err) { renderOnlineResults(null); return; }
+            renderOnlineResults(results);
+          });
+        }
         function addSongFromBank() {
           registerNewBankSong();
         }
@@ -7475,6 +7659,14 @@
           };
           document.getElementById("tapTempo").onclick = tapTempo;
           document.getElementById("bankAddBtn").onclick = addSongFromBank;
+          document.getElementById("onlineOpenBtn").onclick = openOnlineSearch;
+          document.getElementById("onlineClose").onclick = closeOnlineSearch;
+          document.getElementById("onlineGo").onclick = onlineSearchGo;
+          document
+            .getElementById("onlineQuery")
+            .addEventListener("keydown", function (e) {
+              if (e.key === "Enter") onlineSearchGo();
+            });
           document
             .getElementById("editLines")
             .addEventListener("input", updateEditPreview);

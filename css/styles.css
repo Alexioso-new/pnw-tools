@@ -2611,3 +2611,36 @@
         background: #1f2429;
         color: var(--text);
       }
+
+      /* ===== Cari lagu online (v48) ===== */
+      .onlineSearchBar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .onlineSearchBar .bankSearch2 {
+        margin-bottom: 0;
+      }
+      .onlineSearchBar .scBtn {
+        flex: none;
+      }
+      .olCard {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .olArt {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        object-fit: cover;
+        flex: none;
+      }
+      body.dark .olCard {
+        background: #1f2429;
+        color: var(--text);
+      }
