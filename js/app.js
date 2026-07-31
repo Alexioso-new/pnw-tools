@@ -449,6 +449,10 @@
           }
           try {
             firebase.initializeApp(firebaseConfig);
+            try {
+              if (window.PNWLog)
+                window.PNWLog.ready(firebase, { version: "3.9.2" });
+            } catch (e) {}
             dbRef = firebase.database().ref("pujianYouth/songs");
             bankRef = firebase.database().ref("pujianYouth/songBank");
             bankRef.on("value", function (snap) {
@@ -560,6 +564,9 @@
         }
         function recomputeAdmin() {
           isAdmin = localAdmin || fbAdmin;
+          try {
+            if (window.PNWLog) window.PNWLog.setContext({ isAdmin: isAdmin });
+          } catch (e) {}
           applyAdminUI();
           applyIzinUI();
         }
@@ -604,8 +611,32 @@
             if (firebase.auth) {
               authRef = firebase.auth();
               authRef.onAuthStateChanged(function (u) {
-                fbAdmin = !!u;
-                recomputeAdmin();
+                try {
+                  if (window.PNWLog)
+                    window.PNWLog.setContext({ uid: u ? u.uid : null });
+                } catch (e) {}
+                if (u && !u.isAnonymous) {
+                  // Akun admin sungguhan: verifikasi lewat allowlist di DB.
+                  firebase
+                    .database()
+                    .ref("pujianYouth/admins")
+                    .child(u.uid)
+                    .once("value")
+                    .then(function (s) {
+                      fbAdmin = s.exists();
+                      recomputeAdmin();
+                    })
+                    .catch(function () {
+                      fbAdmin = false;
+                      recomputeAdmin();
+                    });
+                } else {
+                  // Belum login / sesi anonim -> bukan admin. Pastikan ada
+                  // sesi anonim agar Rules bisa menuntut auth != null nanti.
+                  fbAdmin = false;
+                  recomputeAdmin();
+                  if (!u) authRef.signInAnonymously().catch(function () {});
+                }
               });
             }
           } catch (e) {}
