@@ -405,8 +405,13 @@
               break;
             }
           }
-          if (i >= 0) bankSongs[i] = master;
-          else bankSongs.push(master);
+          if (i >= 0) {
+            master.cat = bankSongs[i].cat || song.cat || "other";
+            bankSongs[i] = master;
+          } else {
+            master.cat = song.cat || "other";
+            bankSongs.push(master);
+          }
         }
         function saveBank() {
           try {
@@ -6418,87 +6423,217 @@
         }
         function openBankPage() {
           closeMenu();
+          currentBankFolder = null;
           var si = document.getElementById("bankPageSearch");
-          renderBankPage(si ? si.value : "");
+          if (si) si.value = "";
+          renderBankPage("");
           document.getElementById("bankPage").classList.add("open");
         }
         function closeBankPage() {
           var pg = document.getElementById("bankPage");
           if (pg) pg.classList.remove("open");
         }
+        // ===== Bank lagu berbentuk folder (v47) =====
+        var BANK_CATS = [
+          { key: "worship", label: "Worship", icon: "🙏" },
+          { key: "praise", label: "Praise", icon: "🎉" },
+          { key: "other", label: "Lainnya", icon: "📁" },
+        ];
+        var currentBankFolder = null;
+        function bankCatOf(s) {
+          var c = s && s.cat;
+          return c === "worship" || c === "praise" ? c : "other";
+        }
+        function bankCatLabel(key) {
+          for (var i = 0; i < BANK_CATS.length; i++)
+            if (BANK_CATS[i].key === key) return BANK_CATS[i].label;
+          return "Lainnya";
+        }
+        function setBankCat(master, cat) {
+          if (!isAdmin) {
+            toast("Hanya admin yang bisa memindahkan folder.", "error");
+            return;
+          }
+          var i = -1;
+          for (var k = 0; k < bankSongs.length; k++)
+            if (bankSongs[k] && bankSongs[k].bankId === master.bankId) {
+              i = k;
+              break;
+            }
+          if (i < 0) return;
+          bankSongs[i].cat = cat === "worship" || cat === "praise" ? cat : "other";
+          master.cat = bankSongs[i].cat;
+          saveBank();
+          try {
+            backupMaybe("bank");
+          } catch (e) {}
+          var si = document.getElementById("bankPageSearch");
+          renderBankPage(si ? si.value : "");
+          toast("Dipindahkan ke folder " + bankCatLabel(bankSongs[i].cat) + ".", "success");
+        }
+        function buildBankCard(s) {
+          var setSong = songs.find(function (x) {
+            return x.bankId === s.bankId;
+          });
+          var inSet = !!setSong;
+          var card = document.createElement("div");
+          card.className = "songCard";
+          var info = document.createElement("div");
+          info.className = "scInfo";
+          var t = document.createElement("b");
+          t.textContent = s.title;
+          if (inSet) {
+            var tag = document.createElement("span");
+            tag.className = "inSet";
+            tag.textContent = " ✓ di daftar";
+            t.appendChild(tag);
+          }
+          var meta = document.createElement("span");
+          meta.textContent =
+            "Nada dasar " + s.originalKey + (s.source ? " • " + s.source : "");
+          info.appendChild(t);
+          info.appendChild(meta);
+          var btns = document.createElement("div");
+          btns.className = "scBtns";
+          var pull = document.createElement("button");
+          pull.type = "button";
+          pull.className = "scBtn primary";
+          pull.textContent = inSet ? "Buka" : "Tarik ke daftar";
+          pull.onclick = function () {
+            if (inSet) gotoSong(setSong.id);
+            else pullFromBank(s);
+          };
+          var edit = document.createElement("button");
+          edit.type = "button";
+          edit.className = "scBtn";
+          edit.textContent = "Ubah";
+          edit.onclick = function () {
+            editBankSong(s);
+          };
+          btns.appendChild(pull);
+          btns.appendChild(edit);
+          if (isAdmin) {
+            var sel = document.createElement("select");
+            sel.className = "scBtn bankCatSel";
+            BANK_CATS.forEach(function (c) {
+              var o = document.createElement("option");
+              o.value = c.key;
+              o.textContent = c.label;
+              if (bankCatOf(s) === c.key) o.selected = true;
+              sel.appendChild(o);
+            });
+            sel.onchange = function () {
+              setBankCat(s, sel.value);
+            };
+            btns.appendChild(sel);
+            var del = document.createElement("button");
+            del.type = "button";
+            del.className = "scBtn danger";
+            del.textContent = "Hapus";
+            del.onclick = function () {
+              removeFromBank(s);
+            };
+            btns.appendChild(del);
+          }
+          card.appendChild(info);
+          card.appendChild(btns);
+          return card;
+        }
+        function buildFolderCard(c) {
+          var n = bankSongs.filter(function (s) {
+            return bankCatOf(s) === c.key;
+          }).length;
+          var f = document.createElement("button");
+          f.type = "button";
+          f.className = "folderCard";
+          var ico = document.createElement("span");
+          ico.className = "folderIco";
+          ico.textContent = c.icon;
+          var nm = document.createElement("b");
+          nm.textContent = c.label;
+          var ct = document.createElement("span");
+          ct.className = "small";
+          ct.textContent = n + " lagu";
+          f.appendChild(ico);
+          f.appendChild(nm);
+          f.appendChild(ct);
+          f.onclick = function () {
+            currentBankFolder = c.key;
+            renderBankPage("");
+          };
+          return f;
+        }
+        function renderBankEmpty(box, msg) {
+          var e = document.createElement("p");
+          e.className = "small bankEmpty";
+          e.textContent = msg;
+          box.appendChild(e);
+        }
+        function renderBankCrumb(box, label, isSearch) {
+          var bar = document.createElement("div");
+          bar.className = "bankCrumb";
+          if (isSearch) {
+            var hint = document.createElement("span");
+            hint.className = "small";
+            hint.textContent = "Hasil pencarian di semua folder";
+            bar.appendChild(hint);
+          } else {
+            var back = document.createElement("button");
+            back.type = "button";
+            back.className = "scBtn";
+            back.textContent = "← Semua folder";
+            back.onclick = function () {
+              currentBankFolder = null;
+              renderBankPage("");
+            };
+            bar.appendChild(back);
+            var lb = document.createElement("b");
+            lb.textContent = " " + label;
+            bar.appendChild(lb);
+          }
+          box.appendChild(bar);
+        }
         function renderBankPage(q) {
           var box = document.getElementById("bankPageList");
           if (!box) return;
           box.innerHTML = "";
           q = (q || "").trim().toLowerCase();
-          var list = bankSongs.filter(function (s) {
-            return s && (!q || (s.title || "").toLowerCase().indexOf(q) >= 0);
-          });
-          if (!list.length) {
-            var e = document.createElement("p");
-            e.className = "small";
-            e.textContent = bankSongs.length
-              ? "Tidak ada lagu yang cocok."
-              : "Bank lagu masih kosong. Tekan tombol Daftarkan lagu untuk menambah.";
-            box.appendChild(e);
+          var emptyMsg =
+            "Bank lagu masih kosong. Tekan tombol Daftarkan lagu untuk menambah.";
+          if (q) {
+            var results = bankSongs.filter(function (s) {
+              return s && (s.title || "").toLowerCase().indexOf(q) >= 0;
+            });
+            renderBankCrumb(box, null, true);
+            if (!results.length) {
+              renderBankEmpty(box, bankSongs.length ? "Tidak ada lagu yang cocok." : emptyMsg);
+              return;
+            }
+            results.forEach(function (s) {
+              box.appendChild(buildBankCard(s));
+            });
             return;
           }
-          list.forEach(function (s) {
-            var setSong = songs.find(function (x) {
-              return x.bankId === s.bankId;
+          if (!currentBankFolder) {
+            if (!bankSongs.length) {
+              renderBankEmpty(box, emptyMsg);
+              return;
+            }
+            BANK_CATS.forEach(function (c) {
+              box.appendChild(buildFolderCard(c));
             });
-            var inSet = !!setSong;
-            var card = document.createElement("div");
-            card.className = "songCard";
-            var info = document.createElement("div");
-            info.className = "scInfo";
-            var t = document.createElement("b");
-            t.textContent = s.title;
-            if (inSet) {
-              var tag = document.createElement("span");
-              tag.className = "inSet";
-              tag.textContent = " ✓ di daftar";
-              t.appendChild(tag);
-            }
-            var meta = document.createElement("span");
-            meta.textContent =
-              "Nada dasar " +
-              s.originalKey +
-              (s.source ? " • " + s.source : "");
-            info.appendChild(t);
-            info.appendChild(meta);
-            var btns = document.createElement("div");
-            btns.className = "scBtns";
-            var pull = document.createElement("button");
-            pull.type = "button";
-            pull.className = "scBtn primary";
-            pull.textContent = inSet ? "Buka" : "Tarik ke daftar";
-            pull.onclick = function () {
-              if (inSet) gotoSong(setSong.id);
-              else pullFromBank(s);
-            };
-            var edit = document.createElement("button");
-            edit.type = "button";
-            edit.className = "scBtn";
-            edit.textContent = "Ubah";
-            edit.onclick = function () {
-              editBankSong(s);
-            };
-            btns.appendChild(pull);
-            btns.appendChild(edit);
-            if (isAdmin) {
-              var del = document.createElement("button");
-              del.type = "button";
-              del.className = "scBtn danger";
-              del.textContent = "Hapus";
-              del.onclick = function () {
-                removeFromBank(s);
-              };
-              btns.appendChild(del);
-            }
-            card.appendChild(info);
-            card.appendChild(btns);
-            box.appendChild(card);
+            return;
+          }
+          renderBankCrumb(box, bankCatLabel(currentBankFolder), false);
+          var inFolder = bankSongs.filter(function (s) {
+            return bankCatOf(s) === currentBankFolder;
+          });
+          if (!inFolder.length) {
+            renderBankEmpty(box, "Folder ini masih kosong.");
+            return;
+          }
+          inFolder.forEach(function (s) {
+            box.appendChild(buildBankCard(s));
           });
         }
         function pullFromBank(master) {

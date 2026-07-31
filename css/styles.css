@@ -2567,3 +2567,47 @@
           max-width: 210px;
         }
       }
+
+      /* ===== Song Bank folder (v47) ===== */
+      .bankCrumb {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 2px 0 6px;
+      }
+      .bankEmpty {
+        grid-column: 1 / -1;
+      }
+      .folderCard {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+        padding: 16px 16px 14px;
+        cursor: pointer;
+        text-align: left;
+        transition: 0.15s;
+      }
+      .folderCard:hover {
+        background: var(--soft);
+        border-color: var(--blue);
+      }
+      .folderCard b {
+        font-size: 15px;
+      }
+      .folderIco {
+        font-size: 26px;
+        line-height: 1;
+      }
+      .bankCatSel {
+        padding: 6px 8px;
+        max-width: 120px;
+      }
+      body.dark .folderCard {
+        background: #1f2429;
+        color: var(--text);
+      }
