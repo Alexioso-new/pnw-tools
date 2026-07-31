@@ -7248,6 +7248,73 @@
               setSecAlign("right");
             };
         }
+        var bankMoveMode = false;
+        var bankMoveSel = {};
+        function bankRerender() {
+          var si = document.getElementById("bankPageSearch");
+          renderBankPage(si ? si.value : "");
+        }
+        function moveSelectedBank(cat) {
+          if (!isAdmin) {
+            toast("Hanya admin yang bisa memindahkan folder.", "error");
+            return;
+          }
+          var ids = Object.keys(bankMoveSel).filter(function (k) {
+            return bankMoveSel[k];
+          });
+          if (!ids.length) {
+            toast("Pilih dulu lagu yang mau dipindahkan.", "info");
+            return;
+          }
+          var n = 0;
+          for (var k = 0; k < bankSongs.length; k++) {
+            var b = bankSongs[k];
+            if (!b || ids.indexOf(String(b.bankId)) < 0) continue;
+            b.cat = cat === "worship" || cat === "praise" ? cat : "other";
+            n++;
+          }
+          if (!n) return;
+          saveBank();
+          try {
+            backupMaybe("bank");
+          } catch (e) {}
+          bankMoveSel = {};
+          bankMoveMode = false;
+          bankRerender();
+          toast(n + " lagu dipindahkan ke folder " + bankCatLabel(cat) + ".", "success");
+        }
+        function buildBankMoveBar() {
+          var bar = document.createElement("div");
+          bar.className = "bankMoveBar";
+          var t = document.createElement("button");
+          t.type = "button";
+          t.className = "bmBtn" + (bankMoveMode ? " isOn" : "");
+          t.textContent = bankMoveMode ? "Batal" : "Pindahkan lagu";
+          t.onclick = function () {
+            bankMoveMode = !bankMoveMode;
+            bankMoveSel = {};
+            bankRerender();
+          };
+          bar.appendChild(t);
+          if (bankMoveMode) {
+            var lb = document.createElement("span");
+            lb.className = "bmLbl";
+            lb.textContent = "Pindahkan ke";
+            bar.appendChild(lb);
+            BANK_CATS.forEach(function (c) {
+              if (c.key === currentBankFolder) return;
+              var b = document.createElement("button");
+              b.type = "button";
+              b.className = "bmBtn go";
+              b.textContent = c.label;
+              b.onclick = function () {
+                moveSelectedBank(c.key);
+              };
+              bar.appendChild(b);
+            });
+          }
+          return bar;
+        }
         function buildBankCard(s) {
           var setSong = songs.find(function (x) {
             return x.bankId === s.bankId;
@@ -7255,6 +7322,17 @@
           var inSet = !!setSong;
           var card = document.createElement("div");
           card.className = "songCard";
+          if (bankMoveMode && isAdmin) {
+            card.classList.add("selectable");
+            var chk = document.createElement("input");
+            chk.type = "checkbox";
+            chk.className = "bmChk";
+            chk.checked = !!bankMoveSel[s.bankId];
+            chk.onchange = function () {
+              bankMoveSel[s.bankId] = chk.checked;
+            };
+            card.appendChild(chk);
+          }
           var info = document.createElement("div");
           info.className = "scInfo";
           var t = document.createElement("b");
@@ -7385,6 +7463,8 @@
             back.textContent = "← Semua folder";
             back.onclick = function () {
               currentBankFolder = null;
+              bankMoveMode = false;
+              bankMoveSel = {};
               renderBankPage("");
             };
             bar.appendChild(back);
@@ -7426,6 +7506,7 @@
             return;
           }
           renderBankCrumb(box, bankCatLabel(currentBankFolder), false);
+          if (isAdmin) box.appendChild(buildBankMoveBar());
           var inFolder = bankSongs.filter(function (s) {
             return bankCatOf(s) === currentBankFolder;
           });
