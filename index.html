@@ -60,6 +60,10 @@
   </head>
   <body>
     <div id="toastWrap" aria-live="polite"></div>
+    <div id="pendingBanner" class="pendingBanner" hidden>
+      Akun kamu menunggu persetujuan pemilik.
+      <a href="#" id="pendingLogout">Keluar</a>
+    </div>
     <div id="displayScreen" class="displayScreen" hidden>
       <div class="dispBar">
         <span class="dispDot off" id="dispDot" title="Menyambung…"></span>
@@ -615,6 +619,10 @@
             >
               &#128221; Tambah catatan rilis
             </button>
+            <section id="adminReqSec" class="adminReqSec" hidden>
+              <p class="label">Permintaan admin</p>
+              <div id="adminReqList"></div>
+            </section>
             <button
               class="actionBtn secondary"
               id="adminLogoutBtn"
@@ -631,31 +639,83 @@
     <div class="modalBackdrop no-print" id="loginModal">
       <div class="modal">
         <h2>&#128273; Login Admin</h2>
-        <div class="field">
-          <label>Username</label
-          ><input
-            id="loginEmail"
-            type="text"
-            autocomplete="username"
-            placeholder="username pengurus"
-          />
-        </div>
-        <div class="field">
-          <label>Password</label
-          ><input
-            id="loginPass"
-            type="password"
-            autocomplete="current-password"
-          />
-        </div>
-        <p class="small" id="loginMsg"></p>
-        <div class="rowBtns">
-          <button class="actionBtn" id="loginSubmit" type="button">
-            Masuk
+        <div id="loginForms">
+          <div class="field">
+            <label>Username / Email</label
+            ><input
+              id="loginEmail"
+              type="text"
+              autocomplete="username"
+              placeholder="username atau email"
+            />
+          </div>
+          <div class="field">
+            <label>Password</label
+            ><input
+              id="loginPass"
+              type="password"
+              autocomplete="current-password"
+            />
+          </div>
+          <p class="small" id="loginMsg"></p>
+          <div class="rowBtns">
+            <button class="actionBtn" id="loginSubmit" type="button">
+              Masuk
+            </button>
+            <button class="actionBtn secondary" id="loginClose" type="button">
+              Batal
+            </button>
+          </div>
+          <div class="orSep">atau</div>
+          <button
+            class="actionBtn secondary"
+            id="googleLoginBtn"
+            type="button"
+            style="width: 100%"
+          >
+            &#128272; Masuk dengan Google
           </button>
-          <button class="actionBtn secondary" id="loginClose" type="button">
-            Batal
-          </button>
+          <p class="small" style="margin-top: 10px">
+            Belum jadi admin?
+            <a href="#" id="toSignupBtn">Daftar di sini</a>
+          </p>
+        </div>
+        <div id="signupForms" hidden>
+          <div class="field">
+            <label>Nama</label
+            ><input id="signupName" type="text" placeholder="nama lengkap" />
+          </div>
+          <div class="field">
+            <label>Email</label
+            ><input
+              id="signupEmail"
+              type="email"
+              autocomplete="email"
+              placeholder="email aktif"
+            />
+          </div>
+          <div class="field">
+            <label>Password</label
+            ><input
+              id="signupPass"
+              type="password"
+              autocomplete="new-password"
+              placeholder="minimal 6 karakter"
+            />
+          </div>
+          <p class="small" id="signupMsg"></p>
+          <div class="rowBtns">
+            <button class="actionBtn" id="signupSubmit" type="button">
+              Daftar
+            </button>
+            <button class="actionBtn secondary" id="toLoginBtn" type="button">
+              Kembali
+            </button>
+          </div>
+          <p class="small" style="margin-top: 8px">
+            Setelah daftar, akunmu perlu <b>disetujui pemilik</b> sebelum
+            menjadi admin.
+          </p>
         </div>
       </div>
     </div>

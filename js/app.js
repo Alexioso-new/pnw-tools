@@ -555,6 +555,8 @@
           noteOvRef = null,
           likesRef = null,
           noteLikes = {};
+        var OWNER_UID = "l9U1ktYog2X3vSA81JdsjHln5qu1";
+        var reqRef = null, pendingApproval = false, _reqInit = false;
         // ==== AKUN PENGURUS (login username & password) ====
         // Tambah / ubah akun di sini lalu bagikan ke pengurus.
         // Catatan: ini keamanan tingkat kenyamanan (client-side), bukan enkripsi.
@@ -580,6 +582,7 @@
           } catch (e) {}
           applyAdminUI();
           applyIzinUI();
+          updatePendingUI();
         }
         function canEdit() {
           return isAdmin || !locked;
@@ -638,6 +641,13 @@
                     .once("value")
                     .then(function (s) {
                       fbAdmin = s.exists();
+                      if (fbAdmin) {
+                        pendingApproval = false;
+                      } else {
+                        pendingApproval = true;
+                        ensureAdminRequest(u);
+                      }
+                      if (u.uid === OWNER_UID) initAdminRequests();
                       recomputeAdmin();
                     })
                     .catch(function () {
@@ -648,6 +658,7 @@
                   // Belum login / sesi anonim -> bukan admin. Pastikan ada
                   // sesi anonim agar Rules bisa menuntut auth != null nanti.
                   fbAdmin = false;
+                  pendingApproval = false;
                   recomputeAdmin();
                   if (!u) authRef.signInAnonymously().catch(function () {});
                 }
@@ -712,9 +723,308 @@
             });
           } catch (e) {}
         }
+        function escReq(s) {
+          return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+        function updatePendingUI() {
+          var b = document.getElementById("pendingBanner");
+          if (b) b.hidden = !(pendingApproval && !isAdmin);
+        }
+        function ensureAdminRequest(u) {
+          if (!u || u.isAnonymous) return;
+          try {
+            var rr = firebase
+              .database()
+              .ref("pujianYouth/adminRequests")
+              .child(u.uid);
+            rr.once("value")
+              .then(function (s) {
+                if (!s.exists()) {
+                  rr.set({
+                    email: u.email || "",
+                    nama:
+                      u.displayName ||
+                      (u.email || "").split("@")[0] ||
+                      "Tanpa nama",
+                    status: "pending",
+                    ts: Date.now(),
+                  });
+                }
+              })
+              .catch(function () {});
+          } catch (e) {}
+        }
+        function initAdminRequests() {
+          if (_reqInit) return;
+          _reqInit = true;
+          try {
+            reqRef = firebase.database().ref("pujianYouth/adminRequests");
+            reqRef.on("value", function (s) {
+              renderAdminRequests(s.val() || {});
+            });
+          } catch (e) {}
+        }
+        function renderAdminRequests(v) {
+          var sec = document.getElementById("adminReqSec");
+          var list = document.getElementById("adminReqList");
+          if (!sec || !list) return;
+          var isOwner =
+            authRef &&
+            authRef.currentUser &&
+            authRef.currentUser.uid === OWNER_UID;
+          sec.hidden = !isOwner;
+          if (!isOwner) return;
+          var keys = Object.keys(v || {});
+          var pend = keys.filter(function (k) {
+            return (v[k] || {}).status === "pending";
+          });
+          var appr = keys.filter(function (k) {
+            return (v[k] || {}).status === "approved";
+          });
+          var html = "";
+          if (!pend.length && !appr.length) {
+            html = '<p class="small">Belum ada permintaan admin.</p>';
+          } else {
+            if (pend.length) {
+              html +=
+                '<p class="small" style="font-weight:600">Menunggu persetujuan (' +
+                pend.length +
+                ")</p>";
+              pend.forEach(function (k) {
+                var r = v[k] || {};
+                html +=
+                  '<div class="reqRow"><div class="reqInfo"><b>' +
+                  escReq(r.nama || "-") +
+                  "</b><span>" +
+                  escReq(r.email || "") +
+                  "</span></div>" +
+                  '<div class="reqBtns"><button class="actionBtn reqOk" data-uid="' +
+                  k +
+                  '" data-nama="' +
+                  escReq(r.nama || "") +
+                  '">Setujui</button>' +
+                  '<button class="actionBtn secondary reqNo" data-uid="' +
+                  k +
+                  '">Tolak</button></div></div>';
+              });
+            }
+            if (appr.length) {
+              html +=
+                '<p class="small" style="font-weight:600;margin-top:8px">Admin aktif (' +
+                appr.length +
+                ")</p>";
+              appr.forEach(function (k) {
+                var r = v[k] || {};
+                var own = k === OWNER_UID;
+                html +=
+                  '<div class="reqRow"><div class="reqInfo"><b>' +
+                  escReq(r.nama || "-") +
+                  (own ? " (pemilik)" : "") +
+                  "</b><span>" +
+                  escReq(r.email || "") +
+                  "</span></div>" +
+                  (own
+                    ? ""
+                    : '<div class="reqBtns"><button class="actionBtn secondary reqRevoke" data-uid="' +
+                      k +
+                      '">Cabut</button></div>') +
+                  "</div>";
+              });
+            }
+          }
+          list.innerHTML = html;
+          Array.prototype.forEach.call(
+            list.querySelectorAll(".reqOk"),
+            function (b) {
+              b.onclick = function () {
+                approveAdmin(b.getAttribute("data-uid"), b.getAttribute("data-nama"));
+              };
+            },
+          );
+          Array.prototype.forEach.call(
+            list.querySelectorAll(".reqNo"),
+            function (b) {
+              b.onclick = function () {
+                rejectAdmin(b.getAttribute("data-uid"));
+              };
+            },
+          );
+          Array.prototype.forEach.call(
+            list.querySelectorAll(".reqRevoke"),
+            function (b) {
+              b.onclick = function () {
+                revokeAdmin(b.getAttribute("data-uid"));
+              };
+            },
+          );
+        }
+        function approveAdmin(uid, nama) {
+          if (!uid) return;
+          firebase
+            .database()
+            .ref("pujianYouth/admins")
+            .child(uid)
+            .set(nama || true)
+            .then(function () {
+              return firebase
+                .database()
+                .ref("pujianYouth/adminRequests")
+                .child(uid)
+                .child("status")
+                .set("approved");
+            })
+            .then(function () {
+              toast("Admin disetujui: " + (nama || uid), "success");
+            })
+            .catch(function (e) {
+              toast("Gagal menyetujui: " + ((e && e.message) || ""), "error");
+            });
+        }
+        function rejectAdmin(uid) {
+          if (!uid) return;
+          firebase
+            .database()
+            .ref("pujianYouth/adminRequests")
+            .child(uid)
+            .child("status")
+            .set("rejected")
+            .then(function () {
+              toast("Permintaan ditolak.", "info");
+            })
+            .catch(function () {
+              toast("Gagal menolak.", "error");
+            });
+        }
+        function revokeAdmin(uid) {
+          if (!uid) return;
+          firebase
+            .database()
+            .ref("pujianYouth/admins")
+            .child(uid)
+            .remove()
+            .then(function () {
+              return firebase
+                .database()
+                .ref("pujianYouth/adminRequests")
+                .child(uid)
+                .child("status")
+                .set("rejected");
+            })
+            .then(function () {
+              toast("Akses admin dicabut.", "info");
+            })
+            .catch(function () {
+              toast("Gagal mencabut.", "error");
+            });
+        }
+        function openSignup() {
+          var lf = document.getElementById("loginForms");
+          var sf = document.getElementById("signupForms");
+          if (lf) lf.hidden = true;
+          if (sf) sf.hidden = false;
+          var sm = document.getElementById("signupMsg");
+          if (sm) sm.textContent = "";
+        }
+        function backToLogin() {
+          var lf = document.getElementById("loginForms");
+          var sf = document.getElementById("signupForms");
+          if (lf) lf.hidden = false;
+          if (sf) sf.hidden = true;
+        }
+        function doSignup() {
+          var name = (document.getElementById("signupName").value || "").trim();
+          var email = (document.getElementById("signupEmail").value || "").trim();
+          var pass = document.getElementById("signupPass").value;
+          var msg = document.getElementById("signupMsg");
+          if (!name || !email || !pass) {
+            if (msg) msg.textContent = "Isi nama, email, dan password.";
+            return;
+          }
+          if (email.indexOf("@") < 0) {
+            if (msg) msg.textContent = "Email tidak valid.";
+            return;
+          }
+          if (pass.length < 6) {
+            if (msg) msg.textContent = "Password minimal 6 karakter.";
+            return;
+          }
+          if (!authRef) {
+            if (msg) msg.textContent = "Koneksi Firebase belum siap.";
+            return;
+          }
+          if (msg) msg.textContent = "Memproses...";
+          showLoading("Mendaftar...");
+          authRef
+            .createUserWithEmailAndPassword(email, pass)
+            .then(function (cred) {
+              var u = cred.user;
+              return u
+                .updateProfile({ displayName: name })
+                .catch(function () {})
+                .then(function () {
+                  return firebase
+                    .database()
+                    .ref("pujianYouth/adminRequests")
+                    .child(u.uid)
+                    .set({
+                      email: email,
+                      nama: name,
+                      status: "pending",
+                      ts: Date.now(),
+                    });
+                });
+            })
+            .then(function () {
+              document.getElementById("signupPass").value = "";
+              pendingApproval = true;
+              closeLogin();
+              loadingSuccess("Pendaftaran terkirim!", function () {
+                toast(
+                  "Pendaftaran terkirim. Menunggu persetujuan pemilik.",
+                  "success",
+                );
+                updatePendingUI();
+              });
+            })
+            .catch(function (err) {
+              hideLoading();
+              if (msg)
+                msg.textContent = "Gagal: " + ((err && err.message) || "coba lagi");
+              toast("Pendaftaran gagal.", "error");
+            });
+        }
+        function doGoogleLogin() {
+          if (
+            !authRef ||
+            !firebase.auth ||
+            !firebase.auth.GoogleAuthProvider
+          ) {
+            toast("Login Google tidak tersedia.", "error");
+            return;
+          }
+          var prov = new firebase.auth.GoogleAuthProvider();
+          showLoading("Menghubungkan Google...");
+          authRef
+            .signInWithPopup(prov)
+            .then(function () {
+              closeLogin();
+              hideLoading();
+            })
+            .catch(function (err) {
+              hideLoading();
+              var m = document.getElementById("loginMsg");
+              if (m) m.textContent = "Gagal Google: " + ((err && err.message) || "");
+              toast("Login Google gagal.", "error");
+            });
+        }
         function openLogin() {
           closeMenu();
           document.getElementById("loginMsg").textContent = "";
+          backToLogin();
           document.getElementById("loginModal").classList.add("open");
         }
         function closeLogin() {
@@ -7593,6 +7903,16 @@
           document.getElementById("addNoteBtn").onclick = openNoteModal;
           document.getElementById("loginSubmit").onclick = doLogin;
           document.getElementById("loginClose").onclick = closeLogin;
+          var _gbtn = document.getElementById("googleLoginBtn");
+          if (_gbtn) _gbtn.onclick = doGoogleLogin;
+          var _sbtn = document.getElementById("signupSubmit");
+          if (_sbtn) _sbtn.onclick = doSignup;
+          var _sopen = document.getElementById("toSignupBtn");
+          if (_sopen) _sopen.onclick = function (ev) { ev.preventDefault(); openSignup(); };
+          var _sback = document.getElementById("toLoginBtn");
+          if (_sback) _sback.onclick = function (ev) { ev.preventDefault(); backToLogin(); };
+          var _plo = document.getElementById("pendingLogout");
+          if (_plo) _plo.onclick = function (ev) { ev.preventDefault(); doLogout(); };
           document.getElementById("noteSubmit").onclick = submitNote;
           window.addEventListener("online", function () {
             toast("Kembali online - perubahan tersinkron.", "success");
