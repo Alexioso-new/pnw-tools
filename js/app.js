@@ -6438,25 +6438,49 @@
           if (pg) pg.classList.remove("open");
         }
         function itunesSearch(term, cb) {
-          var cbName = "__itunesCb" + Date.now();
-          var sc = document.createElement("script");
-          var timer = setTimeout(function () { cleanup(); cb(null, "timeout"); }, 12000);
-          function cleanup() {
-            clearTimeout(timer);
-            try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
-            if (sc.parentNode) sc.parentNode.removeChild(sc);
-          }
-          window[cbName] = function (data) {
-            cleanup();
-            cb(data && data.results ? data.results : [], null);
-          };
-          sc.onerror = function () { cleanup(); cb(null, "network"); };
-          sc.src =
+          var url =
             "https://itunes.apple.com/search?media=music&entity=song&limit=24&term=" +
-            encodeURIComponent(term) + "&callback=" + cbName;
-          document.body.appendChild(sc);
+            encodeURIComponent(term);
+          var done = false;
+          function finish(results, err) {
+            if (done) return;
+            done = true;
+            cb(results, err);
+          }
+          // 1) Coba CORS fetch dulu (iTunes kirim Access-Control-Allow-Origin: *)
+          var ctrl =
+            typeof AbortController !== "undefined" ? new AbortController() : null;
+          var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 8000);
+          fetch(url, ctrl ? { signal: ctrl.signal } : {})
+            .then(function (r) { return r && r.ok ? r.json() : null; })
+            .then(function (j) {
+              clearTimeout(to);
+              if (j && j.results) finish(j.results, null);
+              else jsonp();
+            })
+            .catch(function () { clearTimeout(to); jsonp(); });
+          // 2) Fallback JSONP kalau fetch gagal/diblokir
+          function jsonp() {
+            if (done) return;
+            var cbName = "__itunesCb" + Date.now();
+            var sc = document.createElement("script");
+            var timer = setTimeout(function () { cleanup(); finish(null, "timeout"); }, 10000);
+            function cleanup() {
+              clearTimeout(timer);
+              try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+              if (sc.parentNode) sc.parentNode.removeChild(sc);
+            }
+            window[cbName] = function (data) {
+              cleanup();
+              finish(data && data.results ? data.results : [], null);
+            };
+            sc.onerror = function () { cleanup(); finish(null, "network"); };
+            sc.src = url + "&callback=" + cbName;
+            document.body.appendChild(sc);
+          }
         }
         function fetchLyrics(artist, title) {
+
           return new Promise(function (resolve) {
             var url =
               "https://api.lyrics.ovh/v1/" +
