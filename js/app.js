@@ -5044,7 +5044,7 @@
               div.appendChild(mb);
             }
           } else {
-            div.className = "line";
+            div.className = line.trim() ? "line" : "line blankLine";
             div.textContent = line;
           }
           return div;
@@ -7203,6 +7203,51 @@
           renderBankPage(si ? si.value : "");
           toast("Dipindahkan ke folder " + bankCatLabel(bankSongs[i].cat) + ".", "success");
         }
+        var SEC_ALIGN_KEY = "pnwSecAlign";
+        function applySecAlign(v) {
+          var b = document.body;
+          b.classList.remove("secAlignLeft", "secAlignCenter", "secAlignRight");
+          b.classList.add(
+            v === "center"
+              ? "secAlignCenter"
+              : v === "right"
+                ? "secAlignRight"
+                : "secAlignLeft",
+          );
+          var map = { left: "secAlignL", center: "secAlignC", right: "secAlignR" };
+          ["secAlignL", "secAlignC", "secAlignR"].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.toggle("isOn", id === map[v]);
+          });
+        }
+        function setSecAlign(v) {
+          try {
+            localStorage.setItem(SEC_ALIGN_KEY, v);
+          } catch (e) {}
+          applySecAlign(v);
+        }
+        function initSecAlign() {
+          var v = "left";
+          try {
+            v = localStorage.getItem(SEC_ALIGN_KEY) || "left";
+          } catch (e) {}
+          applySecAlign(v);
+          var L = document.getElementById("secAlignL");
+          var C = document.getElementById("secAlignC");
+          var R = document.getElementById("secAlignR");
+          if (L)
+            L.onclick = function () {
+              setSecAlign("left");
+            };
+          if (C)
+            C.onclick = function () {
+              setSecAlign("center");
+            };
+          if (R)
+            R.onclick = function () {
+              setSecAlign("right");
+            };
+        }
         function buildBankCard(s) {
           var setSong = songs.find(function (x) {
             return x.bankId === s.bankId;
@@ -7226,11 +7271,11 @@
           info.appendChild(t);
           info.appendChild(meta);
           var btns = document.createElement("div");
-          btns.className = "scBtns";
+          btns.className = "scNav";
           var pull = document.createElement("button");
           pull.type = "button";
           pull.className = "scBtn primary";
-          pull.textContent = inSet ? "Buka" : "Tarik ke daftar";
+          pull.textContent = inSet ? "Buka" : "Tarik";
           pull.onclick = function () {
             if (inSet) gotoSong(setSong.id);
             else pullFromBank(s);
@@ -8260,6 +8305,7 @@
           document.getElementById("tapTempo").onclick = tapTempo;
           document.getElementById("bankAddBtn").onclick = addSongFromBank;
           document.getElementById("onlineOpenBtn").onclick = openOnlineSearch;
+          initSecAlign();
           document.getElementById("onlineClose").onclick = closeOnlineSearch;
           document.getElementById("onlineGo").onclick = onlineSearchGo;
           document

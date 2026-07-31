@@ -335,7 +335,7 @@
         <div class="bankPageHead">
           <b>Song Bank</b>
           <div style="display: flex; gap: 8px; align-items: center">
-            <button id="onlineOpenBtn" type="button">🔎 Cari online</button>
+            <button id="onlineOpenBtn" type="button"><span class="lottieIco btnIco" data-anim="search"></span>Cari online</button>
             <button id="bankAddBtn" type="button">+ Daftarkan lagu</button>
             <button class="xBtn" id="bankPageClose" type="button">
               &#10005;
@@ -548,6 +548,12 @@
             ><span id="textSizeLabel">Sedang</span
             ><button class="touchBtn" id="textBigger" type="button">A+</button>
           </div>
+          <p class="label">Posisi judul bagian</p>
+          <div class="secAlignRow">
+            <button class="secAlignBtn" id="secAlignL" type="button">Kiri</button>
+            <button class="secAlignBtn" id="secAlignC" type="button">Tengah</button>
+            <button class="secAlignBtn" id="secAlignR" type="button">Kanan</button>
+          </div>
         </section>
         <section class="menuSec">
           <p class="label">Bantu saran</p>
@@ -675,6 +681,7 @@
             type="button"
             style="width: 100%"
           >
+            <img class="gIco" src="./img/google.png" alt="" width="18" height="18" />
             Masuk dengan Google
           </button>
           <p class="small" style="margin-top: 10px">
