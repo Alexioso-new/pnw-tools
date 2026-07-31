@@ -60,6 +60,24 @@
   </head>
   <body>
     <div id="toastWrap" aria-live="polite"></div>
+    <div id="displayScreen" class="displayScreen" hidden>
+      <div class="dispBar">
+        <span class="dispDot off" id="dispDot" title="Menyambung…"></span>
+        <span class="dispBrand">PNW TOOLS — Proyektor</span>
+      </div>
+      <div class="dispIdle" id="dispIdle">
+        <div class="dispIdleInner">
+          <div class="dispLogo">🎵</div>
+          <p id="dispWait">Menunggu live dimulai…</p>
+        </div>
+      </div>
+      <div class="dispStage" id="dispStage" hidden>
+        <h2 id="dispTitle"></h2>
+        <p id="dispKey" class="dispKey"></p>
+        <div id="dispContent" class="dispContent"></div>
+      </div>
+    </div>
+
     <div class="app">
       <header class="brand no-print">
         <img
@@ -573,6 +591,18 @@
               (layar member ikuti admin)</label
             >
             <p class="small" id="spectateStatus"></p>
+            <button
+              class="actionBtn secondary"
+              id="openDisplayBtn"
+              type="button"
+              style="width: 100%"
+            >
+              &#128250; Buka layar proyektor
+            </button>
+            <label class="lockRow"
+              ><input type="checkbox" id="liveChordsToggle" /> Tampilkan chord
+              di proyektor</label
+            >
             <label class="lockRow"
               ><input type="checkbox" id="izinOpenToggle" checked /> Buka form
               izin (member bisa kirim izin)</label

@@ -982,12 +982,20 @@
         var spectateOn = false,
           liveRef = null,
           applyingLive = false,
-          liveThrottle = 0;
+          liveThrottle = 0,
+          liveShowChords = false,
+          _lastLive = null,
+          _dispSig = "",
+          _wakeLock = null,
+          DISPLAY_MODE = /[?&]mode=display/.test(location.search);
         function initSpectate() {
           try {
             liveRef = firebase.database().ref("pujianYouth/live");
             liveRef.on("value", function (s) {
-              applyLive(s.val());
+              var v = s.val();
+              _lastLive = v;
+              applyLive(v);
+              if (DISPLAY_MODE) renderDisplay(v);
             });
           } catch (e) {}
         }
@@ -1008,6 +1016,8 @@
               songId: selectedSongId,
               key: selectedKey,
               scroll: currentScrollFrac(),
+              showChords: liveShowChords,
+              songTitle: (currentSong() || {}).title || "",
               t: now,
             });
           } catch (e) {}
@@ -1058,6 +1068,90 @@
               ? "Spectate AKTIF - layar member mengikuti Anda."
               : "";
         }
+        // === MODE PROYEKTOR / LIVE (Fitur 3) ===
+        function renderDisplay(v) {
+          var screen = document.getElementById("displayScreen");
+          if (!screen) return;
+          var idle = document.getElementById("dispIdle");
+          var stage = document.getElementById("dispStage");
+          var titleEl = document.getElementById("dispTitle");
+          var keyEl = document.getElementById("dispKey");
+          var body = document.getElementById("dispContent");
+          var wait = document.getElementById("dispWait");
+          if (!v || !v.active || !v.songId) {
+            _dispSig = "";
+            if (idle) idle.hidden = false;
+            if (wait) wait.textContent = "Menunggu live dimulai\u2026";
+            if (stage) stage.hidden = true;
+            return;
+          }
+          var song = (songs || []).find(function (x) { return x.id === v.songId; });
+          if (!song) {
+            _dispSig = "";
+            if (idle) idle.hidden = false;
+            if (wait) wait.textContent = v.songTitle ? ("Memuat: " + v.songTitle) : "Memuat lagu\u2026";
+            if (stage) stage.hidden = true;
+            return;
+          }
+          if (idle) idle.hidden = true;
+          if (stage) stage.hidden = false;
+          var target = v.key || song.originalKey;
+          var shift = (noteToIndex[target] || 0) - (noteToIndex[song.originalKey] || 0);
+          var showCh = !!v.showChords;
+          var sig = song.id + "|" + target + "|" + (showCh ? "1" : "0");
+          if (sig !== _dispSig) {
+            _dispSig = sig;
+            if (titleEl) titleEl.textContent = (song.num || "") + ". " + song.title;
+            if (keyEl) keyEl.textContent = target === song.originalKey
+              ? ("Nada " + target)
+              : ("Nada " + target + " (asli " + song.originalKey + ")");
+            renderLinesInto(body, song.lines || [], shift, target);
+            screen.classList.toggle("hideChords", !showCh);
+          }
+          if (typeof v.scroll === "number" && stage) {
+            var m = stage.scrollHeight - stage.clientHeight;
+            if (m > 0) stage.scrollTop = m * v.scroll;
+          }
+        }
+        function dispSetStatus(online) {
+          var d = document.getElementById("dispDot");
+          if (!d) return;
+          d.className = "dispDot " + (online ? "on" : "off");
+          d.title = online ? "Terhubung" : "Terputus \u2014 menyambung ulang\u2026";
+        }
+        function requestWake() {
+          try {
+            if ("wakeLock" in navigator && navigator.wakeLock && navigator.wakeLock.request) {
+              navigator.wakeLock.request("screen").then(function (wl) {
+                _wakeLock = wl;
+                if (wl && wl.addEventListener) wl.addEventListener("release", function () { _wakeLock = null; });
+              }).catch(function () {});
+            }
+          } catch (e) {}
+        }
+        function toggleLiveChords() {
+          var c = document.getElementById("liveChordsToggle");
+          liveShowChords = c ? !!c.checked : !liveShowChords;
+          if (typeof broadcastLive === "function") broadcastLive();
+        }
+        function initDisplayMode() {
+          if (!DISPLAY_MODE) return;
+          document.body.classList.add("display-mode");
+          var screen = document.getElementById("displayScreen");
+          if (screen) screen.hidden = false;
+          requestWake();
+          document.addEventListener("visibilitychange", function () {
+            if (document.visibilityState === "visible") { requestWake(); renderDisplay(_lastLive); }
+          });
+          try {
+            firebase.database().ref(".info/connected").on("value", function (s) {
+              dispSetStatus(!!s.val());
+            });
+          } catch (e) {}
+          renderDisplay(_lastLive);
+          setInterval(function () { renderDisplay(_lastLive); }, 1500);
+        }
+
         function toast(msg, type, ms) {
           var wrap = document.getElementById("toastWrap");
           if (!wrap) return null;
@@ -7513,6 +7607,13 @@
           setTimeout(seedBankFromSongs, 1800);
           var spx = document.getElementById("spectateToggle");
           if (spx) spx.onclick = toggleSpectate;
+          var odb = document.getElementById("openDisplayBtn");
+          if (odb) odb.onclick = function () {
+            window.open(location.origin + location.pathname + "?mode=display", "_blank");
+          };
+          var lct = document.getElementById("liveChordsToggle");
+          if (lct) lct.onclick = toggleLiveChords;
+          initDisplayMode();
           var shEl = document.getElementById("sheet");
           if (shEl)
             shEl.addEventListener("scroll", function () {
