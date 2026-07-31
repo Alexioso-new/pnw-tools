@@ -466,6 +466,9 @@
                   localStorage.setItem(bankKey, JSON.stringify(bankSongs));
                 } catch (e) {}
                 refreshLibrary();
+                try {
+                  backupMaybe("bank");
+                } catch (e) {}
               } else {
                 setTimeout(seedBankFromSongs, 700);
               }
@@ -501,6 +504,9 @@
                     makeButtons();
                     render();
                     applyingRemote = false;
+                    try {
+                      backupMaybe("songs");
+                    } catch (e) {}
                   }
                   setCloudPill("Online - tersinkron");
                   if (_syncToast) {
@@ -577,6 +583,9 @@
           document.body.classList.toggle("noEdit", !canEdit());
           var panel = document.getElementById("adminPanel");
           if (panel) panel.hidden = !isAdmin;
+          try {
+            initBackupUI();
+          } catch (e) {}
           var loginBtn = document.getElementById("adminLoginBtn");
           if (loginBtn) loginBtn.style.display = isAdmin ? "none" : "";
           var schedSec = document.getElementById("schedMenuSec");
@@ -1759,6 +1768,9 @@
           try {
             localStorage.setItem(SCHED_KEY, JSON.stringify(sched));
           } catch (e) {}
+          try {
+            backupMaybe("sched");
+          } catch (e) {}
           if (cloudReady && scheduleRef) {
             // v3.1 - catat cap waktu tulisan kita sendiri supaya gema
             // (echo) dari Firebase bisa dikenali dan diabaikan.
@@ -1959,9 +1971,197 @@
           }
           renderSchedule();
         }
+        // ===== Backup & pemulihan data (v42+) =====
+        var BACKUP_KEY = "pujianYouthBackups.v1";
+        var BACKUP_MAX = 3;
+        var __lastBackupAt = 0;
+        function schedHasContent(s) {
+          try {
+            if (!s || !s.roster) return false;
+            var j = JSON.stringify(s.roster) || "";
+            return /[A-Za-z0-9]/.test(j.replace(/[\[\]{}",:\s]/g, ""));
+          } catch (e) {
+            return false;
+          }
+        }
+        function backupSnapshotObj() {
+          return {
+            app: "pnw-tools",
+            kind: "backup",
+            at: new Date().toISOString(),
+            ts: Date.now(),
+            counts: { songs: (songs || []).length, bank: (bankSongs || []).length },
+            data: { songs: songs || [], songBank: bankSongs || [], schedule: sched || null },
+          };
+        }
+        function backupList() {
+          try {
+            var raw = localStorage.getItem(BACKUP_KEY);
+            var arr = raw ? JSON.parse(raw) : [];
+            return Array.isArray(arr) ? arr : [];
+          } catch (e) {
+            return [];
+          }
+        }
+        function backupStore(list) {
+          var copy = list.slice();
+          while (copy.length) {
+            try {
+              localStorage.setItem(BACKUP_KEY, JSON.stringify(copy));
+              return true;
+            } catch (e) {
+              copy.shift();
+            }
+          }
+          try { localStorage.removeItem(BACKUP_KEY); } catch (e) {}
+          return false;
+        }
+        function backupMaybe(reason) {
+          var now = Date.now();
+          if (now - __lastBackupAt < 90000) return;
+          var snap = backupSnapshotObj();
+          if (!snap.counts.songs && !snap.counts.bank && !schedHasContent(sched)) return;
+          snap.reason = reason || "auto";
+          __lastBackupAt = now;
+          var list = backupList();
+          list.push(snap);
+          while (list.length > BACKUP_MAX) list.shift();
+          backupStore(list);
+        }
+        function backupDownload(obj, name) {
+          try {
+            var blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function () {
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }, 500);
+          } catch (e) {
+            console.error("unduh backup gagal", e);
+          }
+        }
+        function backupExport() {
+          var snap = backupSnapshotObj();
+          var d = new Date();
+          function p(n) { return (n < 10 ? "0" : "") + n; }
+          var stamp = d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes());
+          backupDownload(snap, "pnw-backup-" + stamp + ".json");
+          toast("Backup diunduh (" + snap.counts.songs + " lagu, " + snap.counts.bank + " bank).", "success");
+        }
+        function backupApply(obj, label) {
+          if (!obj || !obj.data) { toast("File backup tidak valid.", "error"); return; }
+          if (!isAdmin) { toast("Hanya admin yang bisa memulihkan backup.", "error"); return; }
+          var d = obj.data;
+          var msg = "Pulihkan dari " + (label || "backup") + "?\n\nLagu: " + ((d.songs && d.songs.length) || 0) + "\nBank: " + ((d.songBank && d.songBank.length) || 0) + "\n\nData saat ini akan DIGANTI (lokal & cloud).";
+          if (!window.confirm(msg)) return;
+          try {
+            if (Array.isArray(d.songs)) {
+              songs = d.songs.filter(Boolean);
+              localStorage.setItem(storageKey, JSON.stringify(songs));
+              if (cloudReady && dbRef) dbRef.set(songs);
+            }
+            if (Array.isArray(d.songBank)) {
+              bankSongs = d.songBank.filter(Boolean);
+              localStorage.setItem(bankKey, JSON.stringify(bankSongs));
+              if (cloudReady && bankRef) bankRef.set(bankSongs);
+            }
+            if (d.schedule) {
+              sched = schedNormalize(d.schedule);
+              localStorage.setItem(SCHED_KEY, JSON.stringify(sched));
+              if (cloudReady && scheduleRef) scheduleRef.set(schedClean(sched));
+            }
+            try { makeButtons(); render(); refreshLibrary(); renderSchedule(); } catch (e) {}
+            toast("Backup dipulihkan.", "success");
+          } catch (e) {
+            console.error("pulihkan backup gagal", e);
+            toast("Gagal memulihkan backup.", "error");
+          }
+        }
+        function backupImportFile() {
+          var inp = document.createElement("input");
+          inp.type = "file";
+          inp.accept = "application/json,.json";
+          inp.onchange = function () {
+            var f = inp.files && inp.files[0];
+            if (!f) return;
+            var rd = new FileReader();
+            rd.onload = function () {
+              try {
+                var obj = JSON.parse(String(rd.result));
+                backupApply(obj, "file " + f.name);
+              } catch (e) {
+                toast("File backup tidak bisa dibaca.", "error");
+              }
+            };
+            rd.readAsText(f);
+          };
+          inp.click();
+        }
+        function backupRestoreLocalMenu() {
+          var list = backupList();
+          if (!list.length) { toast("Belum ada snapshot lokal."); return; }
+          var lines = list.map(function (s, i) {
+            var t = new Date(s.ts || s.at);
+            return (i + 1) + ". " + t.toLocaleString() + " - " + ((s.counts && s.counts.songs) || 0) + " lagu, " + ((s.counts && s.counts.bank) || 0) + " bank (" + (s.reason || "auto") + ")";
+          }).join("\n");
+          var pick = window.prompt("Snapshot lokal (terbaru di bawah):\n\n" + lines + "\n\nKetik nomor untuk memulihkan:", String(list.length));
+          if (!pick) return;
+          var idx = parseInt(pick, 10) - 1;
+          if (isNaN(idx) || idx < 0 || idx >= list.length) { toast("Nomor tidak valid.", "error"); return; }
+          var s = list[idx];
+          backupApply(s, "snapshot " + new Date(s.ts || s.at).toLocaleString());
+        }
+        function initBackupUI() {
+          var panel = document.getElementById("adminPanel");
+          if (!panel || document.getElementById("backupSec")) return;
+          var sec = document.createElement("div");
+          sec.id = "backupSec";
+          sec.style.marginTop = "14px";
+          sec.style.paddingTop = "12px";
+          sec.style.borderTop = "1px solid var(--line)";
+          var h = document.createElement("div");
+          h.textContent = "Backup & pemulihan data";
+          h.style.fontWeight = "700";
+          h.style.marginBottom = "8px";
+          sec.appendChild(h);
+          var row = document.createElement("div");
+          row.style.display = "flex";
+          row.style.flexWrap = "wrap";
+          row.style.gap = "8px";
+          function mkBtn(label, fn) {
+            var b = document.createElement("button");
+            b.type = "button";
+            b.textContent = label;
+            b.style.padding = "8px 12px";
+            b.style.borderRadius = "10px";
+            b.style.border = "1px solid var(--line)";
+            b.style.background = "var(--soft)";
+            b.style.cursor = "pointer";
+            b.onclick = fn;
+            return b;
+          }
+          row.appendChild(mkBtn("Export backup", backupExport));
+          row.appendChild(mkBtn("Import backup", backupImportFile));
+          row.appendChild(mkBtn("Pulihkan snapshot lokal", backupRestoreLocalMenu));
+          sec.appendChild(row);
+          var note = document.createElement("div");
+          note.style.fontSize = "12px";
+          note.style.color = "var(--muted)";
+          note.style.marginTop = "6px";
+          note.textContent = "Snapshot lokal otomatis tersimpan di perangkat ini (maks " + BACKUP_MAX + "). Export untuk simpanan permanen.";
+          sec.appendChild(note);
+          panel.appendChild(sec);
+        }
+        // ===== end backup =====
         function schedApplyRemote(v) {
           if (v == null) {
-            if (scheduleRef) scheduleRef.set(schedClean(sched));
+            if (scheduleRef && schedHasContent(sched))
+              scheduleRef.set(schedClean(sched));
             return;
           }
           if (!v.roster) return;
