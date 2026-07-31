@@ -1,8 +1,17 @@
 /* HOSANA YOUTH TOOLS - service worker
    PENTING: naikkan angka versi CACHE setiap deploy index.html baru
    supaya cache lama dibuang dan file terbaru dipakai. */
-const CACHE = "pnw-tools-v35";
-const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png"];
+const CACHE = "pnw-tools-v40";
+const APP_SHELL = [
+  "./",
+  "./index.html",
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./css/styles.css",
+  "./js/animations.js",
+  "./js/app.js",
+];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
