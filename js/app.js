@@ -7077,7 +7077,7 @@
             try { backupMaybe("bank"); } catch (e) {}
             refreshLibrary();
             toast("'" + title + "' ditambahkan ke Bank (folder Lainnya).", "success");
-            if (btn) { btn.textContent = "✓ Ditambahkan"; }
+            if (btn) { btn.textContent = "Ditambahkan"; }
           });
         }
         function renderOnlineResults(list) {
@@ -7167,9 +7167,9 @@
         }
         // ===== Bank lagu berbentuk folder (v47) =====
         var BANK_CATS = [
-          { key: "worship", label: "Worship", icon: "🙏" },
-          { key: "praise", label: "Praise", icon: "🎉" },
-          { key: "other", label: "Lainnya", icon: "📁" },
+          { key: "worship", label: "Worship", img: "./img/worship.jpg" },
+          { key: "praise", label: "Praise", img: "./img/praise.jpg" },
+          { key: "other", label: "Lainnya", img: "" },
         ];
         var currentBankFolder = null;
         function bankCatOf(s) {
@@ -7217,7 +7217,7 @@
           if (inSet) {
             var tag = document.createElement("span");
             tag.className = "inSet";
-            tag.textContent = " ✓ di daftar";
+            tag.textContent = " · di daftar";
             t.appendChild(tag);
           }
           var meta = document.createElement("span");
@@ -7277,18 +7277,42 @@
           }).length;
           var f = document.createElement("button");
           f.type = "button";
-          f.className = "folderCard";
-          var ico = document.createElement("span");
-          ico.className = "folderIco";
-          ico.textContent = c.icon;
+          f.className = "folderCard" + (c.img ? "" : " noPhoto");
+          if (c.img) {
+            var im = document.createElement("img");
+            im.className = "fcImg";
+            im.src = c.img;
+            im.alt = "";
+            im.loading = "lazy";
+            im.decoding = "async";
+            f.appendChild(im);
+          }
+          var sh = document.createElement("span");
+          sh.className = "fcShade";
+          f.appendChild(sh);
+          var meta = document.createElement("span");
+          meta.className = "fcMeta";
           var nm = document.createElement("b");
+          nm.className = "fcName";
           nm.textContent = c.label;
           var ct = document.createElement("span");
-          ct.className = "small";
+          ct.className = "fcCount";
           ct.textContent = n + " lagu";
-          f.appendChild(ico);
-          f.appendChild(nm);
-          f.appendChild(ct);
+          meta.appendChild(nm);
+          meta.appendChild(ct);
+          f.appendChild(meta);
+          f.addEventListener(
+            "touchstart",
+            function () {
+              f.classList.add("isOn");
+            },
+            { passive: true },
+          );
+          f.addEventListener("touchend", function () {
+            setTimeout(function () {
+              f.classList.remove("isOn");
+            }, 450);
+          });
           f.onclick = function () {
             currentBankFolder = c.key;
             renderBankPage("");

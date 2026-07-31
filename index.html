@@ -114,7 +114,7 @@
         </button>
       </header>
       <div class="liveBanner no-print" id="liveBanner" hidden>
-        &#128225; Mode spectate: layar mengikuti admin
+        Mode spectate aktif
       </div>
       <section class="control no-print">
         <p class="label labelRow">
@@ -138,10 +138,12 @@
         <p class="label">Nada dasar</p>
         <div class="keyGrid" id="keyButtons"></div>
       </section>
-      <div class="status no-print">
-        <span class="pill" id="currentSongPill">Lagu</span
-        ><span class="pill" id="currentKeyPill">Nada</span
-        ><span class="pill" id="cloudPill">Mode lokal</span
+      <div class="crumb no-print" id="statusCrumb">
+        <span class="crumbItem" id="currentSongPill">Lagu</span
+        ><span class="crumbSep">&rsaquo;</span
+        ><span class="crumbItem" id="currentKeyPill">Nada</span
+        ><span class="crumbSep">&rsaquo;</span
+        ><span class="crumbItem dim" id="cloudPill">Mode lokal</span
         ><span class="pill green" id="savePill" style="display: none"></span>
       </div>
       <div class="actions no-print">
@@ -159,16 +161,10 @@
       <details class="help no-print">
         <summary>Cara pakai</summary>
         <ul>
-          <li>Pilih lagu &rarr; pilih nada dasar. Chord langsung berpindah.</li>
-          <li>
-            <b>Ubah lagu ini</b> &rarr; sunting chord/lirik &rarr;
-            <b>Simpan</b>.
-          </li>
-          <li><b>Tambah lagu</b> untuk membuat lagu baru.</li>
-          <li>Hapus: <b>Ubah lagu ini</b> &rarr; <b>Hapus lagu ini</b>.</li>
-          <li>Ubah urutan: tahan ikon &#8942; lalu geser.</li>
-          <li>Menu &#9776; (kanan atas): Song Bank, metronome, mode gelap.</li>
-          <li>Online: perubahan tampil di semua perangkat.</li>
+          <li>Pilih lagu, lalu pilih nada dasar.</li>
+          <li>Ubah urutan lagu: tahan ikon &#8942; lalu geser.</li>
+          <li>Miringkan HP untuk tampilan kolom bersebelahan.</li>
+          <li>Menu &#9776; di kanan atas: Song Bank &amp; pengaturan.</li>
         </ul>
       </details>
       <section class="editor no-print" id="editor">
@@ -545,7 +541,7 @@
               Mode rapat
             </button>
           </div>
-          <p class="small">Ukuran huruf chord &amp; lirik:</p>
+          <p class="label">Ukuran huruf</p>
           <div class="textSize">
             <button class="touchBtn" id="textSmaller" type="button">
               A&minus;</button
@@ -593,12 +589,10 @@
           </button>
           <div id="adminPanel" hidden>
             <label class="lockRow"
-              ><input type="checkbox" id="lockToggle" /> Kunci daftar lagu
-              (member tak bisa mengubah)</label
+              ><input type="checkbox" id="lockToggle" /> Kunci daftar lagu</label
             >
             <label class="lockRow"
-              ><input type="checkbox" id="spectateToggle" /> Mode spectate
-              (layar member ikuti admin)</label
+              ><input type="checkbox" id="spectateToggle" /> Mode spectate</label
             >
             <p class="small" id="spectateStatus"></p>
             <button
@@ -607,15 +601,13 @@
               type="button"
               style="width: 100%"
             >
-              &#128250; Buka layar proyektor
+              Buka layar proyektor
             </button>
             <label class="lockRow"
-              ><input type="checkbox" id="liveChordsToggle" /> Tampilkan chord
-              di proyektor</label
+              ><input type="checkbox" id="liveChordsToggle" /> Tampilkan chord di proyektor</label
             >
             <label class="lockRow"
-              ><input type="checkbox" id="izinOpenToggle" checked /> Buka form
-              izin (member bisa kirim izin)</label
+              ><input type="checkbox" id="izinOpenToggle" checked /> Buka form izin</label
             >
             <button
               class="actionBtn secondary"
@@ -623,10 +615,10 @@
               type="button"
               style="width: 100%"
             >
-              &#128221; Tambah catatan rilis
+              Tambah catatan rilis
             </button>
             <div class="field" style="margin-top: 8px">
-              <label>Tanggal ibadah "Minggu 1" (untuk pengingat H-1)</label
+              <label>Tanggal ibadah Minggu 1</label
               ><input type="date" id="schedStartDate" />
             </div>
             <section id="adminReqSec" class="adminReqSec" hidden>
@@ -648,7 +640,7 @@
     </div>
     <div class="modalBackdrop no-print" id="loginModal">
       <div class="modal">
-        <h2>&#128273; Login Admin</h2>
+        <h2>Login Admin</h2>
         <div id="loginForms">
           <div class="field">
             <label>Username / Email</label
@@ -683,7 +675,7 @@
             type="button"
             style="width: 100%"
           >
-            &#128272; Masuk dengan Google
+            Masuk dengan Google
           </button>
           <p class="small" style="margin-top: 10px">
             Belum jadi admin?
@@ -731,7 +723,7 @@
     </div>
     <div class="modalBackdrop no-print" id="noteModal">
       <div class="modal">
-        <h2>&#128221; Tambah catatan rilis</h2>
+        <h2>Tambah catatan rilis</h2>
         <div class="field">
           <label>Versi</label><input id="noteVer" placeholder="mis. 1.4" />
         </div>
