@@ -1971,6 +1971,26 @@
           }
           renderSchedule();
         }
+        // ===== Rate limiting (v44+) =====
+        var __rl = {};
+        function rateLimited(key, ms) {
+          var now = Date.now();
+          var last = __rl[key] || 0;
+          if (now - last < ms) return true;
+          __rl[key] = now;
+          return false;
+        }
+        var __wbursts = [];
+        function writeBurstOk(limit, windowMs) {
+          var now = Date.now();
+          __wbursts = __wbursts.filter(function (t) {
+            return now - t < windowMs;
+          });
+          if (__wbursts.length >= limit) return false;
+          __wbursts.push(now);
+          return true;
+        }
+        // ===== end rate limiting =====
         // ===== Backup & pemulihan data (v42+) =====
         var BACKUP_KEY = "pujianYouthBackups.v1";
         var BACKUP_MAX = 3;
@@ -3944,6 +3964,14 @@
           // kosong yang membebani pengurus.
           btn.disabled = true;
           btn.onclick = function () {
+            if (rateLimited("req_" + p.id, 5000)) {
+              toast(
+                "Tunggu sebentar sebelum mengirim ulang permintaan.",
+                "error",
+                3000,
+              );
+              return;
+            }
             var minta = reqAmbilCentang(card);
             if (!sched.roleReq) sched.roleReq = {};
             sched.roleReq[p.id] = {
@@ -5329,6 +5357,12 @@
             st.textContent = "Tulis saran kamu dulu ya.";
             return;
           }
+          if (rateLimited("saran", 12000)) {
+            st.style.color = "var(--red)";
+            st.textContent =
+              "Sabar ya, tunggu beberapa detik sebelum mengirim saran lagi.";
+            return;
+          }
           st.style.color = "var(--muted)";
           st.textContent = "Menyiapkan...";
           var btn = document.getElementById("sendSaranBtn");
@@ -5696,6 +5730,7 @@
         }
         function toggleNoteLike(n) {
           var key = likeKeyFor(n);
+          if (rateLimited("like_" + key, 600) || !writeBurstOk(30, 10000)) return;
           var lk = "ptLike_" + key;
           var liked = false;
           try {
