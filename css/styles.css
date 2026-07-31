@@ -2684,3 +2684,14 @@ body.display-mode .app { display: none !important; }
 .reqBtns .actionBtn { padding:6px 10px; font-size:13px; width:auto; }
 .pendingBanner { position:fixed; left:0; right:0; top:0; z-index:9998; background:var(--orange); color:#fff; text-align:center; padding:8px 12px; font-size:14px; box-shadow:0 2px 8px rgba(0,0,0,.15); }
 .pendingBanner a { color:#fff; text-decoration:underline; margin-left:8px; font-weight:600; }
+
+/* === PENGINGAT JADWAL H-1 (Fitur 4) === */
+.reminderCard { position:fixed; left:50%; transform:translateX(-50%); bottom:16px; z-index:9997; width:min(92vw,380px); background:var(--ivory); border:1px solid var(--line); border-left:5px solid var(--green); border-radius:14px; padding:14px 16px; box-shadow:0 8px 28px rgba(0,0,0,.18); }
+.reminderX { position:absolute; top:8px; right:10px; border:none; background:transparent; font-size:20px; line-height:1; color:var(--muted); cursor:pointer; padding:2px 6px; }
+.reminderHead { font-weight:700; font-size:16px; color:var(--text); padding-right:20px; }
+.reminderDate { font-size:13px; color:var(--blue); font-weight:600; margin:2px 0 8px; }
+.reminderBody { max-height:42vh; overflow-y:auto; }
+.remTeam { margin-bottom:8px; }
+.remTeam > b { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); margin-bottom:2px; }
+.remRole { font-size:14px; line-height:1.45; }
+.remRoleName { color:var(--orange); font-weight:600; }

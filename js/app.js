@@ -2159,6 +2159,7 @@
             allowDouble: false,
             allowMusLintasSesi: false,
             weekLabels: {},
+            startISO: "",
             requests: REQUESTS.slice(),
           };
         }
@@ -2285,6 +2286,122 @@
           if (sp) sp.textContent = txt;
         }
         // Firebase menolak nilai undefined; bersihkan dulu agar set() tidak gagal.
+        function schedWeekDate(w) {
+          var iso = sched && sched.startISO;
+          if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+          var p = iso.split("-");
+          var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+          if (isNaN(d.getTime())) return null;
+          d.setDate(d.getDate() + 7 * (w - 1));
+          d.setHours(0, 0, 0, 0);
+          return d;
+        }
+        function reminderAssignHtml(w) {
+          var out = "";
+          SCHED_TEAMS.forEach(function (team) {
+            var lines = "";
+            team.roles.forEach(function (role) {
+              try {
+                if (isRoleClosed(w, role.key)) return;
+              } catch (e) {}
+              var names = (getAssign(w, role.key) || [])
+                .map(personName)
+                .filter(Boolean);
+              if (!names.length) return;
+              lines +=
+                '<div class="remRole"><span class="remRoleName">' +
+                escReq(role.label) +
+                "</span> " +
+                escReq(names.join(", ")) +
+                "</div>";
+            });
+            if (lines)
+              out +=
+                '<div class="remTeam"><b>' +
+                escReq(team.label) +
+                "</b>" +
+                lines +
+                "</div>";
+          });
+          return (
+            out ||
+            '<p class="small">Belum ada petugas yang dijadwalkan untuk minggu ini.</p>'
+          );
+        }
+        function buildReminder() {
+          var card = document.getElementById("reminderCard");
+          if (!card) return;
+          var weeks = (sched && sched.weeks) || 0;
+          var found = -1,
+            foundDate = null,
+            days = -1;
+          for (var w = 1; w <= weeks; w++) {
+            var dt = schedWeekDate(w);
+            if (!dt) continue;
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+            var du = Math.round((dt.getTime() - today.getTime()) / 86400000);
+            if (du === 0 || du === 1) {
+              found = w;
+              foundDate = dt;
+              days = du;
+              break;
+            }
+          }
+          if (found < 0) {
+            card.hidden = true;
+            return;
+          }
+          var iso =
+            foundDate.getFullYear() +
+            "-" +
+            ("0" + (foundDate.getMonth() + 1)).slice(-2) +
+            "-" +
+            ("0" + foundDate.getDate()).slice(-2);
+          var dkey = "w" + found + "|" + iso;
+          try {
+            if (localStorage.getItem("pnwReminderDismiss") === dkey) {
+              card.hidden = true;
+              return;
+            }
+          } catch (e) {}
+          card._dkey = dkey;
+          var head = document.getElementById("reminderHead");
+          var dl = document.getElementById("reminderDate");
+          var body = document.getElementById("reminderBody");
+          if (head)
+            head.textContent =
+              days === 1
+                ? "\uD83D\uDD14 Besok ada ibadah!"
+                : "\uD83D\uDD14 Hari ini ada ibadah!";
+          if (dl) {
+            try {
+              dl.textContent = foundDate.toLocaleDateString("id-ID", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              });
+            } catch (e) {
+              dl.textContent = iso;
+            }
+          }
+          if (body) body.innerHTML = reminderAssignHtml(found);
+          card.hidden = false;
+        }
+        function dismissReminder() {
+          var card = document.getElementById("reminderCard");
+          if (card && card._dkey) {
+            try {
+              localStorage.setItem("pnwReminderDismiss", card._dkey);
+            } catch (e) {}
+          }
+          if (card) card.hidden = true;
+        }
+        function syncStartDateInput() {
+          var i = document.getElementById("schedStartDate");
+          if (i) i.value = (sched && sched.startISO) || "";
+        }
         function schedClean(v) {
           if (v === undefined || v === null) return null;
           if (Array.isArray(v)) {
@@ -2351,6 +2468,8 @@
           });
           if (!s.weekLabels || typeof s.weekLabels !== "object")
             s.weekLabels = {};
+          if (typeof s.startISO !== "string")
+            s.startISO = s.startISO ? String(s.startISO) : "";
           if (!s.closed || typeof s.closed !== "object") s.closed = {};
           Object.keys(s.closed).forEach(function (wk) {
             if (!s.closed[wk] || typeof s.closed[wk] !== "object")
@@ -2604,6 +2723,7 @@
             return;
           }
           sched = schedNormalize(v);
+          try { syncStartDateInput(); buildReminder(); } catch (e) {}
           PIDX = null;
           // Kalau perubahan datang dari pengurus LAIN, riwayat undo lokal
           // dikosongkan. Tanpa ini, menekan Undo akan mengembalikan data lama
@@ -7913,6 +8033,17 @@
           if (_sback) _sback.onclick = function (ev) { ev.preventDefault(); backToLogin(); };
           var _plo = document.getElementById("pendingLogout");
           if (_plo) _plo.onclick = function (ev) { ev.preventDefault(); doLogout(); };
+          var _sd = document.getElementById("schedStartDate");
+          if (_sd)
+            _sd.onchange = function () {
+              sched.startISO = _sd.value || "";
+              try { saveSched(); } catch (e) {}
+              buildReminder();
+            };
+          var _rc = document.getElementById("reminderClose");
+          if (_rc) _rc.onclick = dismissReminder;
+          syncStartDateInput();
+          try { buildReminder(); } catch (e) {}
           document.getElementById("noteSubmit").onclick = submitNote;
           window.addEventListener("online", function () {
             toast("Kembali online - perubahan tersinkron.", "success");

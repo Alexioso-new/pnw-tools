@@ -64,6 +64,12 @@
       Akun kamu menunggu persetujuan pemilik.
       <a href="#" id="pendingLogout">Keluar</a>
     </div>
+    <div id="reminderCard" class="reminderCard" hidden>
+      <button class="reminderX" id="reminderClose" type="button" aria-label="Tutup">&times;</button>
+      <div class="reminderHead" id="reminderHead"></div>
+      <div class="reminderDate" id="reminderDate"></div>
+      <div class="reminderBody" id="reminderBody"></div>
+    </div>
     <div id="displayScreen" class="displayScreen" hidden>
       <div class="dispBar">
         <span class="dispDot off" id="dispDot" title="Menyambung…"></span>
@@ -619,6 +625,10 @@
             >
               &#128221; Tambah catatan rilis
             </button>
+            <div class="field" style="margin-top: 8px">
+              <label>Tanggal ibadah "Minggu 1" (untuk pengingat H-1)</label
+              ><input type="date" id="schedStartDate" />
+            </div>
             <section id="adminReqSec" class="adminReqSec" hidden>
               <p class="label">Permintaan admin</p>
               <div id="adminReqList"></div>
