@@ -4896,6 +4896,27 @@
             )
             .join("");
         }
+        function transposeChordLine(line, shift, targetKey) {
+          var re = /\S+/g,
+            m,
+            toks = [];
+          while ((m = re.exec(line)) !== null) {
+            toks.push({
+              start: m.index,
+              text: transposeToken(m[0], shift, targetKey),
+            });
+          }
+          var out = "";
+          for (var i = 0; i < toks.length; i++) {
+            if (out.length < toks[i].start) {
+              out += " ".repeat(toks[i].start - out.length);
+            } else if (out.length > 0) {
+              out += " ";
+            }
+            out += toks[i].text;
+          }
+          return out;
+        }
         function formatChordSpacing(line) {
           return line.trim().split(/\s+/).join("      ");
         }
@@ -5029,9 +5050,7 @@
             });
           } else if (isChordLine(line)) {
             div.className = "line chord";
-            div.textContent = formatChordSpacing(
-              transposeLine(line, shift, target),
-            );
+            div.textContent = transposeChordLine(line, shift, target);
           } else if (sectionWords.test(line.trim())) {
             div.className = "line section";
             var pm = parseSecMod(line);

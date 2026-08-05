@@ -2724,7 +2724,7 @@ body.dark .crumb .crumbItem:first-child { color: #68b0f0; }
   #content .secBlock .line:empty, #content .secBlock .line.blankLine { display: none; }
   body.dark #content .secBlock { border-right-color: rgba(255, 255, 255, 0.17); }
   #content .secBlock:last-child { border-right: none; }
-  #content .secBlock .line { white-space: nowrap; }
+  #content .secBlock .line { white-space: pre; }
   #content .line.chord { overflow-wrap: normal; }
 }
 
@@ -2786,3 +2786,46 @@ body.dark .bmBtn { background: #1f2429; color: var(--text); }
 @media (max-width: 420px) {
   .bmBtn { font-size: 11.5px; padding: 4px 10px; }
 }
+
+
+/* === v56 — WYSIWYG chord/lirik: kunci posisi chord ke huruf (monospace) === */
+:root { --sheetSize: 15.5px; }
+body.xs { --sheetSize: 11.5px; }
+body.sm { --sheetSize: 13.5px; }
+body.big { --sheetSize: 18px; }
+body.xl { --sheetSize: 21px; }
+.sheet #content, #editPreviewBody { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.sheet .line:not(.inlineChord), #editPreviewBody .line:not(.inlineChord) {
+  font-family: "Roboto Mono", "Courier New", Consolas, ui-monospace, monospace;
+  font-size: var(--sheetSize);
+  line-height: 1.5;
+  letter-spacing: 0;
+  white-space: pre;
+  overflow-wrap: normal;
+  tab-size: 4;
+  -moz-tab-size: 4;
+  margin: 0;
+  min-height: 1.5em;
+}
+.sheet .line.chord, #editPreviewBody .line.chord {
+  font-size: var(--sheetSize);
+  line-height: 1.5;
+  letter-spacing: 0;
+  white-space: pre;
+  overflow-wrap: normal;
+  margin: 6px 0 0;
+  min-height: 1.5em;
+}
+.sheet .line.blankLine, #editPreviewBody .line.blankLine { min-height: 0.7em; }
+.sheet .line.section, #editPreviewBody .line.section {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  white-space: normal;
+  letter-spacing: 0.02em;
+  margin: 12px 0 2px;
+  min-height: 0;
+}
+/* "batasan": batas tipis tiap bagian supaya chord tetap terikat pada barisnya */
+.sheet .secBlock:not(.sec-none) { border-left: 2px solid rgba(0, 0, 0, 0.06); }
+body.dark .sheet .secBlock:not(.sec-none) { border-left-color: rgba(255, 255, 255, 0.08); }
+/* editor: tampilkan grid monospace apa adanya (tanpa bungkus baris) */
+#editLines, .structBlock textarea { white-space: pre; overflow-x: auto; tab-size: 4; -moz-tab-size: 4; }
