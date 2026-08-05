@@ -4917,6 +4917,325 @@
           }
           return out;
         }
+        // ---- v57: Rapikan otomatis (lyric formatter + chord finder) ----
+        var AF_SEC_MAP = [
+          [/^intro\b/, "Intro"],
+          [/^(pre[\s\-]?chorus|pre[\s\-]?reff?|prechorus)\b/, "Pre-Chorus"],
+          [/^(reffrain|refrain|reff|ref|chorus|korus)\b/, "Chorus"],
+          [/^(bait|verse|ayat)\b/, "Verse"],
+          [/^bridge\b/, "Bridge"],
+          [/^(interlude|inter)\b/, "Interlude"],
+          [/^(instrumental|instrumen|musik|music|solo)\b/, "Instrumental"],
+          [/^(outro|outtro|ending|penutup|coda)\b/, "Outro"],
+        ];
+        function afCleanLabel(line) {
+          return String(line)
+            .replace(/[\[\]\(\)\{\}\*_#>]/g, " ")
+            .replace(/[:\-\u2013\u2014.]+\s*$/, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+        }
+        function afSectionLabel(line) {
+          var c = afCleanLabel(line);
+          if (!c || c.length > 26) return null;
+          if (c.split(" ").length > 3) return null;
+          var low = c.toLowerCase();
+          for (var i = 0; i < AF_SEC_MAP.length; i++) {
+            if (AF_SEC_MAP[i][0].test(low)) {
+              var base = AF_SEC_MAP[i][1];
+              var num = low.match(/(\d+)/);
+              if (num && base !== "Pre-Chorus") return base + " " + num[1];
+              return base;
+            }
+          }
+          return null;
+        }
+        function afIsJunk(line) {
+          var t = line.trim();
+          if (!t) return false;
+          if (/^[\-=_~*\u2022\u00b7\u2014\u2013\s]+$/.test(t)) return true;
+          return /(chords?\s*(by|:)|kunci\s*gitar|lirik\s*lagu|copyright|all\s+rights|\u00a9|www\.|https?:\/\/|baca\s*juga|terpopuler|iklan|advertis|klik\s*di\s*sini|selengkapnya|share\s*this)/i.test(
+            t,
+          );
+        }
+        function afChordsIn(line) {
+          var out = [];
+          var inl = line.match(/\[([^\]]+)\]/g);
+          if (inl) {
+            for (var i = 0; i < inl.length; i++) {
+              var v = inl[i].slice(1, -1).trim();
+              if (v) out.push(v);
+            }
+            return out;
+          }
+          if (isChordLine(line)) {
+            var m = line.match(/\S+/g) || [];
+            for (var j = 0; j < m.length; j++) out.push(m[j]);
+          }
+          return out;
+        }
+        function afRootOf(chord) {
+          var m = String(chord).match(/^([A-G])(#|b)?/);
+          if (!m) return null;
+          var n = m[1] + (m[2] || "");
+          return noteToIndex[n] === undefined ? null : noteToIndex[n];
+        }
+        function afIsMinor(chord) {
+          return /^[A-G](#|b)?m(?!aj)/.test(String(chord));
+        }
+        function afDetectKey(chords) {
+          if (!chords || !chords.length) return "";
+          var deg = [0, 2, 4, 5, 7, 9, 11];
+          var isMinDeg = [0, 1, 1, 0, 0, 1, 2];
+          var best = "",
+            bestScore = -1;
+          for (var k = 0; k < keyList.length; k++) {
+            var root = noteToIndex[keyList[k]];
+            var score = 0;
+            for (var i = 0; i < chords.length; i++) {
+              var r = afRootOf(chords[i]);
+              if (r === null) continue;
+              var w = i === 0 || i === chords.length - 1 ? 2 : 1;
+              for (var d = 0; d < 7; d++) {
+                if ((root + deg[d]) % 12 === r) {
+                  var mn = afIsMinor(chords[i]);
+                  if (isMinDeg[d] === 2) score += 0.5 * w;
+                  else if ((isMinDeg[d] === 1) === mn) score += 1 * w;
+                  else score += 0.3 * w;
+                  if (d === 0 && w === 2 && !mn) score += 1.5;
+                  break;
+                }
+              }
+            }
+            if (score > bestScore) {
+              bestScore = score;
+              best = keyList[k];
+            }
+          }
+          return best;
+        }
+        function afSignature(lines) {
+          var out = [];
+          for (var i = 0; i < lines.length; i++) {
+            var l = lines[i];
+            if (!l.trim() || isChordLine(l)) continue;
+            var t = l
+              .replace(/\[[^\]]*\]/g, "")
+              .toLowerCase()
+              .replace(/[^a-z0-9\s]/g, "")
+              .replace(/\s+/g, " ")
+              .trim();
+            if (t) out.push(t);
+          }
+          return out.join(" | ");
+        }
+        function afAllChordLines(b) {
+          for (var i = 0; i < b.lines.length; i++) {
+            var l = b.lines[i];
+            if (l.trim() && !isChordLine(l)) return false;
+          }
+          return true;
+        }
+        function afInferLabels(blocks) {
+          var sigs = [],
+            count = {};
+          for (var i = 0; i < blocks.length; i++) {
+            sigs.push(afSignature(blocks[i].lines));
+            if (sigs[i]) count[sigs[i]] = (count[sigs[i]] || 0) + 1;
+          }
+          var chorusSig = "",
+            bestN = 1;
+          for (var s in count) {
+            if (
+              count[s] >= 2 &&
+              (count[s] > bestN ||
+                (count[s] === bestN && s.length > chorusSig.length))
+            ) {
+              bestN = count[s];
+              chorusSig = s;
+            }
+          }
+          var vn = 0,
+            cn = 0,
+            seenChorus = false,
+            usedBridge = false;
+          for (var j = 0; j < blocks.length; j++) {
+            var b = blocks[j];
+            if (!sigs[j] && afAllChordLines(b)) {
+              b.label =
+                j === 0
+                  ? "Intro"
+                  : j === blocks.length - 1
+                    ? "Outro"
+                    : "Interlude";
+              continue;
+            }
+            if (chorusSig && sigs[j] === chorusSig) {
+              cn++;
+              b.label = cn > 1 ? "Chorus " + cn : "Chorus";
+              seenChorus = true;
+              continue;
+            }
+            if (
+              seenChorus &&
+              !usedBridge &&
+              count[sigs[j]] === 1 &&
+              j >= blocks.length - 2
+            ) {
+              usedBridge = true;
+              b.label = "Bridge";
+              continue;
+            }
+            vn++;
+            b.label = "Verse " + vn;
+          }
+        }
+        function autoFormatLyrics(raw) {
+          var txt = String(raw || "")
+            .replace(/\r\n?/g, "\n")
+            .replace(/\u00a0/g, " ")
+            .replace(/[\u200b-\u200d\ufeff]/g, "")
+            .replace(/\t/g, "    ");
+          var src = txt.split("\n"),
+            lines = [];
+          for (var i = 0; i < src.length; i++) {
+            var l = src[i].replace(/\s+$/, "");
+            if (afIsJunk(l)) continue;
+            lines.push(l);
+          }
+          var blocks = [],
+            cur = null,
+            hadLabel = false;
+          for (var j = 0; j < lines.length; j++) {
+            var ln = lines[j],
+              lbl = null;
+            if (ln.trim() && !isChordLine(ln)) lbl = afSectionLabel(ln);
+            if (lbl) {
+              hadLabel = true;
+              cur = { label: lbl, lines: [] };
+              blocks.push(cur);
+              continue;
+            }
+            if (!ln.trim()) {
+              if (!hadLabel) cur = null;
+              else if (cur) cur.lines.push("");
+              continue;
+            }
+            if (!cur) {
+              cur = { label: null, lines: [] };
+              blocks.push(cur);
+            }
+            cur.lines.push(ln);
+          }
+          for (var b = 0; b < blocks.length; b++) {
+            var L = blocks[b].lines;
+            while (L.length && !L[0].trim()) L.shift();
+            while (L.length && !L[L.length - 1].trim()) L.pop();
+          }
+          var kept = [];
+          for (var c = 0; c < blocks.length; c++)
+            if (blocks[c].lines.length) kept.push(blocks[c]);
+          blocks = kept;
+          if (!blocks.length) return null;
+          if (!hadLabel) afInferLabels(blocks);
+          else
+            for (var d = 0; d < blocks.length; d++)
+              if (!blocks[d].label)
+                blocks[d].label = afAllChordLines(blocks[d])
+                  ? "Intro"
+                  : "Verse 1";
+          var outLines = [],
+            allChords = [];
+          for (var e = 0; e < blocks.length; e++) {
+            if (e) outLines.push("");
+            outLines.push(blocks[e].label);
+            var BL = blocks[e].lines,
+              prevBlank = false;
+            for (var f = 0; f < BL.length; f++) {
+              var ll = BL[f];
+              if (!ll.trim()) {
+                if (!prevBlank) {
+                  outLines.push("");
+                  prevBlank = true;
+                }
+                continue;
+              }
+              prevBlank = false;
+              outLines.push(ll);
+              var cc = afChordsIn(ll);
+              for (var g = 0; g < cc.length; g++) allChords.push(cc[g]);
+            }
+          }
+          var secCount = {};
+          for (var h = 0; h < blocks.length; h++) {
+            var bn = blocks[h].label.replace(/\s*\d+$/, "");
+            secCount[bn] = (secCount[bn] || 0) + 1;
+          }
+          return {
+            text: outLines.join("\n"),
+            blocks: blocks.length,
+            chords: allChords.length,
+            key: afDetectKey(allChords),
+            secCount: secCount,
+          };
+        }
+        var afPrevText = null;
+        function afUndo() {
+          if (afPrevText === null) return;
+          var ta = document.getElementById("editLines");
+          if (ta) ta.value = afPrevText;
+          afPrevText = null;
+          var bar = document.getElementById("afBar");
+          if (bar) bar.hidden = true;
+          if (structMode) renderCanvas();
+          updateEditPreview();
+          toast("Dikembalikan ke teks semula", "info");
+        }
+        function runAutoFormat() {
+          var ta = document.getElementById("editLines");
+          if (!ta) return;
+          if (structMode) serializeCanvas();
+          var raw = ta.value || "";
+          if (!raw.trim()) {
+            toast("Tempel lirik dulu di kotak Chord & lirik", "error");
+            return;
+          }
+          var res = autoFormatLyrics(raw);
+          if (!res) {
+            toast("Tidak ada lirik yang bisa dirapikan", "error");
+            return;
+          }
+          afPrevText = raw;
+          ta.value = res.text;
+          var keyEl = document.getElementById("editOriginalKey"),
+            keySet = false;
+          if (keyEl && res.key && !keyEl.value.trim()) {
+            keyEl.value = res.key;
+            keySet = true;
+          }
+          var parts = [];
+          for (var k in res.secCount) parts.push(res.secCount[k] + " " + k);
+          var msg = "Terdeteksi: " + parts.join(" \u00b7 ");
+          if (res.chords)
+            msg +=
+              " \u00b7 " +
+              res.chords +
+              " chord" +
+              (res.key ? " \u00b7 nada dasar " + res.key : "");
+          else
+            msg +=
+              " \u00b7 tanpa chord (tempel dari situs chord agar terdeteksi)";
+          if (keySet) msg += " \u2014 nada dasar diisi otomatis";
+          var bar = document.getElementById("afBar"),
+            mEl = document.getElementById("afMsg");
+          if (bar && mEl) {
+            mEl.textContent = msg;
+            bar.hidden = false;
+          }
+          setStructMode(true);
+          updateEditPreview();
+          toast("Lirik dirapikan jadi " + res.blocks + " bagian", "info");
+        }
         function formatChordSpacing(line) {
           return line.trim().split(/\s+/).join("      ");
         }
@@ -8417,6 +8736,10 @@
             .getElementById("editLines")
             .addEventListener("input", updateEditPreview);
           document.getElementById("structToggleBtn").onclick = toggleStructMode;
+          var afBtnEl = document.getElementById("autoFormatBtn");
+          if (afBtnEl) afBtnEl.onclick = runAutoFormat;
+          var afUndoEl = document.getElementById("afUndoBtn");
+          if (afUndoEl) afUndoEl.onclick = afUndo;
           buildPalette();
           document
             .getElementById("editOriginalKey")

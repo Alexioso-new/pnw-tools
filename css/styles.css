@@ -2829,3 +2829,12 @@ body.xl { --sheetSize: 21px; }
 body.dark .sheet .secBlock:not(.sec-none) { border-left-color: rgba(255, 255, 255, 0.08); }
 /* editor: tampilkan grid monospace apa adanya (tanpa bungkus baris) */
 #editLines, .structBlock textarea { white-space: pre; overflow-x: auto; tab-size: 4; -moz-tab-size: 4; }
+
+
+/* === v57 — Rapikan otomatis (lyric formatter + chord finder) === */
+#autoFormatBtn { border-color: rgba(39, 131, 222, 0.45); color: var(--blue); font-weight: 800; }
+.afBar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: -2px 0 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--blueSoft); }
+.afMsg { flex: 1 1 180px; min-width: 140px; font-size: 12.5px; line-height: 1.45; }
+.afUndo { border: 1px solid var(--line); background: #fff; color: var(--text); border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.afUndo:hover { background: var(--soft); }
+body.dark .afUndo { background: transparent; color: inherit; }

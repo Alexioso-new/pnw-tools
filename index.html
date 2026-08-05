@@ -186,12 +186,21 @@
         <div class="field">
           <label>Chord &amp; lirik</label>
           <div class="rowBtns" style="margin-bottom: 8px">
-            <button
+            <button class="actionBtn secondary" id="autoFormatBtn" type="button">
+              &#10024; Rapikan otomatis
+            </button
+            ><button
               class="actionBtn secondary"
               id="structToggleBtn"
               type="button"
             >
               &#129513; Mode struktur
+            </button>
+          </div>
+          <div class="afBar" id="afBar" hidden>
+            <span class="afMsg" id="afMsg"></span
+            ><button class="afUndo" id="afUndoBtn" type="button">
+              Urungkan
             </button>
           </div>
           <textarea id="editLines" spellcheck="false"></textarea>
