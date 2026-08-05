@@ -343,7 +343,7 @@
         ];
         const sharpKeys = new Set(["G", "D", "A", "E", "B", "F#", "C#"]);
         const sectionWords =
-          /^(Intro|Bait|Verse|Reff|Refrain|Chorus|Pre-?Chorus|Bridge|Musik|Instrumen(tal)?|Interlude|Transition|Transisi|Solo|Ending|Outro|Outtro|Coda)(\s|:|$)/i;
+          /^(Intro|Bait|Verse|Reff|Refrain|Chorus|Pre-?Chorus|Post-?Chorus|Breakdown|Modulation|Overtune|Key ?Change|Bridge|Musik|Instrumen(tal)?|Interlude|Transition|Transisi|Solo|Ending|Outro|Outtro|Coda)(\s|:|$)/i;
         let selectedSongId = songs[0]?.id || "song1";
         let selectedKey = songs[0]?.originalKey || "C";
         let numberMode = false;
@@ -5194,6 +5194,9 @@
         function runAutoFormat() {
           var ta = document.getElementById("editLines");
           if (!ta) return;
+          try {
+            replayIn(document.getElementById("autoFormatBtn"));
+          } catch (e) {}
           if (structMode) serializeCanvas();
           var raw = ta.value || "";
           if (!raw.trim()) {
@@ -5603,6 +5606,56 @@
           if (v) v.textContent = m ? (m > 0 ? "+" + m : "" + m) : "0";
           serializeCanvas();
         }
+        function sbCleanName(v) {
+          return (v || "")
+            .replace(/[\r\n\t]+/g, " ")
+            .replace(/\(\s*[+-]\d{1,2}\s*\)/g, "")
+            .replace(/\s{2,}/g, " ")
+            .trim();
+        }
+        function sbApplyName(wrap, h) {
+          wrap.dataset.header = h;
+          var cls = "structBlock";
+          if (h) cls += " " + secClass(h);
+          if (wrap.classList.contains("dragging")) cls += " dragging";
+          wrap.className = cls;
+          var dp = wrap.querySelector(".sbDesc");
+          if (dp) {
+            var d = secDesc(h);
+            dp.textContent = d;
+            dp.hidden = !d;
+          }
+        }
+        function sbRename(wrap, inp, isBlur) {
+          var h = sbCleanName(inp.value);
+          var ok = !!h && sectionWords.test(h);
+          inp.classList.toggle("bad", !ok);
+          if (ok) {
+            sbApplyName(wrap, h);
+            serializeCanvas();
+            return;
+          }
+          if (isBlur) {
+            inp.value = wrap.dataset.header || "";
+            inp.classList.remove("bad");
+            toast(
+              "Nama bagian harus diawali kata baku: Intro, Verse, Chorus, Pre-Chorus, Bridge, Interlude, Instrumental, Outro. Contoh benar: Intro (Drum), Verse 2",
+              "error",
+              4800,
+            );
+          }
+        }
+        function nextSecName(base) {
+          var canvas = document.getElementById("structCanvas");
+          if (!canvas) return base;
+          var b = base.toLowerCase(),
+            n = 0;
+          canvas.querySelectorAll(".structBlock").forEach(function (bl) {
+            var h = (bl.dataset.header || "").toLowerCase();
+            if (h === b || h.indexOf(b + " ") === 0) n++;
+          });
+          return n ? base + " " + (n + 1) : base;
+        }
         function buildBlockEl(header, mod, bodyText) {
           var wrap = document.createElement("div");
           wrap.className = "structBlock";
@@ -5616,9 +5669,33 @@
           handle.textContent = "\u2807";
           handle.setAttribute("draggable", "true");
           head.appendChild(handle);
-          var name = document.createElement("span");
-          name.className = "sbName";
-          name.textContent = header || "(pembuka)";
+          var name;
+          if (header) {
+            name = document.createElement("input");
+            name.type = "text";
+            name.className = "sbName sbNameIn";
+            name.value = header;
+            name.spellcheck = false;
+            name.setAttribute("aria-label", "Nama bagian");
+            name.title =
+              "Klik untuk ubah nama bagian, mis. Intro (Drum), Verse 2";
+            name.addEventListener("input", function () {
+              sbRename(wrap, name, false);
+            });
+            name.addEventListener("blur", function () {
+              sbRename(wrap, name, true);
+            });
+            name.addEventListener("keydown", function (e) {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                name.blur();
+              }
+            });
+          } else {
+            name = document.createElement("span");
+            name.className = "sbName";
+            name.textContent = "(pembuka)";
+          }
           head.appendChild(name);
           if (header) {
             var modWrap = document.createElement("span");
@@ -5654,13 +5731,12 @@
           head.appendChild(del);
           wrap.appendChild(head);
           if (header) {
+            var dp = document.createElement("p");
+            dp.className = "sbDesc";
             var d = secDesc(header);
-            if (d) {
-              var dp = document.createElement("p");
-              dp.className = "sbDesc";
-              dp.textContent = d;
-              wrap.appendChild(dp);
-            }
+            dp.textContent = d;
+            dp.hidden = !d;
+            wrap.appendChild(dp);
           }
           var ta = document.createElement("textarea");
           ta.value = bodyText || "";
@@ -5684,7 +5760,7 @@
         }
         function addSection(name) {
           var canvas = document.getElementById("structCanvas");
-          var el = buildBlockEl(name, 0, "");
+          var el = buildBlockEl(nextSecName(name), 0, "");
           canvas.appendChild(el);
           serializeCanvas();
           el.scrollIntoView({ block: "nearest" });
@@ -5743,9 +5819,17 @@
           if (sug && structMode) sug.hidden = true;
           if (btn) {
             btn.classList.toggle("active", structMode);
-            btn.innerHTML = structMode
-              ? "\uD83D\uDCDD Mode teks"
-              : "\uD83E\uDDE9 Mode struktur";
+            var lbl = document.getElementById("structBtnLbl");
+            if (lbl)
+              lbl.textContent = structMode ? "Mode teks" : "Mode struktur";
+            else
+              btn.innerHTML =
+                '<span class="lottieIco btnIco" data-anim="struktur"></span>' +
+                (structMode ? "Mode teks" : "Mode struktur");
+            try {
+              initLottieIcons();
+              replayIn(btn);
+            } catch (e) {}
           }
         }
         function toggleStructMode() {

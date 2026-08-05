@@ -2838,3 +2838,11 @@ body.dark .sheet .secBlock:not(.sec-none) { border-left-color: rgba(255, 255, 25
 .afUndo { border: 1px solid var(--line); background: #fff; color: var(--text); border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
 .afUndo:hover { background: var(--soft); }
 body.dark .afUndo { background: transparent; color: inherit; }
+
+/* ==== v58: judul bagian bisa diedit + ikon tombol editor ==== */
+.sbNameIn { flex: 1; min-width: 90px; font: inherit; font-weight: 800; font-size: 14px; color: var(--text); background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 3px 6px; cursor: text; }
+.sbNameIn:hover { border-color: var(--line); background: var(--soft); }
+.sbNameIn:focus { outline: none; border-color: var(--blue); background: var(--blueSoft); }
+.sbNameIn.bad { border-color: var(--red); background: var(--redSoft); }
+body.dark .sbNameIn:hover, body.dark .sbNameIn:focus { background: rgba(255,255,255,0.07); }
+#autoFormatBtn .btnIco, #structToggleBtn .btnIco { width: 18px; height: 18px; vertical-align: -4px; margin-right: 6px; }
