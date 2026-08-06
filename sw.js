@@ -1,7 +1,7 @@
 /* HOSANA YOUTH TOOLS - service worker
    PENTING: naikkan angka versi CACHE setiap deploy index.html baru
    supaya cache lama dibuang dan file terbaru dipakai. */
-const CACHE = "pnw-tools-v61";
+const CACHE = "pnw-tools-v62";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -18,7 +18,10 @@ const APP_SHELL = [
   "./js/gsap/gsap.min.js",
   "./js/gsap/CustomEase.min.js",
   "./js/motion.js",
+  "./js/recorder.js",
   "./js/app.js",
+  "./js/logo-anim.js",
+  "./js/hosana-flame.json",
 ];
 
 self.addEventListener("install", (event) => {

@@ -3078,3 +3078,693 @@ body.dark .atHubSub { color: rgba(255, 255, 255, 0.6); }
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================
+   v62 - logo api, semitone, rekaman, poles UI, assistive touch
+   Prinsip: hanya transform + opacity + filter. Tanpa animasi
+   layout (width/height/top/left). Hormati prefers-reduced-motion.
+   ============================================================ */
+
+:root {
+  --flame-deep: #0b3f91;
+  --flame-mid: #2783de;
+  --flame-bright: #79cfff;
+  --ring: 0 0 0 3px rgba(39, 131, 222, 0.28);
+  --lift: 0 6px 18px -8px rgba(20, 30, 50, 0.28);
+  --lift-sm: 0 3px 10px -6px rgba(20, 30, 50, 0.24);
+}
+
+/* ---------- 1. LOGO: api biru -> logo lama (fade) ---------- */
+.brandMark {
+  position: relative;
+  width: 74px;
+  height: 74px;
+  flex: 0 0 auto;
+  display: block;
+}
+.brandFlame {
+  position: absolute;
+  inset: 0;
+  display: block;
+  opacity: 0;
+  transition: opacity 220ms var(--ease-out, ease-out),
+    transform 520ms var(--ease-sig, ease);
+  transform: scale(1);
+  pointer-events: none;
+}
+.brandMark.flameOn .brandFlame {
+  opacity: 1;
+}
+.brandFlame svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.brandLogo {
+  position: relative;
+  display: block;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 460ms var(--ease-out, ease-out),
+    transform 560ms var(--ease-sig, ease);
+  will-change: opacity, transform;
+}
+/* saat logo lama masuk, api mengecil & memudar */
+.brandMark.logoIn .brandLogo {
+  opacity: 1;
+  transform: scale(1);
+}
+.brandMark.logoIn .brandFlame {
+  opacity: 0;
+  transform: scale(1.14);
+}
+.brandMark.flameGone .brandFlame {
+  display: none;
+}
+.brandMark.noAnim .brandLogo,
+.brandMark.noAnim .brandFlame {
+  transition: none;
+}
+
+/* ---------- 2. SEMITONE (naik/turun setengah nada) ---------- */
+.semiRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.semiBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--dur-quick, 180ms) var(--ease-out, ease),
+    background var(--dur-quick, 180ms) linear,
+    border-color var(--dur-quick, 180ms) linear;
+}
+.semiBtn:hover {
+  background: var(--blueSoft);
+  border-color: var(--blue);
+}
+.semiBtn:active {
+  transform: scale(0.92);
+}
+.semiBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.semiBtn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.semiInfo {
+  min-width: 92px;
+  padding: 5px 12px;
+  border-radius: 12px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  text-align: center;
+  line-height: 1.15;
+}
+.semiLbl {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.semiVal {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.semiVal.up {
+  color: var(--green);
+}
+.semiVal.down {
+  color: var(--blue);
+}
+.semiVal.bump {
+  animation: semiBump 260ms var(--ease-out, ease-out);
+}
+@keyframes semiBump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.16);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.semiReset {
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--dur-quick, 180ms) var(--ease-out, ease),
+    color var(--dur-quick, 180ms) linear;
+}
+.semiReset:hover {
+  color: var(--text);
+  border-color: var(--blue);
+}
+.semiReset:active {
+  transform: scale(0.94);
+}
+.semiHint {
+  width: 100%;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 2px 0 0;
+}
+body.dark .semiBtn,
+body.dark .semiReset {
+  background: #1c2331;
+  border-color: #2c3648;
+  color: #e6ecf6;
+}
+body.dark .semiInfo {
+  background: #161c28;
+  border-color: #2c3648;
+}
+body.dark .semiVal {
+  color: #e6ecf6;
+}
+
+/* ---------- 3. REKAMAN ---------- */
+.recBack {
+  z-index: 9400;
+}
+.recModal {
+  max-width: 460px;
+  width: 100%;
+}
+.recHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.recTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+.recSub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.recX {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 8px;
+  transition: transform var(--dur-quick, 180ms) var(--ease-out, ease);
+}
+.recX:hover {
+  color: var(--red);
+}
+.recX:active {
+  transform: scale(0.9);
+}
+.recStage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0 12px;
+}
+#recDot {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform var(--dur-quick, 180ms) var(--ease-out, ease),
+    border-color var(--dur-quick, 180ms) linear;
+}
+#recDot:hover {
+  border-color: var(--red);
+}
+#recDot:active {
+  transform: scale(0.94);
+}
+#recDot:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.recDotIn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--red);
+  transition: border-radius 200ms var(--ease-sig, ease),
+    transform 200ms var(--ease-sig, ease);
+}
+.recModal.isRec .recDotIn {
+  border-radius: 6px;
+  transform: scale(0.72);
+}
+.recModal.isRec #recDot {
+  border-color: var(--red);
+  animation: recPulse 1.6s ease-in-out infinite;
+}
+@keyframes recPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(229, 100, 88, 0.34);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(229, 100, 88, 0);
+  }
+}
+#recTime {
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+#recHint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+  text-align: center;
+}
+#recWave {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  height: 22px;
+  opacity: 0;
+  transition: opacity var(--dur-quick, 180ms) linear;
+}
+.recModal.isRec #recWave {
+  opacity: 1;
+}
+#recWave i {
+  width: 4px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--blue);
+  display: block;
+  transform-origin: bottom center;
+  animation: recWave 900ms ease-in-out infinite;
+  animation-delay: calc(var(--i) * 110ms);
+}
+@keyframes recWave {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(3.2);
+  }
+}
+#recList {
+  max-height: 250px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.recItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  transition: border-color var(--dur-quick, 180ms) linear,
+    transform var(--dur-quick, 180ms) var(--ease-out, ease);
+}
+.recItem:hover {
+  border-color: var(--blue);
+  transform: translateY(-1px);
+}
+.recItem.playing {
+  border-color: var(--blue);
+  background: var(--blueSoft);
+}
+.recPlay {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  cursor: pointer;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--dur-quick, 180ms) var(--ease-out, ease);
+}
+.recPlay:active {
+  transform: scale(0.9);
+}
+.recInfo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.recName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recItemMeta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.recMini {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 9px;
+  padding: 5px 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: transform var(--dur-quick, 180ms) var(--ease-out, ease),
+    color var(--dur-quick, 180ms) linear;
+}
+.recMini:hover {
+  color: var(--text);
+}
+.recMini:active {
+  transform: scale(0.92);
+}
+.recMini.danger:hover {
+  color: var(--red);
+  border-color: var(--red);
+}
+.recEmpty {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+  padding: 18px 8px;
+}
+.recFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+#recNote {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+/* lencana jumlah rekaman di tombol lagu */
+.recBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  margin-left: 6px;
+  border-radius: 9px;
+  background: var(--blueSoft);
+  color: var(--blue);
+  font-size: 10.5px;
+  font-weight: 700;
+  vertical-align: middle;
+  line-height: 1;
+}
+body.dark .recItem,
+body.dark .recPlay,
+body.dark .recMini {
+  background: #1c2331;
+  border-color: #2c3648;
+  color: #e6ecf6;
+}
+body.dark #recDot {
+  background: #161c28;
+  border-color: #2c3648;
+}
+
+/* ---------- 4. POLES UI RINGAN (arketipe Premium) ---------- */
+/* fokus keyboard konsisten & terlihat (WCAG) */
+.actionBtn:focus-visible,
+.songBtn:focus-visible,
+.keyBtn:focus-visible,
+.menuBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+/* tekanan tombol terasa, tanpa memindah layout */
+.actionBtn {
+  transition: transform var(--dur-quick, 180ms) var(--ease-out, ease),
+    box-shadow var(--dur-quick, 180ms) var(--ease-out, ease),
+    filter var(--dur-quick, 180ms) linear;
+}
+.actionBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--lift-sm);
+}
+.actionBtn:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: none;
+}
+.songBtn {
+  transition: transform var(--dur-quick, 180ms) var(--ease-out, ease),
+    border-color var(--dur-quick, 180ms) linear,
+    box-shadow var(--dur-quick, 180ms) var(--ease-out, ease);
+}
+.songBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--lift-sm);
+}
+.songBtn:active {
+  transform: scale(0.98);
+}
+.keyBtn {
+  transition: transform var(--dur-micro, 100ms) var(--ease-out, ease),
+    background var(--dur-quick, 180ms) linear;
+}
+.keyBtn:active {
+  transform: scale(0.92);
+}
+/* remah status lebih rapi */
+.crumbItem {
+  transition: color var(--dur-quick, 180ms) linear;
+}
+/* modal masuk lebih halus (Premium: 350-600ms, tanpa overshoot) */
+.modalBackdrop {
+  transition: opacity var(--dur-normal, 300ms) var(--ease-out, ease);
+}
+.modalBackdrop .modal {
+  transition: transform 380ms var(--ease-sig, ease),
+    opacity 280ms var(--ease-out, ease);
+}
+.modalBackdrop:not(.show) .modal {
+  transform: translateY(10px) scale(0.985);
+  opacity: 0;
+}
+.modalBackdrop.show .modal {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+/* ---------- 5. ASSISTIVE TOUCH LEBIH SEGAR ---------- */
+/* denyut lembut pada tombol saat menganggur (pseudo-element saja,
+   supaya tidak bentrok dengan transform drag milik JS) */
+#atBtn::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px solid var(--flame-mid);
+  opacity: 0;
+  pointer-events: none;
+  animation: atHalo 3.4s ease-out infinite;
+}
+#atBtn.dragging::after,
+#atBtn:active::after {
+  animation: none;
+  opacity: 0;
+}
+@keyframes atHalo {
+  0% {
+    transform: scale(0.86);
+    opacity: 0;
+  }
+  22% {
+    opacity: 0.5;
+  }
+  60%,
+  100% {
+    transform: scale(1.28);
+    opacity: 0;
+  }
+}
+/* item roda: pegas masuk dari pusat + sedikit blur -> tajam */
+.atItem {
+  animation: atPop 420ms var(--ease-sig, cubic-bezier(0.4, 0, 0.2, 1)) both;
+  animation-delay: var(--d, 0ms);
+}
+@keyframes atPop {
+  0% {
+    transform: translate(0, 0) scale(0.42);
+    opacity: 0;
+    filter: blur(5px);
+  }
+  55% {
+    filter: blur(0);
+  }
+  70% {
+    transform: translate(var(--x, 0), var(--y, 0)) scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--x, 0), var(--y, 0)) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+.atItem.cur {
+  animation-name: atPopCur;
+}
+@keyframes atPopCur {
+  0% {
+    transform: translate(0, 0) scale(0.42);
+    opacity: 0;
+    filter: blur(5px);
+  }
+  70% {
+    transform: translate(var(--x, 0), var(--y, 0)) scale(1.12);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: translate(var(--x, 0), var(--y, 0)) scale(1.04);
+    opacity: 1;
+  }
+}
+/* hub bernapas halus */
+.atHub {
+  animation: atBreathe 4.2s ease-in-out infinite;
+}
+@keyframes atBreathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+/* penutupan roda: mengempis balik ke pusat */
+#atOverlay.closing .atItem {
+  animation: atOut 150ms var(--ease-in, cubic-bezier(0.3, 0, 1, 1)) both;
+  animation-delay: 0ms;
+}
+@keyframes atOut {
+  0% {
+    transform: translate(var(--x, 0), var(--y, 0)) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) scale(0.55);
+    opacity: 0;
+  }
+}
+#atOverlay.closing .atHub {
+  animation: atHubOut 150ms var(--ease-in, ease-in) both;
+}
+@keyframes atHubOut {
+  to {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* ---------- 6. HORMATI PENGATURAN GERAK MINIM ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .brandFlame,
+  .brandLogo,
+  .atItem,
+  .atHub,
+  #atBtn::after,
+  #recWave i,
+  .semiVal.bump,
+  #recDot,
+  .modalBackdrop .modal {
+    animation: none !important;
+    transition: none !important;
+  }
+  .brandLogo {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .atItem {
+    transform: translate(var(--x, 0), var(--y, 0)) !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+  .actionBtn:hover,
+  .songBtn:hover,
+  .recItem:hover {
+    transform: none;
+  }
+}
+
+/* ---------- 7. LAYAR KECIL ---------- */
+@media (max-width: 420px) {
+  .brandMark,
+  .brandLogo {
+    width: 58px;
+    height: 58px;
+  }
+  .semiInfo {
+    min-width: 80px;
+  }
+  .recModal {
+    max-width: 100%;
+  }
+}
+
+/* ---------- 8. JANGAN CETAK ---------- */
+@media print {
+  .semiRow,
+  .recBack,
+  .brandFlame {
+    display: none !important;
+  }
+}

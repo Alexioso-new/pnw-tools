@@ -413,11 +413,76 @@
             bankSongs.push(master);
           }
         }
+        // ============ v62: PENGAMAN ANTI-TIMPA-KOSONG ============
+        // Masalah lama: data kosong dari perangkat lain bisa menimpa Song Bank
+        // di cloud sehingga seluruh lagu hilang. Sekarang setiap penerimaan /
+        // pengiriman data melewati pemeriksaan jumlah minimum.
+        var BANK_HWM_KEY = "pujianYouthBankHWM.v1";
+        var SONGS_HWM_KEY = "pujianYouthSongsHWM.v1";
+        function hwmGet(k) {
+          try {
+            return parseInt(localStorage.getItem(k) || "0", 10) || 0;
+          } catch (e) {
+            return 0;
+          }
+        }
+        function hwmSet(k, n) {
+          try {
+            if (n > hwmGet(k)) localStorage.setItem(k, String(n));
+          } catch (e) {}
+        }
+        function bankMarkHadData() {
+          hwmSet(BANK_HWM_KEY, (bankSongs || []).length);
+        }
+        function songsMarkHadData() {
+          hwmSet(SONGS_HWM_KEY, (songs || []).length);
+        }
+        // true = boleh diterapkan, false = tolak
+        function guardAccept(incomingLen, localLen, hwmKey, label) {
+          var hwm = Math.max(hwmGet(hwmKey), localLen);
+          if (incomingLen === 0 && hwm > 0) {
+            try {
+              toast(
+                "Data " + label + " kosong dari server ditolak - data di perangkat ini dipertahankan.",
+                "error",
+                6000
+              );
+            } catch (e) {}
+            return false;
+          }
+          if (hwm >= 5 && incomingLen > 0 && incomingLen < Math.ceil(hwm * 0.6)) {
+            try {
+              backupForce("menyusut: " + label);
+            } catch (e) {}
+            try {
+              toast(
+                label + " menyusut dari " + hwm + " ke " + incomingLen + " lagu. Cadangan otomatis dibuat.",
+                "info",
+                6000
+              );
+            } catch (e) {}
+          }
+          return true;
+        }
+        // Boleh mengirim daftar kosong ke cloud? Hanya kalau memang belum pernah ada isi.
+        function guardPush(arr, hwmKey, label) {
+          var n = (arr || []).length;
+          if (n > 0) return true;
+          if (hwmGet(hwmKey) > 0) {
+            try {
+              console.warn("[v62] batal mengirim " + label + " kosong ke server");
+            } catch (e) {}
+            return false;
+          }
+          return true;
+        }
         function saveBank() {
           try {
             localStorage.setItem(bankKey, JSON.stringify(bankSongs));
           } catch (e) {}
+          bankMarkHadData();
           if (cloudReady && bankRef && !applyingRemote) {
+            if (!guardPush(bankSongs, BANK_HWM_KEY, "Song Bank")) return;
             try {
               bankRef.set(bankSongs);
             } catch (e) {}
@@ -466,7 +531,17 @@
                 var arr = Array.isArray(val)
                   ? val.filter(Boolean)
                   : Object.values(val).filter(Boolean);
+                // v62 - tolak data kosong dari perangkat lain
+                if (!guardAccept(arr.length, (bankSongs || []).length, BANK_HWM_KEY, "Song Bank")) {
+                  if ((bankSongs || []).length && !applyingRemote) {
+                    try {
+                      bankRef.set(bankSongs);
+                    } catch (e) {}
+                  }
+                  return;
+                }
                 bankSongs = arr;
+                bankMarkHadData();
                 try {
                   localStorage.setItem(bankKey, JSON.stringify(bankSongs));
                 } catch (e) {}
@@ -2522,7 +2597,8 @@
         // ===== end rate limiting =====
         // ===== Backup & pemulihan data (v42+) =====
         var BACKUP_KEY = "pujianYouthBackups.v1";
-        var BACKUP_MAX = 3;
+        var BACKUP_MAX = 8;
+        var BACKUP_MIN_GAP = 25000;
         var __lastBackupAt = 0;
         function schedHasContent(s) {
           try {
@@ -2567,7 +2643,7 @@
         }
         function backupMaybe(reason) {
           var now = Date.now();
-          if (now - __lastBackupAt < 90000) return;
+          if (now - __lastBackupAt < BACKUP_MIN_GAP) return;
           var snap = backupSnapshotObj();
           if (!snap.counts.songs && !snap.counts.bank && !schedHasContent(sched)) return;
           snap.reason = reason || "auto";
@@ -2576,6 +2652,19 @@
           list.push(snap);
           while (list.length > BACKUP_MAX) list.shift();
           backupStore(list);
+        }
+        // v62 - cadangan paksa (abaikan jeda) untuk kejadian berisiko
+        function backupForce(reason) {
+          try {
+            var snap = backupSnapshotObj();
+            if (!snap.counts.songs && !snap.counts.bank) return;
+            snap.reason = reason || "jaga-jaga";
+            __lastBackupAt = Date.now();
+            var list = backupList();
+            list.push(snap);
+            while (list.length > BACKUP_MAX) list.shift();
+            backupStore(list);
+          } catch (e) {}
         }
         function backupDownload(obj, name) {
           try {
@@ -4819,7 +4908,8 @@
         function saveSongs() {
           songs.forEach(mirrorToBank);
           saveBank();
-          if (cloudReady && dbRef && !applyingRemote) {
+          songsMarkHadData();
+          if (cloudReady && dbRef && !applyingRemote && guardPush(songs, SONGS_HWM_KEY, "Daftar lagu")) {
             try {
               dbRef.set(songs);
             } catch (e) {}
@@ -5283,6 +5373,10 @@
               if (selectedSongId !== song.id) stopYt();
               selectedSongId = song.id;
               selectedKey = song.originalKey;
+              try {
+                if (window.__pnwSemiUi)
+                  window.__pnwSemiUi(song.originalKey, song.originalKey);
+              } catch (e) {}
               closeEditor();
               render();
             };
@@ -5305,6 +5399,12 @@
             keyButtons.appendChild(b);
           });
           refreshLibrary();
+          try {
+            initV62();
+          } catch (e) {}
+          try {
+            if (window.PNWRec) window.PNWRec.decorate();
+          } catch (e) {}
         }
         function hasInlineChords(line) {
           return /\[[^\]]*\]/.test(line);
@@ -5447,6 +5547,10 @@
             target === song.originalKey
               ? "Nada " + target + " (asli)"
               : "Nada " + target + " (asli " + song.originalKey + ")";
+          try {
+            if (window.__pnwSemiUi)
+              window.__pnwSemiUi(target, song.originalKey);
+          } catch (e) {}
           document.getElementById("songTitle").textContent = song.title;
           document.getElementById("keyLine").textContent =
             "Nada asli " +
@@ -7689,6 +7793,19 @@
             toast("Pilih dulu lagu yang mau dipindahkan.", "info");
             return;
           }
+          if (
+            !confirm(
+              "Pindahkan " +
+                ids.length +
+                " lagu ke folder " +
+                bankCatLabel(cat) +
+                "?\n\nLagu TIDAK dihapus, hanya berpindah folder."
+            )
+          )
+            return;
+          try {
+            backupForce("sebelum pindah folder");
+          } catch (e) {}
           var n = 0;
           for (var k = 0; k < bankSongs.length; k++) {
             var b = bankSongs[k];
@@ -8031,6 +8148,113 @@
           setTimeout(openEditor, 140);
           closeBankPage();
         }
+        /* ================= v62: semitone + rekaman ================= */
+        var SEMI_MAP = {
+          C: 0, "B#": 0, "C#": 1, Db: 1, "Db": 1, D: 2, "D#": 3, Eb: 3,
+          E: 4, Fb: 4, "E#": 5, F: 5, "F#": 6, Gb: 6, G: 7, "G#": 8,
+          Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11, Cb: 11,
+        };
+        function semiOf(k) {
+          var s = String(k == null ? "" : k).trim();
+          if (SEMI_MAP[s] != null) return SEMI_MAP[s];
+          var m = s.match(/^([A-Ga-g])([#b]?)/);
+          if (!m) return 0;
+          var key = m[1].toUpperCase() + (m[2] || "");
+          return SEMI_MAP[key] != null ? SEMI_MAP[key] : 0;
+        }
+        function v62Song() {
+          for (var i = 0; i < songs.length; i++) {
+            if (songs[i].id === selectedSongId) return songs[i];
+          }
+          return null;
+        }
+        function updateSemiUi(target, orig) {
+          var el = document.getElementById("semiVal");
+          if (!el) return;
+          var d = ((semiOf(target) - semiOf(orig)) % 12 + 12) % 12;
+          if (d > 6) d -= 12;
+          el.classList.remove("up", "down");
+          if (d > 0) {
+            el.textContent = "+" + d;
+            el.classList.add("up");
+          } else if (d < 0) {
+            el.textContent = String(d);
+            el.classList.add("down");
+          } else {
+            el.textContent = "0 asli";
+          }
+          var rs = document.getElementById("semiReset");
+          if (rs) rs.disabled = d === 0;
+        }
+        function semiShift(step) {
+          var song = v62Song();
+          if (!song) {
+            toast("Pilih lagu dulu.", "info");
+            return;
+          }
+          var cur = selectedKey || song.originalKey || "C";
+          selectedKey = keyList[((semiOf(cur) + step) % 12 + 12) % 12];
+          render();
+          updateSemiUi(selectedKey, song.originalKey);
+          var el = document.getElementById("semiVal");
+          if (el) {
+            el.classList.remove("bump");
+            void el.offsetWidth;
+            el.classList.add("bump");
+          }
+        }
+        function semiReset() {
+          var song = v62Song();
+          if (!song) return;
+          selectedKey = song.originalKey || "C";
+          render();
+          updateSemiUi(selectedKey, song.originalKey);
+        }
+        function openRecorderForCurrent() {
+          if (!window.PNWRec) {
+            toast("Fitur rekaman belum siap.", "error");
+            return;
+          }
+          var song = v62Song();
+          if (!song) {
+            toast("Pilih lagu dulu untuk menyimpan rekaman.", "info");
+            return;
+          }
+          window.PNWRec.open(song.id, song.title);
+        }
+        var __v62Ready = false;
+        function initV62() {
+          if (__v62Ready) return;
+          __v62Ready = true;
+          window.__pnwSemiUi = updateSemiUi;
+          window.pnwToast = function (m, t, ms) {
+            try {
+              toast(m, t, ms);
+            } catch (e) {}
+          };
+          var up = document.getElementById("semiUp");
+          var dn = document.getElementById("semiDown");
+          var rs = document.getElementById("semiReset");
+          var rb = document.getElementById("recBtn");
+          if (up) up.onclick = function () { semiShift(1); };
+          if (dn) dn.onclick = function () { semiShift(-1); };
+          if (rs) rs.onclick = semiReset;
+          if (rb) rb.onclick = openRecorderForCurrent;
+          document.addEventListener("keydown", function (e) {
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            var t = e.target || {};
+            var tag = (t.tagName || "").toUpperCase();
+            if (tag === "INPUT" || tag === "TEXTAREA" || t.isContentEditable) return;
+            if (e.key === "+" || e.key === "=") {
+              e.preventDefault();
+              semiShift(1);
+            } else if (e.key === "-" || e.key === "_") {
+              e.preventDefault();
+              semiShift(-1);
+            }
+          });
+        }
+        /* =============== akhir blok v62 =============== */
         function refreshLibrary() {
           renderSongJump();
           var ss = document.getElementById("songSearch");

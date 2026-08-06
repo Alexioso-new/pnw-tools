@@ -208,11 +208,21 @@
       var bank = readPath("pujianYouth/songBank");
       var localSongs = null;
       var localBank = null;
+      // v62 - kunci penyimpanan yang benar (dulu salah tulis sehingga
+      // data perangkat tidak pernah terbaca saat Mode Lokal menyalakan server)
       try {
-        localSongs = JSON.parse(localStorage.getItem("pujianYouthSongs") || "null");
+        localSongs = JSON.parse(
+          localStorage.getItem("pujianYouthChordSongs.v3") ||
+            localStorage.getItem("pujianYouthSongs") ||
+            "null"
+        );
       } catch (e) {}
       try {
-        localBank = JSON.parse(localStorage.getItem("pujianYouthBank") || "null");
+        localBank = JSON.parse(
+          localStorage.getItem("pujianYouthSongBank.v1") ||
+            localStorage.getItem("pujianYouthBank") ||
+            "null"
+        );
       } catch (e) {}
       var isEmpty = function (v) {
         return !v || (Array.isArray(v) && !v.length) || (typeof v === "object" && !Object.keys(v).length);
