@@ -9022,10 +9022,433 @@
           restorePrefs();
         }
 
+
+        /* ============ v60: Tombol melayang ala AssistiveTouch + Wheel ============ */
+        var atBtnEl = null,
+          atOvEl = null,
+          atWheelEl = null,
+          atItemsEl = null,
+          atHubEl = null,
+          atLevel = "root",
+          atPage = 0,
+          atIdleT = null;
+        var AT_POS_KEY = "pnwWheelPos";
+        var AT_PER_PAGE = 6;
+
+        function atClamp(v, lo, hi) {
+          return Math.max(lo, Math.min(hi, v));
+        }
+        function atSavePos(x, y) {
+          try {
+            localStorage.setItem(AT_POS_KEY, JSON.stringify({ x: x, y: y }));
+          } catch (e) {}
+        }
+        function atPlaceBtn(x, y) {
+          if (!atBtnEl) return { x: 0, y: 0 };
+          var m = 8,
+            w = atBtnEl.offsetWidth || 52,
+            h = atBtnEl.offsetHeight || 52;
+          x = atClamp(x, m, Math.max(m, window.innerWidth - w - m));
+          y = atClamp(y, m, Math.max(m, window.innerHeight - h - m));
+          atBtnEl.style.left = x + "px";
+          atBtnEl.style.top = y + "px";
+          atBtnEl.style.right = "auto";
+          return { x: x, y: y };
+        }
+        function atSnapEdge() {
+          if (!atBtnEl) return;
+          var r = atBtnEl.getBoundingClientRect();
+          var toLeft = r.left + r.width / 2 < window.innerWidth / 2;
+          var x = toLeft ? 8 : window.innerWidth - r.width - 8;
+          var p = atPlaceBtn(x, r.top);
+          atSavePos(p.x, p.y);
+        }
+        function atWake() {
+          if (!atBtnEl) return;
+          atBtnEl.classList.remove("idle");
+          clearTimeout(atIdleT);
+          atIdleT = setTimeout(function () {
+            if (atOvEl && atOvEl.hidden) atBtnEl.classList.add("idle");
+          }, 3000);
+        }
+
+        /* ---- isi menu ---- */
+        function atRootItems() {
+          return [
+            { k: "lagu", lbl: "Lagu", anim: "songbank", sub: true },
+            { k: "metro", lbl: "Metronom", ico: "\u266A", sub: true },
+            { k: "tampilan", lbl: "Tampilan", anim: "layer", sub: true },
+            {
+              k: "proyektor",
+              lbl: "Proyektor",
+              ico: "\u25A3",
+              act: function () {
+                var b = document.getElementById("openDisplayBtn");
+                if (b) b.click();
+                atClose();
+              },
+            },
+          ];
+        }
+        function atSongItems() {
+          var list = (songs || []).slice();
+          var pages = Math.max(1, Math.ceil(list.length / AT_PER_PAGE));
+          if (atPage >= pages) atPage = 0;
+          var slice = list.slice(atPage * AT_PER_PAGE, atPage * AT_PER_PAGE + AT_PER_PAGE);
+          var out = slice.map(function (s) {
+            return {
+              k: "song:" + s.id,
+              lbl: s.title || "(tanpa judul)",
+              ico: String(s.num || "\u266B"),
+              cur: s.id === selectedSongId,
+              act: function () {
+                gotoSong(s.id);
+                atClose();
+              },
+            };
+          });
+          if (pages > 1) {
+            out.push({
+              k: "prev",
+              lbl: "Sebelum",
+              ico: "\u2039",
+              keep: true,
+              act: function () {
+                atPage = (atPage - 1 + pages) % pages;
+                atRender(true);
+              },
+            });
+            out.push({
+              k: "next",
+              lbl: "Lanjut",
+              ico: "\u203A",
+              keep: true,
+              act: function () {
+                atPage = (atPage + 1) % pages;
+                atRender(true);
+              },
+            });
+          }
+          return out;
+        }
+        function atMetroItems() {
+          return [
+            {
+              k: "mstart",
+              lbl: metroOn ? "Stop" : "Mulai",
+              ico: metroOn ? "\u25A0" : "\u25B6",
+              on: metroOn,
+              keep: true,
+              act: function () {
+                toggleMetro();
+                atRender(false);
+              },
+            },
+            {
+              k: "mminus",
+              lbl: "BPM \u2212",
+              ico: "\u2212",
+              keep: true,
+              act: function () {
+                setBpm(bpm - 5);
+                atRender(false);
+              },
+            },
+            {
+              k: "mplus",
+              lbl: "BPM +",
+              ico: "+",
+              keep: true,
+              act: function () {
+                setBpm(bpm + 5);
+                atRender(false);
+              },
+            },
+            {
+              k: "mtap",
+              lbl: "Tap",
+              ico: "\u25CE",
+              keep: true,
+              act: function () {
+                tapTempo();
+                atRender(false);
+              },
+            },
+          ];
+        }
+        function atViewItems() {
+          return [
+            {
+              k: "vdark",
+              lbl: "Gelap",
+              ico: "\u25D1",
+              on: document.body.classList.contains("dark"),
+              keep: true,
+              act: function () {
+                toggleDark();
+                atRender(false);
+              },
+            },
+            {
+              k: "vnum",
+              lbl: "Nomor",
+              ico: "#",
+              on: document.body.classList.contains("num"),
+              keep: true,
+              act: function () {
+                toggleNum();
+                atRender(false);
+              },
+            },
+            {
+              k: "vcomp",
+              lbl: "Ringkas",
+              ico: "\u2263",
+              on: document.body.classList.contains("compact"),
+              keep: true,
+              act: function () {
+                toggleCompact();
+                atRender(false);
+              },
+            },
+            {
+              k: "vbig",
+              lbl: "Teks +",
+              ico: "A",
+              keep: true,
+              act: function () {
+                textBigger();
+              },
+            },
+            {
+              k: "vsmall",
+              lbl: "Teks \u2212",
+              ico: "a",
+              keep: true,
+              act: function () {
+                textSmaller();
+              },
+            },
+          ];
+        }
+        function atItemsFor(level) {
+          if (level === "lagu") return atSongItems();
+          if (level === "metro") return atMetroItems();
+          if (level === "tampilan") return atViewItems();
+          return atRootItems();
+        }
+        function atHubText(level) {
+          if (level === "lagu") return { lbl: "Pilih lagu", sub: "kembali" };
+          if (level === "metro") return { lbl: fmtBpm(bpm) + " BPM", sub: "kembali" };
+          if (level === "tampilan") return { lbl: "Tampilan", sub: "kembali" };
+          return { lbl: "Menu", sub: "" };
+        }
+
+        /* ---- gambar wheel ---- */
+        function atRender(spin) {
+          if (!atItemsEl) return;
+          var items = atItemsFor(atLevel);
+          var ht = atHubText(atLevel);
+          var lbl = atHubEl.querySelector(".atHubLbl");
+          if (lbl) lbl.textContent = ht.lbl;
+          var sub = atHubEl.querySelector(".atHubSub");
+          if (!sub) {
+            sub = document.createElement("span");
+            sub.className = "atHubSub";
+            atHubEl.appendChild(sub);
+          }
+          sub.textContent = ht.sub;
+
+          atItemsEl.innerHTML = "";
+          var n = items.length;
+          var R = n > 6 ? 108 : 100;
+          items.forEach(function (it, i) {
+            var ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+            var b = document.createElement("button");
+            b.type = "button";
+            b.className = "atItem" + (it.on ? " on" : "") + (it.cur ? " cur" : "");
+            b.style.setProperty("--x", (Math.cos(ang) * R).toFixed(1) + "px");
+            b.style.setProperty("--y", (Math.sin(ang) * R).toFixed(1) + "px");
+            b.style.setProperty("--d", i * 42 + "ms");
+            var ico;
+            if (it.anim) {
+              ico = document.createElement("span");
+              ico.className = "lottieIco";
+              ico.setAttribute("data-anim", it.anim);
+            } else {
+              ico = document.createElement("span");
+              ico.className = "atIco";
+              ico.textContent = it.ico || "\u2022";
+            }
+            var tx = document.createElement("span");
+            tx.className = "atLbl";
+            tx.textContent = it.lbl;
+            b.appendChild(ico);
+            b.appendChild(tx);
+            b.onclick = function (ev) {
+              ev.stopPropagation();
+              b.classList.remove("pressed");
+              void b.offsetWidth;
+              b.classList.add("pressed");
+              if (it.sub) {
+                atPage = 0;
+                atGoLevel(it.k);
+              } else if (it.act) {
+                setTimeout(it.act, it.keep ? 0 : 120);
+              }
+            };
+            atItemsEl.appendChild(b);
+          });
+
+          try {
+            initLottieIcons();
+          } catch (e) {}
+          if (spin !== false) {
+            try {
+              replayIn(atHubEl);
+            } catch (e) {}
+          }
+        }
+
+        function atGoLevel(level) {
+          atLevel = level;
+          atItemsEl.classList.add("leaving");
+          setTimeout(function () {
+            atItemsEl.classList.remove("leaving");
+            atRender(true);
+          }, 150);
+        }
+
+        function atOpen() {
+          if (!atOvEl) return;
+          atLevel = "root";
+          atPage = 0;
+          atOvEl.hidden = false;
+          atWheelEl.classList.remove("closing");
+          atBtnEl.classList.remove("idle");
+          clearTimeout(atIdleT);
+          atRender(true);
+        }
+        function atClose() {
+          if (!atOvEl || atOvEl.hidden) return;
+          atWheelEl.classList.add("closing");
+          setTimeout(function () {
+            atOvEl.hidden = true;
+            atWheelEl.classList.remove("closing");
+            atWake();
+          }, 150);
+        }
+        function atToggle() {
+          if (atOvEl && atOvEl.hidden) atOpen();
+          else atClose();
+        }
+
+        function initWheel() {
+          atBtnEl = document.getElementById("atBtn");
+          atOvEl = document.getElementById("atOverlay");
+          atWheelEl = document.getElementById("atWheel");
+          if (!atBtnEl || !atOvEl || !atWheelEl) return;
+          atItemsEl = atWheelEl.querySelector(".atItems");
+          atHubEl = atWheelEl.querySelector(".atHub");
+
+          // posisi tersimpan
+          var saved = null;
+          try {
+            saved = JSON.parse(localStorage.getItem(AT_POS_KEY) || "null");
+          } catch (e) {}
+          if (saved && typeof saved.x === "number") atPlaceBtn(saved.x, saved.y);
+          else
+            atPlaceBtn(
+              window.innerWidth - (atBtnEl.offsetWidth || 52) - 14,
+              Math.round(window.innerHeight * 0.6),
+            );
+
+          // geser bebas ala iPhone
+          var sx = 0,
+            sy = 0,
+            ox = 0,
+            oy = 0,
+            moved = false,
+            downT = 0,
+            pid = null;
+          atBtnEl.addEventListener("pointerdown", function (e) {
+            pid = e.pointerId;
+            moved = false;
+            downT = Date.now();
+            var r = atBtnEl.getBoundingClientRect();
+            sx = e.clientX;
+            sy = e.clientY;
+            ox = r.left;
+            oy = r.top;
+            try {
+              atBtnEl.setPointerCapture(pid);
+            } catch (err) {}
+            atBtnEl.classList.add("dragging");
+            atWake();
+          });
+          atBtnEl.addEventListener("pointermove", function (e) {
+            if (pid === null) return;
+            var dx = e.clientX - sx,
+              dy = e.clientY - sy;
+            if (!moved && Math.abs(dx) + Math.abs(dy) > 6) moved = true;
+            if (moved) {
+              e.preventDefault();
+              atPlaceBtn(ox + dx, oy + dy);
+            }
+          });
+          function atUp() {
+            if (pid === null) return;
+            atBtnEl.classList.remove("dragging");
+            try {
+              atBtnEl.releasePointerCapture(pid);
+            } catch (err) {}
+            pid = null;
+            if (!moved && Date.now() - downT < 700) atToggle();
+            else atSnapEdge();
+          }
+          atBtnEl.addEventListener("pointerup", atUp);
+          atBtnEl.addEventListener("pointercancel", atUp);
+
+          // tutup bila tap di luar lingkaran wheel
+          atOvEl.addEventListener("pointerdown", function (e) {
+            var r = atWheelEl.getBoundingClientRect();
+            var cx = r.left + r.width / 2,
+              cy = r.top + r.height / 2;
+            var dx = e.clientX - cx,
+              dy = e.clientY - cy;
+            if (Math.sqrt(dx * dx + dy * dy) > r.width / 2) atClose();
+          });
+
+          // hub: kembali satu tingkat, atau tutup bila sudah di akar
+          atHubEl.onclick = function (e) {
+            e.stopPropagation();
+            if (atLevel === "root") atClose();
+            else {
+              atPage = 0;
+              atGoLevel("root");
+            }
+          };
+
+          document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape" && atOvEl && !atOvEl.hidden) atClose();
+          });
+          window.addEventListener("resize", function () {
+            var r = atBtnEl.getBoundingClientRect();
+            atPlaceBtn(r.left, r.top);
+          });
+
+          atWake();
+        }
+
         // Jalankan aplikasi: gambar tampilan, lalu coba sambungkan ke server online.
         makeButtons();
         render();
         initExtras();
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", initWheel);
+        } else {
+          initWheel();
+        }
         if (document.readyState === "loading") {
           document.addEventListener("DOMContentLoaded", initCloud);
         } else {

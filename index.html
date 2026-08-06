@@ -814,5 +814,19 @@
       src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"
     ></script>
     <script src="./js/app.js"></script>
+    <!-- v60: tombol melayang ala AssistiveTouch + wheel menu -->
+    <button id="atBtn" type="button" aria-label="Menu cepat" title="Tahan lalu geser untuk memindahkan">
+      <span class="atDot"></span>
+    </button>
+    <div id="atOverlay" hidden>
+      <div id="atWheel" role="dialog" aria-label="Menu cepat">
+        <div class="atRing"></div>
+        <div class="atItems"></div>
+        <button class="atHub" type="button">
+          <span class="lottieIco atHubIco" data-anim="wheel"></span>
+          <span class="atHubLbl">Menu</span>
+        </button>
+      </div>
+    </div>
 </body>
 </html>
