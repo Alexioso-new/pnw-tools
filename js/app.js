@@ -1417,6 +1417,7 @@
               : ("Nada " + target + " (asli " + song.originalKey + ")");
             renderLinesInto(body, song.lines || [], shift, target);
             screen.classList.toggle("hideChords", !showCh);
+            if (window.PNWMotion) window.PNWMotion.revealLines(body);
           }
           if (typeof v.scroll === "number" && stage) {
             var m = stage.scrollHeight - stage.clientHeight;
@@ -7915,6 +7916,7 @@
             results.forEach(function (s) {
               box.appendChild(buildBankCard(s));
             });
+            if (window.PNWMotion) window.PNWMotion.stagger(box);
             return;
           }
           if (!currentBankFolder) {
@@ -7925,6 +7927,7 @@
             BANK_CATS.forEach(function (c) {
               box.appendChild(buildFolderCard(c));
             });
+            if (window.PNWMotion) window.PNWMotion.stagger(box);
             return;
           }
           renderBankCrumb(box, bankCatLabel(currentBankFolder), false);
@@ -7939,6 +7942,7 @@
           inFolder.forEach(function (s) {
             box.appendChild(buildBankCard(s));
           });
+          if (window.PNWMotion) window.PNWMotion.stagger(box);
         }
         function pullFromBank(master) {
           if (

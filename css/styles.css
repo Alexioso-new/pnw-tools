@@ -3054,3 +3054,27 @@ body.dark .atHubSub { color: rgba(255, 255, 255, 0.6); }
   #atWheel { width: 262px; height: 262px; }
   .atItem { width: 62px; height: 62px; margin: -31px 0 0 -31px; }
 }
+
+/* ===================== v61: Token gerak + reduced motion ===================== */
+/* Arketipe Premium: halus, tanpa overshoot. */
+:root {
+  --dur-micro: 100ms;
+  --dur-quick: 180ms;
+  --dur-normal: 300ms;
+  --dur-slow: 450ms;
+  --ease-sig: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.3, 0, 1, 1);
+}
+
+/* Wajib: hormati pengaturan "kurangi gerak" di sistem operasi. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
