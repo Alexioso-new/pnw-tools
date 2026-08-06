@@ -105,7 +105,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v4.0</span>
+            <span class="verTag" id="appVer">v4.1</span>
           </p>
         </div>
         <button
@@ -142,37 +142,6 @@
       <section class="control no-print">
         <p class="label">Nada dasar</p>
         <div class="keyGrid" id="keyButtons"></div>
-        <div class="semiRow" id="semiRow">
-          <button
-            class="semiBtn"
-            id="semiDown"
-            type="button"
-            title="Turunkan setengah nada"
-            aria-label="Turunkan setengah nada"
-          >
-            &minus;
-          </button>
-          <div class="semiInfo">
-            <span class="semiLbl">Semitone</span>
-            <span class="semiVal" id="semiVal">0</span>
-          </div>
-          <button
-            class="semiBtn"
-            id="semiUp"
-            type="button"
-            title="Naikkan setengah nada"
-            aria-label="Naikkan setengah nada"
-          >
-            +
-          </button>
-          <button class="semiReset" id="semiReset" type="button">
-            Nada asli
-          </button>
-          <p class="semiHint">
-            Geser setengah nada untuk mengukur jangkauan suara worship leader.
-            Pintasan papan ketik: + dan &minus;
-          </p>
-        </div>
       </section>
       <div class="crumb no-print" id="statusCrumb">
         <span class="crumbItem" id="currentSongPill">Lagu</span
@@ -312,6 +281,72 @@
           >
             &#10005;
           </button>
+        </div>
+        <div class="ytPitch no-print" id="ytPitch">
+          <div class="ytPitchRow">
+            <span class="ytPitchLbl">Nada</span>
+            <button
+              class="semiBtn"
+              id="semiDown"
+              type="button"
+              title="Turunkan setengah nada"
+              aria-label="Turunkan setengah nada"
+            >
+              &minus;
+            </button>
+            <div class="semiInfo">
+              <span class="semiVal" id="semiVal">0</span>
+            </div>
+            <button
+              class="semiBtn"
+              id="semiUp"
+              type="button"
+              title="Naikkan setengah nada"
+              aria-label="Naikkan setengah nada"
+            >
+              +
+            </button>
+            <button class="semiReset" id="semiReset" type="button">
+              Asli
+            </button>
+            <button
+              class="semiTone"
+              id="semiTone"
+              type="button"
+              title="Bunyikan nada acuan"
+            >
+              &#9835; Nada acuan
+            </button>
+          </div>
+          <div class="ytPitchRow">
+            <span class="ytPitchLbl">Tempo</span>
+            <button
+              class="semiBtn"
+              id="ytRateDown"
+              type="button"
+              aria-label="Perlambat lagu"
+            >
+              &minus;
+            </button>
+            <div class="semiInfo">
+              <span class="semiVal" id="ytRateVal">1&times;</span>
+            </div>
+            <button
+              class="semiBtn"
+              id="ytRateUp"
+              type="button"
+              aria-label="Percepat lagu"
+            >
+              +
+            </button>
+          </div>
+          <p class="semiHint">
+            Chord langsung berpindah nada, dan <b>Nada acuan</b> membunyikan
+            nada dasar barunya supaya WL bisa mengukur jangkauan suara.
+            Catatan jujur: audio YouTube nadanya dikunci oleh YouTube sendiri,
+            jadi tidak ada aplikasi web yang bisa menggeser frekuensinya.
+            Untuk berlatih di nada baru, pakai <b>Rekaman</b>.
+          </p>
         </div>
         <div id="ytHost"></div>
         <div id="content"></div>
@@ -856,6 +891,7 @@
     <script src="./js/motion.js"></script>
     <script src="./js/recorder.js"></script>
     <script src="./js/app.js"></script>
+    <script src="./js/hosana-flame-data.js"></script>
     <script src="./js/logo-anim.js"></script>
     <!-- v60: tombol melayang ala AssistiveTouch + wheel menu -->
     <button id="atBtn" type="button" aria-label="Menu cepat" title="Tahan lalu geser untuk memindahkan">

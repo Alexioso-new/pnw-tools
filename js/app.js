@@ -1171,12 +1171,35 @@
           toast("Anda keluar dari mode admin.", "info");
         }
         function toggleLock() {
-          if (!isAdmin || !lockRef) return;
-          lockRef.set(!locked);
-          toast(
-            !locked ? "Daftar lagu dikunci." : "Daftar lagu dibuka.",
-            "success",
-          );
+          if (!isAdmin) {
+            toast("Masuk sebagai admin dulu untuk membuka kunci.", "info");
+            return;
+          }
+          if (!lockRef) {
+            toast(
+              "Cloud belum terhubung, jadi status kunci belum bisa diubah.",
+              "error"
+            );
+            return;
+          }
+          var want = !locked;
+          lockRef.set(want, function (err) {
+            if (err) {
+              console.error("ubah kunci gagal", err);
+              toast(
+                fbDenied(err)
+                  ? "Gagal mengubah kunci: akun ini belum punya izin admin di Firebase."
+                  : "Gagal mengubah kunci: cloud tidak bisa dihubungi.",
+                "error",
+                6000
+              );
+              return;
+            }
+            toast(
+              want ? "Daftar lagu dikunci." : "Daftar lagu dibuka.",
+              "success"
+            );
+          });
         }
         var noteEditKey = null,
           noteEditT = 0;
@@ -2266,8 +2289,17 @@
               scheduleRef.set(schedClean(sched), function (err) {
                 if (err) {
                   console.error("simpan jadwal gagal", err);
-                  schedCloudStatus("Gagal simpan ke cloud");
-                  toast("Gagal menyimpan jadwal ke cloud.", "error");
+                  var den = fbDenied(err);
+                  schedCloudStatus(
+                    den ? "Cloud: perlu masuk admin" : "Cloud tidak terhubung"
+                  );
+                  toast(
+                    den
+                      ? "Jadwal tersimpan di perangkat ini. Untuk ikut tersimpan ke cloud, masuk sebagai admin dulu."
+                      : "Jadwal tersimpan di perangkat ini. Cloud sedang tidak bisa dihubungi.",
+                    den ? "info" : "error",
+                    6000
+                  );
                 } else schedCloudStatus("Realtime aktif");
               });
             } catch (e) {
@@ -7243,10 +7275,17 @@
         function showYtBar() {
           var b = document.getElementById("ytBar");
           if (b) b.classList.add("open");
+          var p = document.getElementById("ytPitch");
+          if (p) p.classList.add("open");
         }
         function hideYtBar() {
           var b = document.getElementById("ytBar");
           if (b) b.classList.remove("open");
+          var p = document.getElementById("ytPitch");
+          if (p) p.classList.remove("open");
+          try {
+            ytRateSet(1);
+          } catch (e) {}
         }
         function ytTogglePlay() {
           if (!ytPlayer || !ytPlayer.getPlayerState) return;
@@ -8154,6 +8193,14 @@
           E: 4, Fb: 4, "E#": 5, F: 5, "F#": 6, Gb: 6, G: 7, "G#": 8,
           Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11, Cb: 11,
         };
+        // v63: kenali penolakan izin Firebase supaya pesannya jujur
+        function fbDenied(err) {
+          var s = "";
+          try {
+            s = ((err && (err.code || err.message)) || String(err)).toLowerCase();
+          } catch (e) {}
+          return s.indexOf("permission") >= 0 || s.indexOf("denied") >= 0;
+        }
         function semiOf(k) {
           var s = String(k == null ? "" : k).trim();
           if (SEMI_MAP[s] != null) return SEMI_MAP[s];
@@ -8210,6 +8257,67 @@
           render();
           updateSemiUi(selectedKey, song.originalKey);
         }
+        // --- v63: nada acuan (pitch pipe) lewat Web Audio ---
+        var __ac = null;
+        function playRefTone(key) {
+          try {
+            var AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) {
+              toast("Peramban ini tidak mendukung nada acuan.", "error");
+              return;
+            }
+            if (!__ac) __ac = new AC();
+            if (__ac.state === "suspended") __ac.resume();
+            var base = 261.63 * Math.pow(2, semiOf(key) / 12);
+            var t0 = __ac.currentTime;
+            [base, base * 2].forEach(function (f, i) {
+              var o = __ac.createOscillator();
+              var g = __ac.createGain();
+              o.type = i ? "sine" : "triangle";
+              o.frequency.value = f;
+              g.gain.setValueAtTime(0.0001, t0);
+              g.gain.exponentialRampToValueAtTime(i ? 0.06 : 0.16, t0 + 0.03);
+              g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.5);
+              o.connect(g);
+              g.connect(__ac.destination);
+              o.start(t0);
+              o.stop(t0 + 1.6);
+            });
+          } catch (e) {
+            toast("Nada acuan gagal dibunyikan.", "error");
+          }
+        }
+        function semiToneRef() {
+          var song = v62Song();
+          if (!song) {
+            toast("Pilih lagu dulu.", "info");
+            return;
+          }
+          var k = selectedKey || song.originalKey || "C";
+          playRefTone(k);
+          toast("Nada acuan: " + k, "info", 1800);
+        }
+
+        // --- v63: kecepatan pemutar YouTube ---
+        var YT_RATES = [0.5, 0.75, 1, 1.25, 1.5];
+        var __ytRate = 1;
+        function ytRateSet(r) {
+          __ytRate = r;
+          var el = document.getElementById("ytRateVal");
+          if (el) el.textContent = String(r) + "\u00d7";
+          try {
+            if (ytPlayer && ytPlayer.setPlaybackRate) {
+              ytPlayer.setPlaybackRate(r);
+            }
+          } catch (e) {}
+        }
+        function ytRateStep(d) {
+          var i = YT_RATES.indexOf(__ytRate);
+          if (i < 0) i = 2;
+          i = Math.min(YT_RATES.length - 1, Math.max(0, i + d));
+          ytRateSet(YT_RATES[i]);
+        }
+
         function openRecorderForCurrent() {
           if (!window.PNWRec) {
             toast("Fitur rekaman belum siap.", "error");
@@ -8239,6 +8347,18 @@
           if (up) up.onclick = function () { semiShift(1); };
           if (dn) dn.onclick = function () { semiShift(-1); };
           if (rs) rs.onclick = semiReset;
+          var st = document.getElementById("semiTone");
+          if (st) st.onclick = semiToneRef;
+          var ru = document.getElementById("ytRateUp");
+          if (ru)
+            ru.onclick = function () {
+              ytRateStep(1);
+            };
+          var rd2 = document.getElementById("ytRateDown");
+          if (rd2)
+            rd2.onclick = function () {
+              ytRateStep(-1);
+            };
           if (rb) rb.onclick = openRecorderForCurrent;
           document.addEventListener("keydown", function (e) {
             if (e.ctrlKey || e.metaKey || e.altKey) return;
