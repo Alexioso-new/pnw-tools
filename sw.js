@@ -1,7 +1,7 @@
 /* HOSANA YOUTH TOOLS - service worker
    PENTING: naikkan angka versi CACHE setiap deploy index.html baru
    supaya cache lama dibuang dan file terbaru dipakai. */
-const CACHE = "pnw-tools-v64";
+const CACHE = "pnw-tools-v65";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -21,6 +21,8 @@ const APP_SHELL = [
   "./js/motion.js",
   "./js/recorder.js",
   "./js/app.js",
+  "./js/guide.js",
+  "./js/projector.js",
   "./js/hosana-flame-data.js",
   "./js/logo-anim.js",
   "./js/hosana-flame.json",

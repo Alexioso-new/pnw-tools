@@ -8,35 +8,56 @@
    ========================================================================= */
 
 :root {
-  /* --- kanvas & permukaan (Supabase near-black) --- */
-  --d-canvas: #0a0a0b;
-  --d-s1: #101013;
-  --d-s2: #16161a;
-  --d-s3: #1c1c21;
-  --d-s4: #23232a;
+  /* --- tipografi: Geist Sans untuk semua teks, Geist Mono BOLD untuk judul --- */
+  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
+
+  /* =====================================================================
+     PALET HOSANA YOUTH TOOLS - dark mode taktis, minimalis, futuristik
+     Biru logo sebagai aksen. Semua pasangan lulus WCAG AA/AAA.
+     Distribusi 60-30-10:
+       60% kanvas  -> --d-canvas
+       30% surface -> --d-s1..--d-s3 + --d-line
+       10% aksen   -> --d-accent + semantik
+     ===================================================================== */
+
+  /* --- 60%: Background Utama. Near-black bernuansa biru, bukan hitam murni:
+         mengurangi halation/silau di ruangan gelap saat ibadah. --- */
+  --d-canvas: #0b0e14;
+
+  /* --- 30%: Background Sekunder / Surface (kartu, tabel, menu nav) --- */
+  --d-s1: #111621; /* kartu, baris daftar */
+  --d-s2: #171d2b; /* modal, drawer menu, header */
+  --d-s3: #1f2637; /* hover, input, keadaan tertekan */
+  --d-s4: #252d40; /* tumpukan tertinggi */
 
   /* --- garis hairline: pengganti bayangan --- */
-  --d-line: #23232a;
-  --d-line-strong: #32323c;
-  --d-line-soft: #1a1a1f;
+  --d-line: #2a3348;
+  --d-line-strong: #3a4560;
+  --d-line-soft: #1c2333;
 
-  /* --- teks (kontras Raycast) --- */
-  --d-ink: #ededf0;
-  --d-ink-2: #a1a1ab;
-  --d-ink-3: #71717a;
+  /* --- Teks: putih sejuk, bukan #fff murni (menekan glare di ruang gelap) --- */
+  --d-ink: #e8edf7; /* Teks Utama  - 16.5:1 di kanvas  -> AAA */
+  --d-ink-2: #94a3bc; /* Teks Sekunder - 7.1:1 di surface -> AAA */
+  --d-ink-3: #6b7c99; /* Teks Tersier  - 4.6:1 di kanvas  -> AA  */
 
-  /* --- aksen tunggal: biru brand Hosana --- */
-  --d-accent: #4c9df7;
-  --d-accent-hi: #79b8ff;
-  --d-accent-wash: rgba(76, 157, 247, 0.12);
-  --d-accent-ink: #0a0a0b;
+  /* --- 10%: Primary Color, biru logo --- */
+  --d-accent: #3b9eff; /* aksi utama, indikator aktif - 6.9:1 -> AA/AAA besar */
+  --d-accent-hi: #5fb3ff; /* hover */
+  --d-accent-deep: #1b6fcc; /* tertekan */
+  --d-accent-wash: #12243d; /* latar tint */
+  --d-accent-ink: #04121f; /* teks di atas tombol biru - 6.9:1 -> AA */
 
-  /* --- semantik, diredam agar tidak norak --- */
-  --d-ok: #3ecf8e;
-  --d-ok-wash: rgba(62, 207, 142, 0.12);
-  --d-danger: #f0616d;
-  --d-danger-wash: rgba(240, 97, 109, 0.12);
-  --d-chord: #f5a55f;
+  /* --- Semantic Colors khusus mode gelap --- */
+  --d-ok: #34d399; /* sukses  - 9.4:1 -> AAA */
+  --d-ok-wash: #12281f;
+  --d-warn: #fbbf24; /* peringatan - 10.8:1 -> AAA */
+  --d-warn-wash: #2a2213;
+  --d-danger: #f87171; /* error  - 6.5:1 -> AA */
+  --d-danger-wash: #2d1719;
+  --d-chord: #ffb86b; /* akor/kunci - 10.6:1 -> AAA */
 
   /* --- radius: 14 nilai lama dipadatkan jadi 4 --- */
   --d-r-sm: 6px;
@@ -79,11 +100,11 @@
 
 /* toggle gelap tetap hidup: versi hitam pekat ala Raycast */
 body.dark {
-  --d-canvas: #000000;
-  --d-s1: #0a0a0b;
-  --d-s2: #101013;
-  --d-s3: #16161a;
-  --d-s4: #1c1c21;
+  --d-canvas: #05070c;
+  --d-s1: #0b0e14;
+  --d-s2: #111621;
+  --d-s3: #171d2b;
+  --d-s4: #1f2637;
   --text: var(--d-ink);
   --muted: var(--d-ink-2);
   --line: var(--d-line);
@@ -306,7 +327,7 @@ h5 {
   color: var(--d-ink-2);
   border: 1px solid var(--d-line);
   border-radius: var(--d-r-sm);
-  font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-family: "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   box-shadow: none;
@@ -366,7 +387,7 @@ h5 {
   box-shadow: var(--ring);
 }
 #editLines {
-  font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-family: "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
   line-height: 1.7;
 }
 
@@ -374,7 +395,7 @@ h5 {
 .chord,
 .ic-ch {
   color: var(--d-chord);
-  font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-family: "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
   font-weight: 700;
 }
 .line {
@@ -420,7 +441,7 @@ h5 {
 .ytTime,
 .semiVal,
 #ytRateVal {
-  font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-family: "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
   color: var(--d-ink-2);
 }
@@ -509,7 +530,7 @@ h5 {
   font-variant-numeric: tabular-nums;
 }
 .recDockTime {
-  font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-family: "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   color: var(--d-ink-3);
@@ -581,7 +602,7 @@ h5 {
   background: var(--d-danger-wash);
 }
 .recTime {
-  font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-family: "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
   color: var(--d-ink);
 }
@@ -795,5 +816,806 @@ h5 {
   .recDock,
   .no-print {
     display: none !important;
+  }
+}
+
+/* =========================================================================
+   TIPOGRAFI v65 - Geist Sans untuk semua teks, Geist Mono BOLD untuk TITLE
+   ========================================================================= */
+body,
+button,
+input,
+select,
+textarea,
+.btn,
+.chip,
+.pill {
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* TITLE -> Geist Mono BOLD, tegas dan taktis */
+h1,
+h2,
+h3,
+h4,
+#songTitle,
+#editTitle,
+#dispTitle,
+.brand,
+.dispBrand {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--d-ink);
+}
+
+/* angka & akor tetap monospace agar kolom tidak bergeser */
+.line.chord,
+.ic-ch,
+.dispKey,
+#keyLine,
+.recDockTime,
+#recDockTime {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================================
+   3D - TATA LETAK: hilangkan tombol dempet, ritme vertikal konsisten
+   ========================================================================= */
+.drawer .menuSec {
+  padding: 18px 0;
+  margin: 0;
+  border-top: 1px solid var(--d-line-soft);
+}
+.drawer .menuSec:first-of-type {
+  border-top: 0;
+  padding-top: 6px;
+}
+.drawer .menuSec > .label {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--d-ink-3);
+}
+/* target sentuh layak untuk semua kontrol di drawer */
+.drawer .actionBtn,
+.drawer .touchBtn,
+.drawer select,
+.drawer input {
+  min-height: 44px;
+}
+.drawer .menuSec > .actionBtn + .actionBtn {
+  margin-top: 10px;
+}
+
+/* pencarian lagu: input & dropdown diberi jarak */
+.bankFind {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+/* PERBAIKAN: "Pilih lagu..." tadinya putih di atas putih */
+select,
+.bankFind select,
+.drawer select {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+  padding: 0 12px;
+  width: 100%;
+}
+select option {
+  background: var(--d-s2);
+  color: var(--d-ink);
+}
+
+/* metronome: baris tidak lagi menempel */
+.metroRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.metroRow + .metroRow {
+  margin-top: 10px;
+}
+.metroBpm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.metroBpm .mBtn {
+  min-width: 40px;
+  min-height: 40px;
+}
+.stepRow .stepBtn {
+  min-width: 44px;
+  min-height: 36px;
+}
+
+/* PERBAIKAN: label "Mulai" metronome tadinya tak terlihat */
+.metroToggle {
+  background: var(--d-accent);
+  color: var(--d-accent-ink);
+  font-weight: 600;
+  border: 1px solid var(--d-accent);
+  min-width: 96px;
+}
+.metroToggle.on {
+  background: var(--d-danger);
+  border-color: var(--d-danger);
+  color: #260e10;
+}
+
+/* PERBAIKAN: tombol oranye & hijau berkontras jelek -> gaya wash */
+.actionBtn.orange {
+  background: var(--d-warn-wash);
+  color: var(--d-warn);
+  border: 1px solid rgba(251, 191, 36, 0.38);
+}
+.actionBtn.green {
+  background: var(--d-ok-wash);
+  color: var(--d-ok);
+  border: 1px solid rgba(52, 211, 153, 0.38);
+}
+.actionBtn.orange:hover,
+.actionBtn.green:hover {
+  border-color: currentColor;
+}
+
+/* baris aksi utama: jarak seragam, tidak saling menempel */
+.actions,
+.actionRow,
+.btnRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* baris NADA/TEMPO: tombol acuan diberi kontras */
+.ytPitch button,
+.semiRow button {
+  min-height: 40px;
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line-strong);
+}
+
+/* teks kosong rekaman tadinya terlalu redup */
+.recEmpty,
+#recList:empty::before {
+  color: var(--d-ink-2);
+}
+
+/* =========================================================================
+   3B - CETAK: bersih, rapi, profesional (hitam di atas putih)
+   ========================================================================= */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm 13mm;
+  }
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print,
+  .drawer,
+  .drawerBackdrop,
+  .modalBackdrop,
+  .topbar,
+  .actions,
+  #ytHost,
+  #recDock,
+  #toastWrap,
+  #atBtn,
+  #atOverlay,
+  .fab {
+    display: none !important;
+  }
+  #content,
+  .sheet {
+    background: #ffffff !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  /* judul lagu sebagai kepala dokumen */
+  #songTitle {
+    font-size: 20pt !important;
+    color: #000 !important;
+    margin: 0 0 2mm !important;
+    padding-bottom: 2mm;
+    border-bottom: 1.5pt solid #000;
+  }
+  #keyLine,
+  #sourceLine {
+    color: #333 !important;
+    font-size: 9.5pt !important;
+    margin: 0 0 1mm !important;
+  }
+  /* akor tegas tanpa warna */
+  .line.chord,
+  .ic-ch {
+    color: #000 !important;
+    font-weight: 700 !important;
+  }
+  .line.section {
+    color: #000 !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 4mm !important;
+  }
+  /* jangan potong pasangan akor-lirik di antara halaman */
+  .line,
+  .ic,
+  .verse,
+  .section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  #songTitle,
+  .line.section {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}
+
+/* =========================================================================
+   3C - BUKU PANDUAN (PDF diunggah admin, dibaca semua pengguna)
+   ========================================================================= */
+.modal.guideModal {
+  width: min(920px, 94vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.guideHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.guideHead h2 {
+  margin: 0;
+}
+.guideBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: auto;
+  min-height: 200px;
+}
+.guideDocHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--d-line);
+}
+.guideDocName {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: var(--d-ink);
+}
+.guideDocMeta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--d-ink-2);
+}
+.guideDocActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.guideDocActions .actionBtn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+}
+.guideViewer {
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+  overflow: hidden;
+  background: var(--d-s1);
+  min-height: 52vh;
+}
+.guideViewer iframe {
+  display: block;
+  width: 100%;
+  height: 52vh;
+  border: 0;
+  background: var(--d-s1);
+}
+.guideEmpty {
+  padding: 28px 18px;
+  text-align: left;
+  border: 1px dashed var(--d-line-strong);
+  border-radius: var(--d-r-md);
+  background: var(--d-s1);
+}
+.guideEmptyTitle {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: var(--d-ink);
+}
+.guideEmptyNote {
+  margin: 0;
+  font-size: 13px;
+  color: var(--d-ink-2);
+}
+.guideUp {
+  padding-top: 14px;
+  border-top: 1px solid var(--d-line);
+}
+.guideUp input[type="file"] {
+  width: 100%;
+  color: var(--d-ink-2);
+  font-size: 13px;
+  padding: 10px;
+  background: var(--d-s3);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+}
+.guideHint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--d-ink-3);
+}
+.actionBtn.danger.guideDel {
+  background: var(--d-danger-wash);
+  color: var(--d-danger);
+  border: 1px solid rgba(248, 113, 113, 0.38);
+  align-self: flex-start;
+}
+
+/* =========================================================================
+   3E - PROYEKTOR, MODE PERSIAPAN: tata letak 3 panel ala presenter
+   ========================================================================= */
+.projPage {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: var(--d-canvas);
+  display: none;
+  flex-direction: column;
+}
+.projPage.open {
+  display: flex;
+}
+body.projOpen {
+  overflow: hidden;
+}
+.projTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--d-line);
+  background: var(--d-s2);
+  flex: 0 0 auto;
+}
+.projTopL {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.projBrand {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--d-ink);
+}
+.projBadge {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: var(--d-r-pill);
+  background: var(--d-accent-wash);
+  color: var(--d-accent);
+  border: 1px solid rgba(59, 158, 255, 0.34);
+}
+.projDev {
+  font-size: 11px;
+  color: var(--d-ink-3);
+}
+
+/* grid 3 panel */
+.projGrid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(320px, 1fr) minmax(260px, 330px);
+  gap: 1px;
+  background: var(--d-line);
+}
+.projPane {
+  background: var(--d-canvas);
+  padding: 14px;
+  overflow: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.projPaneHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.projPaneHead h3 {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--d-ink-2);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.projPaneOps {
+  display: flex;
+  gap: 8px;
+}
+.projMiniBtn {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: var(--d-r-sm);
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line-strong);
+  cursor: pointer;
+}
+.projMiniBtn:hover {
+  border-color: var(--d-accent);
+}
+.projMiniBtn.primary {
+  background: var(--d-accent);
+  color: var(--d-accent-ink);
+  border-color: var(--d-accent);
+}
+.projRowBtns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.projEmpty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--d-ink-3);
+  padding: 14px;
+  border: 1px dashed var(--d-line-strong);
+  border-radius: var(--d-r-md);
+}
+
+/* panel kiri: rencana ibadah */
+.projPlanList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.projPlanItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+  cursor: pointer;
+  transition: border-color var(--dur-quick) var(--ease-out);
+}
+.projPlanItem:hover {
+  border-color: var(--d-line-strong);
+}
+.projPlanItem.isActive {
+  border-color: var(--d-accent);
+  background: var(--d-accent-wash);
+}
+.projPlanNo {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--d-ink-3);
+  min-width: 18px;
+}
+.projPlanBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.projPlanTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--d-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.projPlanKind {
+  font-size: 11px;
+  color: var(--d-ink-2);
+}
+.projPlanOps {
+  display: flex;
+  gap: 2px;
+}
+.projIconBtn {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  border-radius: var(--d-r-sm);
+  background: transparent;
+  color: var(--d-ink-3);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.projIconBtn:hover {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border-color: var(--d-line);
+}
+
+/* panel tengah: katalog bertab */
+.projTabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--d-line);
+  flex-wrap: wrap;
+}
+.projTab {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--d-ink-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.projTab:hover {
+  color: var(--d-ink);
+}
+.projTab.on {
+  color: var(--d-accent);
+  border-bottom-color: var(--d-accent);
+}
+.projSearchRow input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+}
+.projFilters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.projChip {
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--d-r-pill);
+  background: var(--d-s2);
+  color: var(--d-ink-2);
+  border: 1px solid var(--d-line);
+  cursor: pointer;
+}
+.projChip.on {
+  background: var(--d-accent-wash);
+  color: var(--d-accent);
+  border-color: rgba(59, 158, 255, 0.34);
+}
+.projCatalogList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  align-content: start;
+}
+.projCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  text-align: left;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+  cursor: pointer;
+  transition: border-color var(--dur-quick) var(--ease-out);
+}
+.projCard:hover {
+  border-color: var(--d-accent);
+}
+.projCardTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--d-ink);
+}
+.projCardMeta {
+  font-size: 11.5px;
+  color: var(--d-ink-2);
+}
+.projSoon {
+  padding: 22px 16px;
+  border: 1px dashed var(--d-line-strong);
+  border-radius: var(--d-r-md);
+  background: var(--d-s1);
+}
+.projSoonTitle {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: var(--d-ink);
+}
+.projSoonNote {
+  margin: 0;
+  font-size: 13px;
+  color: var(--d-ink-2);
+}
+
+/* panel kanan: item aktif + pengaturan */
+.projLive {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 3px 7px;
+  border-radius: var(--d-r-sm);
+  background: var(--d-danger-wash);
+  color: var(--d-danger);
+  border: 1px solid rgba(248, 113, 113, 0.38);
+}
+.projActiveBody {
+  padding: 12px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+}
+.projActiveTitle {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: var(--d-ink);
+}
+.projActiveKind {
+  margin: 0;
+  font-size: 12px;
+  color: var(--d-ink-2);
+}
+.projField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.projField > label {
+  font-size: 12px;
+  color: var(--d-ink-2);
+}
+.projField select {
+  min-height: 38px;
+}
+.projField input[type="range"] {
+  width: 100%;
+  accent-color: var(--d-accent);
+}
+.projSeg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--d-r-sm);
+  background: var(--d-s2);
+  border: 1px solid var(--d-line);
+}
+.projSeg button {
+  flex: 1;
+  min-height: 32px;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--d-ink-3);
+  border: 0;
+  border-radius: var(--d-r-sm);
+  cursor: pointer;
+}
+.projSeg button.on {
+  background: var(--d-accent);
+  color: var(--d-accent-ink);
+}
+.projSub {
+  margin: 0;
+  font-size: 11px;
+  color: var(--d-ink-3);
+}
+.projSolids {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+.projSwatch {
+  aspect-ratio: 1;
+  border-radius: var(--d-r-sm);
+  border: 1px solid var(--d-line-strong);
+  cursor: pointer;
+}
+.projSwatch.on {
+  outline: 2px solid var(--d-accent);
+  outline-offset: 1px;
+}
+.projPresets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.projPreset {
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+  cursor: pointer;
+}
+.projPreset.on {
+  border-color: var(--d-accent);
+}
+.projPreset img {
+  display: block;
+  width: 100%;
+  height: 54px;
+  object-fit: cover;
+}
+.projPreset span {
+  display: block;
+  padding: 5px 7px;
+  font-size: 11px;
+  color: var(--d-ink-2);
+}
+.projPreview {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  min-height: 96px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+}
+.projPreview span {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* responsif: panel menumpuk di layar kecil */
+@media (max-width: 1024px) {
+  .projGrid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(200px, auto);
+    overflow: auto;
+  }
+  .projPane {
+    overflow: visible;
   }
 }

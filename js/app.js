@@ -6096,11 +6096,54 @@
         }
         // --- Memasang aksi ke setiap tombol ---
         document.getElementById("printBtn").onclick = () => window.print();
+        // --- Salin: susun teks rapi, bukan innerText mentah ---
+        function buildCopyText() {
+          const sheet = document.getElementById("sheet");
+          if (!sheet) return "";
+          const RULE = "=".repeat(44);
+          const out = [];
+          const txtOf = (id) => {
+            const el = document.getElementById(id);
+            return el ? (el.textContent || "").trim() : "";
+          };
+          const title = txtOf("songTitle") || "Tanpa judul";
+          out.push(title.toUpperCase());
+          const key = txtOf("keyLine");
+          const src = txtOf("sourceLine");
+          if (key) out.push(key);
+          if (src) out.push(src);
+          out.push(RULE);
+          out.push("");
+          let blank = true;
+          sheet.querySelectorAll(".line").forEach((el) => {
+            const raw = (el.innerText || "").replace(/[ \t]+$/g, "");
+            if (el.classList.contains("section")) {
+              if (!blank) out.push("");
+              const name = raw.trim().replace(/^\[|\]$/g, "");
+              out.push("[" + name.toUpperCase() + "]");
+              blank = false;
+              return;
+            }
+            if (!raw.trim()) {
+              if (!blank) {
+                out.push("");
+                blank = true;
+              }
+              return;
+            }
+            out.push(raw);
+            blank = false;
+          });
+          while (out.length && !out[out.length - 1].trim()) out.pop();
+          out.push("", "-".repeat(44), "HOSANA YOUTH TOOLS");
+          return out.join("\n");
+        }
         document.getElementById("copyBtn").onclick = async () => {
-          const t = document.getElementById("sheet").innerText;
+          const t = buildCopyText();
           try {
             await navigator.clipboard.writeText(t);
-            alert("Lagu sudah disalin.");
+            if (typeof toast === "function") toast("Lagu disalin dengan format rapi.");
+            else alert("Lagu disalin dengan format rapi.");
           } catch (e) {
             alert(
               "Penyalinan otomatis gagal. Blok teks lagu lalu salin manual.",

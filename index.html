@@ -28,7 +28,7 @@
       name="description"
       content="PNW TOOLS - alat transpose chord untuk tim pujian. Pilih lagu dan nada dasar, chord langsung menyesuaikan."
     />
-    <meta name="theme-color" content="#0a0a0b" />
+    <meta name="theme-color" content="#0b0e14" />
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -38,7 +38,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./css/styles.css" />
@@ -106,7 +106,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v4.2</span>
+            <span class="verTag" id="appVer">v4.3</span>
           </p>
         </div>
         <button
@@ -611,6 +611,25 @@
           </div>
         </section>
         <section class="menuSec">
+          <p class="label">Panduan &amp; Proyektor</p>
+          <button
+            class="actionBtn secondary"
+            id="openGuideBtn"
+            type="button"
+            style="width: 100%"
+          >
+            Buku Panduan
+          </button>
+          <button
+            class="actionBtn secondary"
+            id="openProjBtn"
+            type="button"
+            style="width: 100%"
+          >
+            Proyektor &mdash; Mode Persiapan
+          </button>
+        </section>
+        <section class="menuSec">
           <p class="label">Bantu saran</p>
           <button
             class="actionBtn secondary"
@@ -839,6 +858,129 @@
         <div id="schedBody"></div>
       </div>
     </div>
+    <div class="modalBackdrop no-print" id="guideModal" aria-hidden="true">
+      <div class="modal guideModal">
+        <div class="guideHead">
+          <h2>Buku Panduan</h2>
+          <button class="xBtn" id="closeGuideBtn" type="button">
+            &#10005;
+          </button>
+        </div>
+        <div class="guideBody" id="guideBody"></div>
+      </div>
+    </div>
+    <div class="projPage no-print" id="projPage" aria-hidden="true">
+      <header class="projTop">
+        <div class="projTopL">
+          <span class="projBrand">Proyektor</span>
+          <span class="projBadge">Mode Persiapan</span>
+          <span class="projDev">Dalam pengembangan</span>
+        </div>
+        <button class="xBtn" id="closeProjBtn" type="button">&#10005;</button>
+      </header>
+      <div class="projGrid">
+        <aside class="projPane projPaneL">
+          <div class="projPaneHead">
+            <h3>Rencana Ibadah</h3>
+            <div class="projPaneOps">
+              <button class="projMiniBtn" id="projNewPlan" type="button">
+                Baru
+              </button>
+              <button
+                class="projMiniBtn primary"
+                id="projSavePlan"
+                type="button"
+              >
+                Simpan
+              </button>
+            </div>
+          </div>
+          <div class="projPlanList" id="projPlanList"></div>
+        </aside>
+        <section class="projPane projPaneC">
+          <div class="projTabs" id="projTabs">
+            <button class="projTab on" data-tab="lagu" type="button">
+              Lagu
+            </button>
+            <button class="projTab" data-tab="alkitab" type="button">
+              Alkitab
+            </button>
+            <button class="projTab" data-tab="teks" type="button">Teks</button>
+            <button class="projTab" data-tab="media" type="button">
+              Media
+            </button>
+            <button class="projTab" data-tab="template" type="button">
+              Template
+            </button>
+          </div>
+          <div class="projSearchRow">
+            <input id="projSearch" type="search" placeholder="Cari lagu..." />
+          </div>
+          <div class="projFilters" id="projFilters">
+            <button class="projChip on" data-filter="semua" type="button">
+              Semua <span id="projCountAll">0</span>
+            </button>
+            <button class="projChip" data-filter="rencana" type="button">
+              Di rencana
+            </button>
+          </div>
+          <div class="projCatalogList" id="projCatalogList"></div>
+        </section>
+        <aside class="projPane projPaneR">
+          <div class="projPaneHead">
+            <h3>Item Aktif</h3>
+            <span class="projLive" id="projLiveDot">LIVE</span>
+          </div>
+          <div class="projActiveBody" id="projActiveBody"></div>
+          <div class="projRowBtns">
+            <button class="projMiniBtn primary" id="projGoLive" type="button">
+              Tayangkan
+            </button>
+            <button class="projMiniBtn" id="projClear" type="button">
+              Bersihkan Layar
+            </button>
+          </div>
+          <p class="label">Pengaturan Teks Sesi</p>
+          <div class="projField">
+            <label for="projFont">Font</label>
+            <select id="projFont">
+              <option value="Geist">Geist Sans</option>
+              <option value="Geist Mono">Geist Mono</option>
+            </select>
+          </div>
+          <div class="projField">
+            <label for="projSize"
+              >Ukuran <span id="projSizeVal">40px</span></label
+            >
+            <input type="range" id="projSize" min="20" max="96" step="2" />
+          </div>
+          <div class="projField">
+            <label>Perataan</label>
+            <div class="projSeg" id="projAlign">
+              <button data-align="left" type="button">Kiri</button>
+              <button data-align="center" type="button">Tengah</button>
+              <button data-align="right" type="button">Kanan</button>
+            </div>
+          </div>
+          <div class="projField">
+            <label for="projShadow">Bayangan</label>
+            <select id="projShadow">
+              <option value="soft">Lembut</option>
+              <option value="strong">Tegas</option>
+              <option value="none">Tanpa bayangan</option>
+            </select>
+          </div>
+          <p class="label">Latar Belakang</p>
+          <div class="projSolids" id="projSolids"></div>
+          <p class="projSub">Gambar preset</p>
+          <div class="projPresets" id="projPresets"></div>
+          <p class="label">Pratinjau</p>
+          <div class="projPreview" id="projPreview">
+            <span id="projPreviewText">Contoh teks lirik</span>
+          </div>
+        </aside>
+      </div>
+    </div>
     <script
       defer
       src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"
@@ -860,6 +1002,8 @@
     <script src="./js/motion.js"></script>
     <script src="./js/recorder.js"></script>
     <script src="./js/app.js"></script>
+    <script src="./js/guide.js"></script>
+    <script src="./js/projector.js"></script>
     <script src="./js/hosana-flame-data.js"></script>
     <script src="./js/logo-anim.js"></script>
     <!-- v60: tombol melayang ala AssistiveTouch + wheel menu -->
