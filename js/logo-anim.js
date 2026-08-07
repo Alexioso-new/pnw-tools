@@ -1,1 +1,141 @@
-(function(){"use strict";var a=document.getElementById("brandMark"),r=document.getElementById("brandFlame"),c=document.getElementById("brandLogo");if(!a||!c)return;var d=!1,n=null;function o(e){d||(d=!0,e&&a.classList.add("noAnim"),a.classList.add("logoIn"),setTimeout(function(){a.classList.add("flameGone");try{n&&n.destroy&&n.destroy()}catch(t){}n=null,r&&(r.innerHTML="")},e?0:760))}var l=!1;try{l=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){}if(l||!r){o(!0);return}setTimeout(function(){o(!1)},3600);function u(e){if(window.lottie&&window.lottie.loadAnimation)return e(!0);var t=document.getElementById("lottieLib");if(t){t.addEventListener("load",function(){e(!!(window.lottie&&window.lottie.loadAnimation))}),t.addEventListener("error",function(){e(!1)});return}var i=document.createElement("script");i.id="lottieLib",i.src="./lottie.min.js",i.onload=function(){e(!!(window.lottie&&window.lottie.loadAnimation))},i.onerror=function(){e(!1)},document.head.appendChild(i)}function f(e){if(window.__HOSANA_FLAME)return e(window.__HOSANA_FLAME);try{fetch("./js/hosana-flame.json",{cache:"force-cache"}).then(function(t){return t&&t.ok?t.json():null}).then(function(t){e(t)}).catch(function(){e(null)})}catch(t){e(null)}}function s(){u(function(e){if(!e)return o(!1);f(function(t){if(!t)return o(!1);try{n=window.lottie.loadAnimation({container:r,renderer:"svg",loop:!1,autoplay:!0,animationData:t,rendererSettings:{preserveAspectRatio:"xMidYMid meet",progressiveLoad:!1}})}catch(i){return o(!1)}a.classList.add("flameOn"),n.addEventListener("complete",function(){o(!1)}),n.addEventListener("data_failed",function(){o(!1)})})})}document.readyState==="complete"||document.readyState==="interactive"?setTimeout(s,0):document.addEventListener("DOMContentLoaded",s)})();
+/* PNW-FILE-GUIDE
+   js/logo-anim.js — animasi logo api -> logo lama.
+   Butuh lottie (di-lazy-load) + window.__HOSANA_FLAME (js/hosana-flame-data.js).
+   Target elemen: #brandMark, #brandFlame, #brandLogo di index.html.
+ */
+
+/* PNW TOOLS v63 - animasi logo api Hosana (Lottie) lalu logo lama (fade).
+   PERBAIKAN v63: data animasi kini di-embed sebagai <script> biasa
+   (window.__HOSANA_FLAME) sehingga TIDAK bergantung pada fetch().
+   Di sebagian browser HP, service worker lama / mode offline membuat
+   fetch("./js/hosana-flame.json") gagal diam-diam sehingga animasi
+   tidak pernah tampil. */
+(function () {
+  "use strict";
+  var mark = document.getElementById("brandMark");
+  var host = document.getElementById("brandFlame");
+  var logo = document.getElementById("brandLogo");
+  if (!mark || !logo) return;
+
+  var done = false;
+  var anim = null;
+
+  function showLogo(instant) {
+    if (done) return;
+    done = true;
+    if (instant) mark.classList.add("noAnim");
+    mark.classList.add("logoIn");
+    setTimeout(
+      function () {
+        mark.classList.add("flameGone");
+        try {
+          if (anim && anim.destroy) anim.destroy();
+        } catch (e) {}
+        anim = null;
+        if (host) host.innerHTML = "";
+      },
+      instant ? 0 : 760,
+    );
+  }
+
+  // hormati pengaturan "kurangi gerak" di iOS/Android
+  var reduced = false;
+  try {
+    reduced =
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch (e) {}
+  if (reduced || !host) {
+    showLogo(true);
+    return;
+  }
+
+  // pengaman mutlak: apa pun yang gagal, logo tetap wajib muncul
+  setTimeout(function () {
+    showLogo(false);
+  }, 3600);
+
+  function ensureLottie(cb) {
+    if (window.lottie && window.lottie.loadAnimation) return cb(true);
+    var ex = document.getElementById("lottieLib");
+    if (ex) {
+      ex.addEventListener("load", function () {
+        cb(!!(window.lottie && window.lottie.loadAnimation));
+      });
+      ex.addEventListener("error", function () {
+        cb(false);
+      });
+      return;
+    }
+    var s = document.createElement("script");
+    s.id = "lottieLib";
+    s.src = "./lottie.min.js";
+    s.onload = function () {
+      cb(!!(window.lottie && window.lottie.loadAnimation));
+    };
+    s.onerror = function () {
+      cb(false);
+    };
+    document.head.appendChild(s);
+  }
+
+  function withData(cb) {
+    // 1) data yang sudah ikut termuat sebagai script (paling andal)
+    if (window.__HOSANA_FLAME) return cb(window.__HOSANA_FLAME);
+    // 2) cadangan: ambil lewat jaringan
+    try {
+      fetch("./js/hosana-flame.json", { cache: "force-cache" })
+        .then(function (r) {
+          return r && r.ok ? r.json() : null;
+        })
+        .then(function (j) {
+          cb(j);
+        })
+        .catch(function () {
+          cb(null);
+        });
+    } catch (e) {
+      cb(null);
+    }
+  }
+
+  function start() {
+    ensureLottie(function (ok) {
+      if (!ok) return showLogo(false);
+      withData(function (data) {
+        if (!data) return showLogo(false);
+        try {
+          anim = window.lottie.loadAnimation({
+            container: host,
+            renderer: "svg",
+            loop: false,
+            autoplay: true,
+            animationData: data,
+            rendererSettings: {
+              preserveAspectRatio: "xMidYMid meet",
+              progressiveLoad: false,
+            },
+          });
+        } catch (e) {
+          return showLogo(false);
+        }
+        mark.classList.add("flameOn");
+        anim.addEventListener("complete", function () {
+          showLogo(false);
+        });
+        anim.addEventListener("data_failed", function () {
+          showLogo(false);
+        });
+      });
+    });
+  }
+
+  if (
+    document.readyState === "complete" ||
+    document.readyState === "interactive"
+  ) {
+    setTimeout(start, 0);
+  } else {
+    document.addEventListener("DOMContentLoaded", start);
+  }
+})();

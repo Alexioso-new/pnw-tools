@@ -1,7 +1,14 @@
+/* PNW-FILE-GUIDE
+   sw.js — service worker (offline cache).
+   WAJIB: naikkan angka CACHE setiap rilis, kalau tidak pengguna melihat versi lama.
+   APP_SHELL harus selalu cocok dengan nama file asli di proyek.
+   Terhubung: index.html (mendaftarkan SW).
+ */
+
 /* HOSANA YOUTH TOOLS - service worker
    PENTING: naikkan angka versi CACHE setiap deploy index.html baru
    supaya cache lama dibuang dan file terbaru dipakai. */
-const CACHE = "pnw-tools-v66";
+const CACHE = "pnw-tools-v67";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -33,7 +40,9 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => Promise.all(APP_SHELL.map((url) => cache.add(url).catch(() => {})))),
+      .then((cache) =>
+        Promise.all(APP_SHELL.map((url) => cache.add(url).catch(() => {}))),
+      ),
   );
 });
 
@@ -41,7 +50,11 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) =>
+        Promise.all(
+          keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)),
+        ),
+      )
       .then(() => self.clients.claim()),
   );
 });
@@ -68,7 +81,9 @@ self.addEventListener("fetch", (event) => {
             .catch(() => {});
           return res;
         })
-        .catch(() => caches.match("./index.html").then((r) => r || caches.match("./"))),
+        .catch(() =>
+          caches.match("./index.html").then((r) => r || caches.match("./")),
+        ),
     );
     return;
   }
@@ -78,7 +93,11 @@ self.addEventListener("fetch", (event) => {
     caches.match(req).then((cached) => {
       const network = fetch(req)
         .then((res) => {
-          if (res && res.status === 200 && url.origin === self.location.origin) {
+          if (
+            res &&
+            res.status === 200 &&
+            url.origin === self.location.origin
+          ) {
             const copy = res.clone();
             caches
               .open(CACHE)

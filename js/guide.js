@@ -1,1 +1,343 @@
-(function(){"use strict";var E="pujianYouth/guide",M="guide",P=26214400,I="l9U1ktYog2X3vSA81JdsjHln5qu1",d=null,y=!1;function o(){return typeof firebase=="undefined"||!firebase.apps||!firebase.apps.length?null:firebase}function g(){var e=o();if(!e||!e.database)return null;try{return e.database().ref(E)}catch(n){return null}}function H(){var e=o();if(!e||!e.storage)return!1;try{return e.storage(),!0}catch(n){return!1}}function b(){var e=o();try{var n=e&&e.auth?e.auth().currentUser:null;return n?{uid:n.uid,name:n.displayName||n.email||"Pengguna"}:null}catch(t){return null}}function s(){var e=b();return!!(e&&e.uid===I)}function F(e){return!e&&e!==0?"":e<1024?e+" B":e<1024*1024?(e/1024).toFixed(0)+" KB":(e/1024/1024).toFixed(1)+" MB"}function L(e){if(!e)return"";try{return new Date(e).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}catch(n){return""}}function k(e){typeof window.toast=="function"?window.toast(e):alert(e)}function U(){return document.getElementById("guideBody")}function S(e){var n=s();e.innerHTML='<div class="guideEmpty"><p class="guideEmptyTitle">Panduan belum tersedia</p><p class="guideEmptyNote">'+(n?"Unggah berkas PDF panduan penggunaan di bawah ini.":"Pengurus belum mengunggah buku panduan.")+"</p></div>"}function T(e,n){var t=s(),a=[];if(n.size&&a.push(F(n.size)),n.ts&&a.push("Diperbarui "+L(n.ts)),n.byName&&a.push("oleh "+n.byName),e.innerHTML='<div class="guideDocHead"><div class="guideDocInfo"><p class="guideDocName">'+p(n.name||"Panduan.pdf")+'</p><p class="guideDocMeta">'+p(a.join(" \xB7 "))+'</p></div><div class="guideDocActions"><a class="actionBtn" id="guideOpenTab" target="_blank" rel="noopener" href="'+m(n.url)+'">Buka tab baru</a><a class="actionBtn secondary" id="guideDl" download href="'+m(n.url)+'">Unduh</a></div></div><div class="guideViewer"><iframe id="guideFrame" title="Buku panduan" src="'+m(n.url)+'#view=FitH"></iframe></div>'+(t?'<button class="actionBtn danger guideDel" id="guideDelBtn" type="button">Hapus panduan</button>':""),t){var l=document.getElementById("guideDelBtn");l&&(l.onclick=O)}}function p(e){return String(e==null?"":e).replace(/[&<>"']/g,function(n){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[n]})}function m(e){return p(e)}function N(e){if(s()){var n=document.createElement("div");n.className="guideUp",n.innerHTML='<p class="label">Unggah panduan (PDF)</p><input type="file" id="guideFile" accept="application/pdf" /><p class="guideHint" id="guideHint">Maksimal 25 MB. Mengunggah berkas baru akan menggantikan panduan lama.</p>',e.appendChild(n);var t=document.getElementById("guideFile");t&&(t.onchange=A)}}function c(){var e=U();if(e){if(!o()){e.innerHTML='<div class="guideEmpty"><p class="guideEmptyTitle">Butuh koneksi</p><p class="guideEmptyNote">Buku panduan tersimpan online. Sambungkan internet lalu buka lagi.</p></div>';return}d&&d.url?T(e,d):S(e),N(e)}}function i(e){var n=document.getElementById("guideHint");n&&(n.textContent=e)}function A(e){var n=e&&e.target&&e.target.files?e.target.files[0]:null;if(n){if(n.type!=="application/pdf"&&!/\.pdf$/i.test(n.name)){i("Berkas harus PDF.");return}if(n.size>P){i("Berkas terlalu besar. Maksimal 25 MB.");return}if(!H()){i("Penyimpanan online belum aktif. Aktifkan Firebase Storage lebih dulu.");return}z(n)}}function z(e){var n=o(),t=b(),a=M+"/panduan-"+Date.now()+".pdf";i("Mengunggah 0%");var l;try{l=n.storage().ref().child(a).put(e,{contentType:"application/pdf"})}catch(r){i("Gagal memulai unggahan.");return}l.on("state_changed",function(r){if(r.totalBytes){var u=Math.round(r.bytesTransferred/r.totalBytes*100);i("Mengunggah "+u+"%")}},function(r){var u=r&&r.code?String(r.code):"";u.indexOf("unauthorized")>=0?i("Tidak diizinkan. Periksa aturan keamanan Storage."):u.indexOf("retry")>=0||u.indexOf("unknown")>=0?i("Unggahan gagal. Pastikan Firebase Storage sudah aktif."):i("Unggahan gagal: "+u)},function(){l.snapshot.ref.getDownloadURL().then(function(r){var u={name:e.name,size:e.size,url:r,path:a,ts:Date.now(),by:t?t.uid:null,byName:t?t.name:"Pengurus"},D=g(),f=d;if(D&&D.set(u),d=u,c(),k("Panduan berhasil diunggah."),f&&f.path&&f.path!==a)try{n.storage().ref().child(f.path).delete()}catch(_){}}).catch(function(){i("Berkas terunggah tetapi tautan gagal dibuat.")})})}function O(){if(s()&&confirm("Hapus buku panduan ini?")){var e=o(),n=d,t=g();if(t&&t.remove(),d=null,c(),n&&n.path&&e&&e.storage)try{e.storage().ref().child(n.path).delete()}catch(a){}k("Panduan dihapus.")}}function B(){if(!y){var e=g();e&&(y=!0,e.on("value",function(n){d=n&&n.val?n.val():null;var t=document.getElementById("guideModal");t&&t.classList.contains("open")&&c()}))}}function w(){var e=document.getElementById("guideModal");e&&(e.classList.add("open"),e.setAttribute("aria-hidden","false"),B(),c())}function h(){var e=document.getElementById("guideModal");e&&(e.classList.remove("open"),e.setAttribute("aria-hidden","true"))}function v(){var e=document.getElementById("openGuideBtn");e&&(e.onclick=function(){typeof window.closeMenu=="function"&&window.closeMenu(),w()});var n=document.getElementById("closeGuideBtn");n&&(n.onclick=h);var t=document.getElementById("guideModal");t&&t.addEventListener("click",function(a){a.target===t&&h()}),B()}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",v):v(),window.PNWGuide={open:w,close:h,render:c,init:v}})();
+/* PNW-FILE-GUIDE
+   js/guide.js — Buku Panduan PDF (window.PNWGuide).
+   PDF -> Storage path guide/..., metadata -> RTDB pujianYouth/guide (tulis hanya OWNER_UID).
+   Dibuka dari #openGuideBtn di drawer (index.html).
+ */
+
+/* =========================================================================
+   GUIDE BOOK - HOSANA YOUTH TOOLS v65
+   Admin mengunggah PDF panduan ke Firebase Storage, seluruh pengguna
+   membacanya online. Metadata disimpan di RTDB agar tersinkron realtime.
+   Bergantung pada firebase compat (app, database, storage) yang dimuat
+   di index.html. Aman jika Firebase belum siap: tampil pesan, tidak crash.
+   ========================================================================= */
+(function () {
+  "use strict";
+
+  var GUIDE_REF = "pujianYouth/guide";
+  var STORE_DIR = "guide";
+  var MAX_PDF = 25 * 1024 * 1024; // 25 MB
+  var OWNER_UID = "l9U1ktYog2X3vSA81JdsjHln5qu1";
+
+  var _meta = null;
+  var _watching = false;
+
+  /* ---------- util ---------- */
+  function fb() {
+    if (typeof firebase === "undefined") return null;
+    if (!firebase.apps || !firebase.apps.length) return null;
+    return firebase;
+  }
+  function dbRef() {
+    var f = fb();
+    if (!f || !f.database) return null;
+    try {
+      return f.database().ref(GUIDE_REF);
+    } catch (e) {
+      return null;
+    }
+  }
+  function storageAvail() {
+    var f = fb();
+    if (!f || !f.storage) return false;
+    try {
+      f.storage();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function whoAmI() {
+    var f = fb();
+    try {
+      var u = f && f.auth ? f.auth().currentUser : null;
+      return u
+        ? { uid: u.uid, name: u.displayName || u.email || "Pengguna" }
+        : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function isOwner() {
+    var me = whoAmI();
+    return !!(me && me.uid === OWNER_UID);
+  }
+  function fmtSize(b) {
+    if (!b && b !== 0) return "";
+    if (b < 1024) return b + " B";
+    if (b < 1024 * 1024) return (b / 1024).toFixed(0) + " KB";
+    return (b / 1024 / 1024).toFixed(1) + " MB";
+  }
+  function fmtDate(ts) {
+    if (!ts) return "";
+    try {
+      return new Date(ts).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+    } catch (e) {
+      return "";
+    }
+  }
+  function notify(msg) {
+    if (typeof window.toast === "function") window.toast(msg);
+    else alert(msg);
+  }
+
+  /* ---------- render ---------- */
+  function body() {
+    return document.getElementById("guideBody");
+  }
+
+  function renderEmpty(host) {
+    var owner = isOwner();
+    host.innerHTML =
+      '<div class="guideEmpty">' +
+      '<p class="guideEmptyTitle">Panduan belum tersedia</p>' +
+      '<p class="guideEmptyNote">' +
+      (owner
+        ? "Unggah berkas PDF panduan penggunaan di bawah ini."
+        : "Pengurus belum mengunggah buku panduan.") +
+      "</p></div>";
+  }
+
+  function renderDoc(host, m) {
+    var owner = isOwner();
+    var meta = [];
+    if (m.size) meta.push(fmtSize(m.size));
+    if (m.ts) meta.push("Diperbarui " + fmtDate(m.ts));
+    if (m.byName) meta.push("oleh " + m.byName);
+
+    host.innerHTML =
+      '<div class="guideDocHead">' +
+      '<div class="guideDocInfo">' +
+      '<p class="guideDocName">' +
+      escapeHtml(m.name || "Panduan.pdf") +
+      "</p>" +
+      '<p class="guideDocMeta">' +
+      escapeHtml(meta.join(" \u00b7 ")) +
+      "</p>" +
+      "</div>" +
+      '<div class="guideDocActions">' +
+      '<a class="actionBtn" id="guideOpenTab" target="_blank" rel="noopener" href="' +
+      escapeAttr(m.url) +
+      '">Buka tab baru</a>' +
+      '<a class="actionBtn secondary" id="guideDl" download href="' +
+      escapeAttr(m.url) +
+      '">Unduh</a>' +
+      "</div></div>" +
+      '<div class="guideViewer"><iframe id="guideFrame" title="Buku panduan" src="' +
+      escapeAttr(m.url) +
+      '#view=FitH"></iframe></div>' +
+      (owner
+        ? '<button class="actionBtn danger guideDel" id="guideDelBtn" type="button">Hapus panduan</button>'
+        : "");
+
+    if (owner) {
+      var del = document.getElementById("guideDelBtn");
+      if (del) del.onclick = removeGuide;
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      }[c];
+    });
+  }
+  function escapeAttr(s) {
+    return escapeHtml(s);
+  }
+
+  function renderUploader(host) {
+    if (!isOwner()) return;
+    var wrap = document.createElement("div");
+    wrap.className = "guideUp";
+    wrap.innerHTML =
+      '<p class="label">Unggah panduan (PDF)</p>' +
+      '<input type="file" id="guideFile" accept="application/pdf" />' +
+      '<p class="guideHint" id="guideHint">Maksimal 25 MB. Mengunggah berkas baru akan menggantikan panduan lama.</p>';
+    host.appendChild(wrap);
+    var inp = document.getElementById("guideFile");
+    if (inp) inp.onchange = onPick;
+  }
+
+  function render() {
+    var host = body();
+    if (!host) return;
+    if (!fb()) {
+      host.innerHTML =
+        '<div class="guideEmpty"><p class="guideEmptyTitle">Butuh koneksi</p>' +
+        '<p class="guideEmptyNote">Buku panduan tersimpan online. Sambungkan internet lalu buka lagi.</p></div>';
+      return;
+    }
+    if (_meta && _meta.url) renderDoc(host, _meta);
+    else renderEmpty(host);
+    renderUploader(host);
+  }
+
+  /* ---------- unggah ---------- */
+  function setHint(msg) {
+    var h = document.getElementById("guideHint");
+    if (h) h.textContent = msg;
+  }
+
+  function onPick(ev) {
+    var file = ev && ev.target && ev.target.files ? ev.target.files[0] : null;
+    if (!file) return;
+    if (file.type !== "application/pdf" && !/\.pdf$/i.test(file.name)) {
+      setHint("Berkas harus PDF.");
+      return;
+    }
+    if (file.size > MAX_PDF) {
+      setHint("Berkas terlalu besar. Maksimal 25 MB.");
+      return;
+    }
+    if (!storageAvail()) {
+      setHint(
+        "Penyimpanan online belum aktif. Aktifkan Firebase Storage lebih dulu.",
+      );
+      return;
+    }
+    uploadPdf(file);
+  }
+
+  function uploadPdf(file) {
+    var f = fb();
+    var me = whoAmI();
+    var path = STORE_DIR + "/panduan-" + Date.now() + ".pdf";
+    setHint("Mengunggah 0%");
+    var task;
+    try {
+      task = f
+        .storage()
+        .ref()
+        .child(path)
+        .put(file, { contentType: "application/pdf" });
+    } catch (e) {
+      setHint("Gagal memulai unggahan.");
+      return;
+    }
+    task.on(
+      "state_changed",
+      function (snap) {
+        if (!snap.totalBytes) return;
+        var pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+        setHint("Mengunggah " + pct + "%");
+      },
+      function (err) {
+        var code = err && err.code ? String(err.code) : "";
+        if (code.indexOf("unauthorized") >= 0)
+          setHint("Tidak diizinkan. Periksa aturan keamanan Storage.");
+        else if (code.indexOf("retry") >= 0 || code.indexOf("unknown") >= 0)
+          setHint("Unggahan gagal. Pastikan Firebase Storage sudah aktif.");
+        else setHint("Unggahan gagal: " + code);
+      },
+      function () {
+        task.snapshot.ref
+          .getDownloadURL()
+          .then(function (url) {
+            var meta = {
+              name: file.name,
+              size: file.size,
+              url: url,
+              path: path,
+              ts: Date.now(),
+              by: me ? me.uid : null,
+              byName: me ? me.name : "Pengurus",
+            };
+            var r = dbRef();
+            var prev = _meta;
+            if (r) r.set(meta);
+            _meta = meta;
+            render();
+            notify("Panduan berhasil diunggah.");
+            // buang berkas lama agar kuota tidak menumpuk
+            if (prev && prev.path && prev.path !== path) {
+              try {
+                f.storage().ref().child(prev.path).delete();
+              } catch (e) {}
+            }
+          })
+          .catch(function () {
+            setHint("Berkas terunggah tetapi tautan gagal dibuat.");
+          });
+      },
+    );
+  }
+
+  function removeGuide() {
+    if (!isOwner()) return;
+    if (!confirm("Hapus buku panduan ini?")) return;
+    var f = fb();
+    var old = _meta;
+    var r = dbRef();
+    if (r) r.remove();
+    _meta = null;
+    render();
+    if (old && old.path && f && f.storage) {
+      try {
+        f.storage().ref().child(old.path).delete();
+      } catch (e) {}
+    }
+    notify("Panduan dihapus.");
+  }
+
+  /* ---------- sinkron ---------- */
+  function watch() {
+    if (_watching) return;
+    var r = dbRef();
+    if (!r) return;
+    _watching = true;
+    r.on("value", function (snap) {
+      _meta = snap && snap.val ? snap.val() : null;
+      var bd = document.getElementById("guideModal");
+      if (bd && bd.classList.contains("open")) render();
+    });
+  }
+
+  /* ---------- buka / tutup ---------- */
+  function open() {
+    var bd = document.getElementById("guideModal");
+    if (!bd) return;
+    bd.classList.add("open");
+    bd.setAttribute("aria-hidden", "false");
+    watch();
+    render();
+  }
+  function close() {
+    var bd = document.getElementById("guideModal");
+    if (!bd) return;
+    bd.classList.remove("open");
+    bd.setAttribute("aria-hidden", "true");
+  }
+
+  function init() {
+    var openBtn = document.getElementById("openGuideBtn");
+    if (openBtn)
+      openBtn.onclick = function () {
+        if (typeof window.closeMenu === "function") window.closeMenu();
+        open();
+      };
+    var x = document.getElementById("closeGuideBtn");
+    if (x) x.onclick = close;
+    var bd = document.getElementById("guideModal");
+    if (bd)
+      bd.addEventListener("click", function (e) {
+        if (e.target === bd) close();
+      });
+    watch();
+  }
+
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", init);
+  else init();
+
+  window.PNWGuide = { open: open, close: close, render: render, init: init };
+})();
