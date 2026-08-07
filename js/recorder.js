@@ -1,5 +1,6 @@
-/* PNW TOOLS v62 - Rekaman latihan per lagu
- * Menyimpan rekaman suara di IndexedDB perangkat (tidak diunggah ke server).
+/* PNW TOOLS v64 - Rekaman latihan per lagu
+ * Simpan lokal (IndexedDB) + unggah online (Firebase Storage + indeks RTDB).
+ * Rekaman online bisa dibuka & diunduh dari perangkat mana pun.
  * Dipakai lewat window.PNWRec
  */
 (function () {
@@ -8,9 +9,13 @@
   var DB_NAME = "pnwRecordings";
   var DB_VER = 1;
   var STORE = "rec";
+  var CLOUD_PATH = "pujianYouth/recordings";
+  var MAX_UPLOAD = 25 * 1024 * 1024; // 25 MB
+
   var _db = null;
   var _counts = {};
   var _openFor = null; // { id, title }
+  var _dockFor = null; // { id, title }
   var _mr = null;
   var _chunks = [];
   var _startAt = 0;
@@ -18,10 +23,14 @@
   var _stream = null;
   var _playingUrl = null;
   var _playingAudio = null;
+  var _playingId = null;
+  var _cloudCache = {}; // songId -> array meta
+  var _watching = {}; // songId -> true
 
   function log() {
     try {
-      if (window.PNWLog && window.PNWLog.debug) console.log.apply(console, arguments);
+      if (window.PNWLog && window.PNWLog.debug)
+        console.log.apply(console, arguments);
     } catch (e) {}
   }
 
@@ -33,6 +42,53 @@
       console.log("[rekaman] " + msg);
     } catch (e) {}
     return null;
+  }
+
+  /* ---------------- Firebase helpers ---------------- */
+  function fb() {
+    try {
+      if (typeof firebase === "undefined" || !firebase.apps || !firebase.apps.length)
+        return null;
+      return firebase;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function dbRefFor(songId) {
+    var f = fb();
+    if (!f || !f.database) return null;
+    try {
+      return f.database().ref(CLOUD_PATH + "/" + safeKey(songId));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function storageAvail() {
+    var f = fb();
+    if (!f || typeof f.storage !== "function") return false;
+    try {
+      f.storage();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function safeKey(v) {
+    return String(v == null ? "lepas" : v).replace(/[.#$/\[\]]/g, "_");
+  }
+
+  function whoAmI() {
+    var f = fb();
+    try {
+      var u = f && f.auth ? f.auth().currentUser : null;
+      if (!u) return { uid: "", name: "" };
+      return { uid: u.uid || "", name: u.displayName || u.email || "" };
+    } catch (e) {
+      return { uid: "", name: "" };
+    }
   }
 
   /* ---------------- IndexedDB ---------------- */
@@ -81,8 +137,12 @@
             name: v.name,
             ts: v.ts,
             dur: v.dur,
-            size: v.blob ? v.blob.size : 0,
+            size: v.blob ? v.blob.size : v.size || 0,
             type: v.type,
+            url: v.url || "",
+            path: v.path || "",
+            synced: !!v.url,
+            local: true,
           });
           c.continue();
         };
@@ -135,6 +195,148 @@
     });
   }
 
+  /* ---------------- cloud index ---------------- */
+  function cloudList(songId) {
+    var ref = dbRefFor(songId);
+    if (!ref) return Promise.resolve([]);
+    return ref
+      .once("value")
+      .then(function (snap) {
+        var v = snap.val() || {};
+        var out = [];
+        Object.keys(v).forEach(function (k) {
+          var r = v[k] || {};
+          out.push({
+            id: k,
+            songId: String(songId),
+            songTitle: r.songTitle || "",
+            name: r.name || "Rekaman",
+            ts: r.ts || 0,
+            dur: r.dur || 0,
+            size: r.size || 0,
+            type: r.type || "audio/webm",
+            url: r.url || "",
+            path: r.path || "",
+            by: r.byName || "",
+            synced: true,
+            cloud: true,
+          });
+        });
+        _cloudCache[String(songId)] = out;
+        return out;
+      })
+      .catch(function () {
+        return _cloudCache[String(songId)] || [];
+      });
+  }
+
+  function watchCloud(songId, cb) {
+    var key = String(songId);
+    var ref = dbRefFor(songId);
+    if (!ref || _watching[key]) return;
+    _watching[key] = true;
+    try {
+      ref.on("value", function () {
+        cloudList(songId).then(function () {
+          if (typeof cb === "function") cb();
+        });
+      });
+    } catch (e) {
+      _watching[key] = false;
+    }
+  }
+
+  function uploadRec(rec) {
+    if (!storageAvail()) return Promise.resolve(null);
+    if (!rec || !rec.blob) return Promise.resolve(null);
+    if (rec.blob.size > MAX_UPLOAD) {
+      toast("Rekaman terlalu besar untuk diunggah, disimpan lokal saja.", "info");
+      return Promise.resolve(null);
+    }
+    var f = fb();
+    var me = whoAmI();
+    var path = "recordings/" + safeKey(rec.songId) + "/" + rec.id + "." + extFor(rec.type);
+    var sref;
+    try {
+      sref = f.storage().ref(path);
+    } catch (e) {
+      return Promise.resolve(null);
+    }
+    return sref
+      .put(rec.blob, { contentType: rec.type || "audio/webm" })
+      .then(function () {
+        return sref.getDownloadURL();
+      })
+      .then(function (url) {
+        var meta = {
+          name: rec.name,
+          songTitle: rec.songTitle || "",
+          ts: rec.ts,
+          dur: rec.dur,
+          size: rec.blob.size,
+          type: rec.type,
+          url: url,
+          path: path,
+          by: me.uid,
+          byName: me.name,
+        };
+        var ref = dbRefFor(rec.songId);
+        if (!ref) return url;
+        return ref
+          .child(rec.id)
+          .set(meta)
+          .then(function () {
+            return url;
+          });
+      })
+      .catch(function (err) {
+        log("upload gagal", err);
+        return null;
+      });
+  }
+
+  function deleteCloud(rec) {
+    var jobs = [];
+    var ref = dbRefFor(rec.songId);
+    if (ref) jobs.push(ref.child(rec.id).remove().catch(function () {}));
+    if (rec.path && storageAvail()) {
+      try {
+        jobs.push(fb().storage().ref(rec.path).delete().catch(function () {}));
+      } catch (e) {}
+    }
+    return Promise.all(jobs);
+  }
+
+  /* ---------------- merged list ---------------- */
+  function mergedList(songId) {
+    var sid = String(songId == null ? "lepas" : songId);
+    return Promise.all([allRecords(), cloudList(sid)]).then(function (res) {
+      var local = res[0].filter(function (r) {
+        return String(r.songId) === sid;
+      });
+      var cloud = res[1];
+      var byId = {};
+      cloud.forEach(function (r) {
+        byId[r.id] = r;
+      });
+      local.forEach(function (r) {
+        if (byId[r.id]) {
+          byId[r.id].local = true;
+          byId[r.id].size = byId[r.id].size || r.size;
+        } else {
+          byId[r.id] = r;
+        }
+      });
+      return Object.keys(byId)
+        .map(function (k) {
+          return byId[k];
+        })
+        .sort(function (a, b) {
+          return (b.ts || 0) - (a.ts || 0);
+        });
+    });
+  }
+
   function refreshCounts() {
     return allRecords()
       .then(function (list) {
@@ -142,6 +344,14 @@
         list.forEach(function (r) {
           var k = String(r.songId);
           m[k] = (m[k] || 0) + 1;
+        });
+        Object.keys(_cloudCache).forEach(function (sid) {
+          var seen = {};
+          (_cloudCache[sid] || []).forEach(function (r) {
+            seen[r.id] = true;
+          });
+          var extra = Object.keys(seen).length;
+          if (extra > (m[sid] || 0)) m[sid] = extra;
         });
         _counts = m;
         decorate();
@@ -188,7 +398,8 @@
     ];
     for (var i = 0; i < opts.length; i++) {
       try {
-        if (window.MediaRecorder && MediaRecorder.isTypeSupported(opts[i])) return opts[i];
+        if (window.MediaRecorder && MediaRecorder.isTypeSupported(opts[i]))
+          return opts[i];
       } catch (e) {}
     }
     return "";
@@ -199,6 +410,184 @@
     if (mime.indexOf("mp4") >= 0) return "m4a";
     if (mime.indexOf("ogg") >= 0) return "ogg";
     return "webm";
+  }
+
+  function fileNameFor(r) {
+    var safe = String(r.songTitle || "lagu").replace(/[^\w\- ]+/g, "").trim() || "lagu";
+    return safe + " - " + (r.name || "rekaman") + "." + extFor(r.type);
+  }
+
+  /* ---------------- playback ---------------- */
+  function stopPlayback() {
+    try {
+      if (_playingAudio) {
+        _playingAudio.pause();
+        _playingAudio.src = "";
+      }
+    } catch (e) {}
+    if (_playingUrl) {
+      try {
+        URL.revokeObjectURL(_playingUrl);
+      } catch (e) {}
+      _playingUrl = null;
+    }
+    _playingAudio = null;
+    _playingId = null;
+    Array.prototype.forEach.call(
+      document.querySelectorAll(".recItem.playing"),
+      function (n) {
+        n.classList.remove("playing");
+      },
+    );
+  }
+
+  function srcFor(rec) {
+    return getBlob(rec.id).then(function (full) {
+      if (full && full.blob) {
+        _playingUrl = URL.createObjectURL(full.blob);
+        return _playingUrl;
+      }
+      if (rec.url) return rec.url;
+      return null;
+    });
+  }
+
+  function playRec(rec, itemEl) {
+    var wasPlaying = _playingId === rec.id;
+    stopPlayback();
+    if (wasPlaying) return;
+    srcFor(rec).then(function (src) {
+      if (!src) return toast("Rekaman tidak tersedia.", "error");
+      _playingAudio = new Audio(src);
+      _playingId = rec.id;
+      if (itemEl) itemEl.classList.add("playing");
+      _playingAudio.onended = stopPlayback;
+      _playingAudio.onerror = function () {
+        stopPlayback();
+        toast("Tidak bisa memutar rekaman.", "error");
+      };
+      _playingAudio.play().catch(function () {
+        stopPlayback();
+        toast("Tidak bisa memutar rekaman.", "error");
+      });
+    });
+  }
+
+  function triggerDownload(blobOrUrl, filename) {
+    var isBlob = blobOrUrl instanceof Blob;
+    var url = isBlob ? URL.createObjectURL(blobOrUrl) : blobOrUrl;
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      try {
+        document.body.removeChild(a);
+      } catch (e) {}
+      if (isBlob) URL.revokeObjectURL(url);
+    }, 800);
+  }
+
+  function downloadRec(rec) {
+    getBlob(rec.id).then(function (full) {
+      if (full && full.blob) return triggerDownload(full.blob, fileNameFor(rec));
+      if (!rec.url) return toast("Rekaman tidak tersedia.", "error");
+      fetch(rec.url)
+        .then(function (r) {
+          if (!r.ok) throw new Error("http " + r.status);
+          return r.blob();
+        })
+        .then(function (b) {
+          triggerDownload(b, fileNameFor(rec));
+        })
+        .catch(function () {
+          window.open(rec.url, "_blank", "noopener");
+        });
+    });
+  }
+
+  /* ---------------- row builder (dipakai modal & dok) ---------------- */
+  function buildRow(r, onChange) {
+    var row = document.createElement("div");
+    row.className = "recItem";
+    row.dataset.id = r.id;
+    if (_playingId === r.id) row.classList.add("playing");
+
+    var play = document.createElement("button");
+    play.type = "button";
+    play.className = "recPlay";
+    play.setAttribute("aria-label", "Putar rekaman");
+    play.onclick = function () {
+      playRec(r, row);
+    };
+
+    var mid = document.createElement("div");
+    mid.className = "recInfo";
+
+    var nm = document.createElement("button");
+    nm.type = "button";
+    nm.className = "recName";
+    nm.textContent = r.name || "Rekaman";
+    nm.title = "Ubah nama";
+    nm.onclick = function () {
+      var v = prompt("Nama rekaman:", r.name || "");
+      if (v === null) return;
+      v = v.trim();
+      if (!v) return;
+      var jobs = [];
+      jobs.push(
+        getBlob(r.id).then(function (full) {
+          if (!full) return null;
+          full.name = v;
+          return putRecord(full);
+        }),
+      );
+      var ref = dbRefFor(r.songId);
+      if (ref && r.cloud) jobs.push(ref.child(r.id).child("name").set(v).catch(function () {}));
+      Promise.all(jobs).then(onChange);
+    };
+
+    var meta = document.createElement("span");
+    meta.className = "recItemMeta";
+    var bits = [fmtDur(r.dur), fmtSize(r.size), fmtDate(r.ts)];
+    if (r.by) bits.push(r.by);
+    meta.textContent = bits.join(" \u00b7 ");
+
+    var tag = document.createElement("span");
+    tag.className = "recTag " + (r.synced ? "isOnline" : "isLocal");
+    tag.textContent = r.synced ? "Online" : "Lokal";
+
+    mid.appendChild(nm);
+    mid.appendChild(meta);
+
+    var dl = document.createElement("button");
+    dl.type = "button";
+    dl.className = "recMini";
+    dl.textContent = "Unduh";
+    dl.onclick = function () {
+      downloadRec(r);
+    };
+
+    var del = document.createElement("button");
+    del.type = "button";
+    del.className = "recMini danger";
+    del.textContent = "Hapus";
+    del.onclick = function () {
+      if (!confirm('Hapus rekaman "' + (r.name || "") + '"?')) return;
+      if (_playingId === r.id) stopPlayback();
+      var jobs = [delRecord(r.id)];
+      if (r.cloud || r.url) jobs.push(deleteCloud(r));
+      Promise.all(jobs).then(refreshCounts).then(onChange);
+    };
+
+    row.appendChild(play);
+    row.appendChild(mid);
+    row.appendChild(tag);
+    row.appendChild(dl);
+    row.appendChild(del);
+    return row;
   }
 
   /* ---------------- panel UI ---------------- */
@@ -212,9 +601,9 @@
     back.innerHTML = [
       '<div class="modal recModal" role="dialog" aria-label="Rekaman latihan">',
       '  <div class="recHead">',
-      '    <div>',
+      "    <div>",
       '      <p class="recTitle" id="recSongTitle">Lagu</p>',
-      '      <p class="recSub">Rekaman latihan tersimpan di perangkat ini</p>',
+      '      <p class="recSub" id="recSub">Tersimpan online</p>',
       "    </div>",
       '    <button class="recX" id="recClose" type="button" aria-label="Tutup">&times;</button>',
       "  </div>",
@@ -222,7 +611,7 @@
       '    <button class="recDot" id="recDot" type="button" aria-label="Mulai merekam"><span class="recDotIn"></span></button>',
       '    <div class="recMeta">',
       '      <span class="recTime" id="recTime">0:00</span>',
-      '      <span class="recHint" id="recHint">Tekan untuk mulai merekam</span>',
+      '      <span class="recHint" id="recHint">Tekan untuk merekam</span>',
       "    </div>",
       '    <div class="recWave" id="recWave" aria-hidden="true"></div>',
       "  </div>",
@@ -237,6 +626,7 @@
 
     el.back = back;
     el.title = back.querySelector("#recSongTitle");
+    el.sub = back.querySelector("#recSub");
     el.dot = back.querySelector("#recDot");
     el.time = back.querySelector("#recTime");
     el.hint = back.querySelector("#recHint");
@@ -262,24 +652,48 @@
   }
 
   function setRecordingUi(on) {
-    if (!el.back) return;
-    el.back.classList.toggle("isRec", !!on);
-    el.hint.textContent = on ? "Sedang merekam - tekan lagi untuk berhenti" : "Tekan untuk mulai merekam";
-    el.dot.setAttribute("aria-label", on ? "Berhenti merekam" : "Mulai merekam");
+    if (el.back) {
+      el.back.classList.toggle("isRec", !!on);
+      el.hint.textContent = on ? "Merekam \u2014 tekan untuk berhenti" : "Tekan untuk merekam";
+      el.dot.setAttribute("aria-label", on ? "Berhenti merekam" : "Mulai merekam");
+    }
+    var dock = document.getElementById("recDock");
+    if (dock) {
+      dock.classList.toggle("isRec", !!on);
+      var db = dock.querySelector("#recDockBtn");
+      if (db) {
+        db.classList.toggle("isRec", !!on);
+        db.setAttribute("aria-label", on ? "Berhenti merekam" : "Mulai merekam");
+      }
+      var dt = dock.querySelector("#recDockTime");
+      if (dt) dt.classList.toggle("isRec", !!on);
+    }
   }
 
   function tick() {
     if (!_startAt) return;
-    el.time.textContent = fmtDur(Date.now() - _startAt);
+    var t = fmtDur(Date.now() - _startAt);
+    if (el.time) el.time.textContent = t;
+    var dt = document.getElementById("recDockTime");
+    if (dt) dt.textContent = t;
+  }
+
+  /* ---------------- rekam ---------------- */
+  function targetSong() {
+    return _openFor || _dockFor || { id: "lepas", title: "Tanpa lagu" };
   }
 
   function startRec() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast("Perangkat/browser ini tidak mendukung perekaman suara.", "error");
+      toast("Browser ini tidak mendukung perekaman suara.", "error");
       return;
     }
     if (!window.MediaRecorder) {
       toast("Browser ini belum mendukung MediaRecorder.", "error");
+      return;
+    }
+    if (!window.isSecureContext && location.hostname !== "localhost") {
+      toast("Mikrofon butuh koneksi HTTPS.", "error");
       return;
     }
     navigator.mediaDevices
@@ -311,16 +725,21 @@
           clearInterval(_timerId);
           _timerId = 0;
           setRecordingUi(false);
-          el.time.textContent = "0:00";
+          if (el.time) el.time.textContent = "0:00";
+          var dt = document.getElementById("recDockTime");
+          if (dt) dt.textContent = "0:00";
           try {
-            if (_stream) _stream.getTracks().forEach(function (t) { t.stop(); });
+            if (_stream)
+              _stream.getTracks().forEach(function (t) {
+                t.stop();
+              });
           } catch (e) {}
           _stream = null;
           if (!blob.size || dur < 700) {
             toast("Rekaman terlalu pendek, tidak disimpan.", "info");
             return;
           }
-          var song = _openFor || { id: "lepas", title: "Tanpa lagu" };
+          var song = targetSong();
           var rec = {
             id: "r" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
             songId: String(song.id),
@@ -330,15 +749,32 @@
             dur: dur,
             type: type,
             blob: blob,
+            url: "",
+            path: "",
           };
           putRecord(rec)
             .then(function () {
               toast("Rekaman disimpan (" + fmtDur(dur) + ").", "success");
-              return refreshCounts();
+              renderAll();
+              return uploadRec(rec);
             })
-            .then(renderList)
+            .then(function (url) {
+              if (url) {
+                rec.url = url;
+                rec.path = "recordings/" + safeKey(rec.songId) + "/" + rec.id + "." + extFor(rec.type);
+                return putRecord(rec).then(function () {
+                  toast("Rekaman tersimpan online.", "success");
+                });
+              }
+              toast("Tersimpan di perangkat. Unggah online belum berhasil.", "info");
+            })
+            .then(refreshCounts)
+            .then(renderAll)
             .catch(function (err) {
-              toast("Gagal menyimpan rekaman: " + (err && err.message ? err.message : err), "error");
+              toast(
+                "Gagal menyimpan rekaman: " + (err && err.message ? err.message : err),
+                "error",
+              );
             });
         };
         _mr.start();
@@ -348,9 +784,13 @@
         _timerId = setInterval(tick, 250);
       })
       .catch(function (err) {
-        var m = err && err.name === "NotAllowedError"
-          ? "Izin mikrofon ditolak. Aktifkan izin mikrofon untuk situs ini."
-          : "Tidak bisa mengakses mikrofon: " + (err && err.message ? err.message : err);
+        var n = err && err.name;
+        var m =
+          n === "NotAllowedError"
+            ? "Izin mikrofon ditolak. Aktifkan izin mikrofon untuk situs ini."
+            : n === "NotFoundError"
+              ? "Mikrofon tidak ditemukan di perangkat ini."
+              : "Tidak bisa mengakses mikrofon: " + (err && err.message ? err.message : err);
         toast(m, "error");
       });
   }
@@ -361,73 +801,11 @@
     } catch (e) {}
   }
 
-  function stopPlayback() {
-    try {
-      if (_playingAudio) {
-        _playingAudio.pause();
-        _playingAudio.src = "";
-      }
-    } catch (e) {}
-    if (_playingUrl) {
-      try {
-        URL.revokeObjectURL(_playingUrl);
-      } catch (e) {}
-      _playingUrl = null;
-    }
-    _playingAudio = null;
-    if (el.list) {
-      Array.prototype.forEach.call(el.list.querySelectorAll(".recItem.playing"), function (n) {
-        n.classList.remove("playing");
-      });
-    }
-  }
-
-  function playRec(id, itemEl) {
-    var wasPlaying = itemEl && itemEl.classList.contains("playing");
-    stopPlayback();
-    if (wasPlaying) return;
-    getBlob(id).then(function (r) {
-      if (!r || !r.blob) return;
-      _playingUrl = URL.createObjectURL(r.blob);
-      _playingAudio = new Audio(_playingUrl);
-      if (itemEl) itemEl.classList.add("playing");
-      _playingAudio.onended = stopPlayback;
-      _playingAudio.onerror = stopPlayback;
-      _playingAudio.play().catch(function () {
-        stopPlayback();
-        toast("Tidak bisa memutar rekaman.", "error");
-      });
-    });
-  }
-
-  function downloadRec(id) {
-    getBlob(id).then(function (r) {
-      if (!r || !r.blob) return;
-      var url = URL.createObjectURL(r.blob);
-      var a = document.createElement("a");
-      var safe = String(r.songTitle || "lagu").replace(/[^\w\- ]+/g, "").trim() || "lagu";
-      a.href = url;
-      a.download = safe + " - " + (r.name || "rekaman") + "." + extFor(r.type);
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function () {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 600);
-    });
-  }
-
+  /* ---------------- render modal ---------------- */
   function renderList() {
     if (!el.list) return Promise.resolve();
-    return allRecords().then(function (list) {
-      var sid = _openFor ? String(_openFor.id) : null;
-      var mine = list
-        .filter(function (r) {
-          return !sid || String(r.songId) === sid;
-        })
-        .sort(function (a, b) {
-          return b.ts - a.ts;
-        });
+    var song = _openFor || { id: "lepas" };
+    return mergedList(song.id).then(function (mine) {
       el.list.innerHTML = "";
       if (!mine.length) {
         var p = document.createElement("p");
@@ -435,78 +813,82 @@
         p.textContent = "Belum ada rekaman untuk lagu ini.";
         el.list.appendChild(p);
       }
-      var total = 0;
-      list.forEach(function (r) {
-        total += r.size || 0;
-      });
       mine.forEach(function (r) {
-        var row = document.createElement("div");
-        row.className = "recItem";
-        row.dataset.id = r.id;
-
-        var play = document.createElement("button");
-        play.type = "button";
-        play.className = "recPlay";
-        play.setAttribute("aria-label", "Putar rekaman");
-        play.onclick = function () {
-          playRec(r.id, row);
-        };
-
-        var mid = document.createElement("div");
-        mid.className = "recInfo";
-        var nm = document.createElement("button");
-        nm.type = "button";
-        nm.className = "recName";
-        nm.textContent = r.name || "Rekaman";
-        nm.title = "Ubah nama";
-        nm.onclick = function () {
-          var v = prompt("Nama rekaman:", r.name || "");
-          if (v === null) return;
-          v = v.trim();
-          if (!v) return;
-          getBlob(r.id).then(function (full) {
-            if (!full) return;
-            full.name = v;
-            putRecord(full).then(renderList);
-          });
-        };
-        var meta = document.createElement("span");
-        meta.className = "recItemMeta";
-        meta.textContent = fmtDur(r.dur) + " \u00b7 " + fmtSize(r.size) + " \u00b7 " + fmtDate(r.ts);
-        mid.appendChild(nm);
-        mid.appendChild(meta);
-
-        var dl = document.createElement("button");
-        dl.type = "button";
-        dl.className = "recMini";
-        dl.textContent = "Unduh";
-        dl.onclick = function () {
-          downloadRec(r.id);
-        };
-
-        var del = document.createElement("button");
-        del.type = "button";
-        del.className = "recMini danger";
-        del.textContent = "Hapus";
-        del.onclick = function () {
-          if (!confirm('Hapus rekaman "' + (r.name || "") + '"?')) return;
-          stopPlayback();
-          delRecord(r.id)
-            .then(refreshCounts)
-            .then(renderList);
-        };
-
-        row.appendChild(play);
-        row.appendChild(mid);
-        row.appendChild(dl);
-        row.appendChild(del);
-        el.list.appendChild(row);
+        el.list.appendChild(buildRow(r, renderAll));
       });
       if (el.note) {
-        el.note.textContent =
-          mine.length + " rekaman lagu ini \u00b7 total semua lagu " + fmtSize(total);
+        var online = mine.filter(function (r) {
+          return r.synced;
+        }).length;
+        el.note.textContent = mine.length + " rekaman \u00b7 " + online + " online";
+      }
+      if (el.sub) {
+        el.sub.textContent = storageAvail()
+          ? "Tersimpan online, bisa dibuka di perangkat lain"
+          : "Tersimpan di perangkat ini";
       }
     });
+  }
+
+  /* ---------------- dok di bawah pemutar ---------------- */
+  function renderDock() {
+    var dock = document.getElementById("recDock");
+    if (!dock || !_dockFor) return Promise.resolve();
+    var list = dock.querySelector("#recDockList");
+    var cnt = dock.querySelector("#recDockCount");
+    if (!list) return Promise.resolve();
+    return mergedList(_dockFor.id).then(function (mine) {
+      list.innerHTML = "";
+      if (!mine.length) {
+        var p = document.createElement("p");
+        p.className = "recEmpty";
+        p.textContent = "Belum ada rekaman. Tekan tombol rekam untuk mulai.";
+        list.appendChild(p);
+      }
+      mine.forEach(function (r) {
+        list.appendChild(buildRow(r, renderAll));
+      });
+      if (cnt) {
+        var online = mine.filter(function (r) {
+          return r.synced;
+        }).length;
+        cnt.textContent = mine.length ? mine.length + " rekaman \u00b7 " + online + " online" : "";
+      }
+    });
+  }
+
+  function renderAll() {
+    return Promise.all([renderList(), renderDock()]);
+  }
+
+  function mountDock(songId, songTitle) {
+    var dock = document.getElementById("recDock");
+    if (!dock) return;
+    _dockFor = { id: songId == null ? "lepas" : songId, title: songTitle || "Lagu" };
+    if (!dock.dataset.built) {
+      dock.dataset.built = "1";
+      dock.innerHTML = [
+        '<div class="recDockHead">',
+        '  <button class="recDockBtn" id="recDockBtn" type="button" aria-label="Mulai merekam"><span class="recDotIn"></span></button>',
+        '  <div class="recDockLbl">',
+        "    <span>Rekaman latihan</span>",
+        '    <span class="recDockCount" id="recDockCount"></span>',
+        "  </div>",
+        '  <span class="recDockTime" id="recDockTime">0:00</span>',
+        '  <button class="recDockMore" id="recDockMore" type="button">Kelola</button>',
+        "</div>",
+        '<div class="recDockList" id="recDockList"></div>',
+      ].join("");
+      dock.querySelector("#recDockBtn").onclick = function () {
+        if (_mr && _mr.state === "recording") stopRec();
+        else startRec();
+      };
+      dock.querySelector("#recDockMore").onclick = function () {
+        open(_dockFor.id, _dockFor.title);
+      };
+    }
+    watchCloud(_dockFor.id, renderAll);
+    renderDock();
   }
 
   function open(songId, songTitle) {
@@ -516,15 +898,21 @@
     el.time.textContent = "0:00";
     setRecordingUi(false);
     el.back.classList.add("show");
+    el.back.classList.add("open");
     document.body.classList.add("noScroll");
+    watchCloud(_openFor.id, renderAll);
     renderList();
   }
 
   function close() {
     stopRec();
     stopPlayback();
-    if (el.back) el.back.classList.remove("show");
+    if (el.back) {
+      el.back.classList.remove("show");
+      el.back.classList.remove("open");
+    }
     document.body.classList.remove("noScroll");
+    _openFor = null;
   }
 
   /* --------- lencana jumlah rekaman di daftar lagu --------- */
@@ -557,6 +945,8 @@
     close: close,
     decorate: decorate,
     refresh: refreshCounts,
+    mountDock: mountDock,
+    render: renderAll,
     countFor: function (id) {
       return _counts[String(id)] || 0;
     },

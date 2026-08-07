@@ -1,0 +1,799 @@
+/* =========================================================================
+   PNW TOOLS v64 - DESIGN DNA LAYER
+   Referensi: Supabase (struktur hairline, near-black, restraint)
+              Raycast  (kontras tinggi, tipografi tegas, permukaan tenang)
+   Prinsip: 1px border menggantikan bayangan, skala radius dipadatkan,
+            satu warna aksen, teks rata kiri, motion fungsional.
+   Lapisan ini hanya menimpa gaya. Tidak ada class/id yang diubah.
+   ========================================================================= */
+
+:root {
+  /* --- kanvas & permukaan (Supabase near-black) --- */
+  --d-canvas: #0a0a0b;
+  --d-s1: #101013;
+  --d-s2: #16161a;
+  --d-s3: #1c1c21;
+  --d-s4: #23232a;
+
+  /* --- garis hairline: pengganti bayangan --- */
+  --d-line: #23232a;
+  --d-line-strong: #32323c;
+  --d-line-soft: #1a1a1f;
+
+  /* --- teks (kontras Raycast) --- */
+  --d-ink: #ededf0;
+  --d-ink-2: #a1a1ab;
+  --d-ink-3: #71717a;
+
+  /* --- aksen tunggal: biru brand Hosana --- */
+  --d-accent: #4c9df7;
+  --d-accent-hi: #79b8ff;
+  --d-accent-wash: rgba(76, 157, 247, 0.12);
+  --d-accent-ink: #0a0a0b;
+
+  /* --- semantik, diredam agar tidak norak --- */
+  --d-ok: #3ecf8e;
+  --d-ok-wash: rgba(62, 207, 142, 0.12);
+  --d-danger: #f0616d;
+  --d-danger-wash: rgba(240, 97, 109, 0.12);
+  --d-chord: #f5a55f;
+
+  /* --- radius: 14 nilai lama dipadatkan jadi 4 --- */
+  --d-r-sm: 6px;
+  --d-r-md: 10px;
+  --d-r-lg: 14px;
+  --d-r-pill: 999px;
+
+  /* --- elevasi: ambient halus saja --- */
+  --d-e1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --d-e2: 0 8px 24px -12px rgba(0, 0, 0, 0.7);
+  --d-e3: 0 24px 60px -24px rgba(0, 0, 0, 0.85);
+
+  /* --- token lama dipetakan ulang --- */
+  --text: var(--d-ink);
+  --muted: var(--d-ink-2);
+  --line: var(--d-line);
+  --soft: var(--d-s2);
+  --paper: var(--d-s1);
+  --blue: var(--d-accent);
+  --blueSoft: var(--d-accent-wash);
+  --orange: var(--d-chord);
+  --green: var(--d-ok);
+  --greenSoft: var(--d-ok-wash);
+  --red: var(--d-danger);
+  --redSoft: var(--d-danger-wash);
+
+  --ring: 0 0 0 3px rgba(76, 157, 247, 0.32);
+  --lift: var(--d-e2);
+  --lift-sm: var(--d-e1);
+
+  /* --- motion: fungsional, bukan dekoratif --- */
+  --dur-micro: 100ms;
+  --dur-quick: 180ms;
+  --dur-normal: 260ms;
+  --dur-slow: 380ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.3, 0, 1, 1);
+  --ease-sig: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* toggle gelap tetap hidup: versi hitam pekat ala Raycast */
+body.dark {
+  --d-canvas: #000000;
+  --d-s1: #0a0a0b;
+  --d-s2: #101013;
+  --d-s3: #16161a;
+  --d-s4: #1c1c21;
+  --text: var(--d-ink);
+  --muted: var(--d-ink-2);
+  --line: var(--d-line);
+  --soft: var(--d-s2);
+  --blue: var(--d-accent);
+  --blueSoft: var(--d-accent-wash);
+  background: var(--d-canvas);
+}
+
+/* =========================== DASAR =========================== */
+html,
+body {
+  background: var(--d-canvas);
+  color: var(--d-ink);
+}
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.006em;
+}
+
+::selection {
+  background: var(--d-accent-wash);
+  color: var(--d-ink);
+}
+
+/* scrollbar ikut tema, bukan default terang */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--d-line-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--d-line-strong);
+  border-radius: var(--d-r-pill);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* ==================== TIPOGRAFI: hierarki tegas ==================== */
+/* slop = semua ukuran mirip + tracking default. DNA = skala jelas + tracking negatif */
+h1 {
+  letter-spacing: -0.028em;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+h2,
+h3 {
+  letter-spacing: -0.02em;
+  color: var(--d-ink);
+}
+h4,
+h5 {
+  letter-spacing: -0.012em;
+  color: var(--d-ink);
+}
+.sub,
+.help,
+.small,
+.muted,
+.hint {
+  color: var(--d-ink-3);
+  letter-spacing: 0;
+}
+.verTag {
+  background: var(--d-s3);
+  border: 1px solid var(--d-line-strong);
+  color: var(--d-ink-3);
+  border-radius: var(--d-r-pill);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* slop = paragraf rata tengah di mana-mana. DNA = rata kiri */
+.modal p,
+.modal .help,
+.drawer p,
+.recSub,
+.recEmpty,
+.dangerText,
+.field label {
+  text-align: left;
+}
+
+/* label kecil bergaya teknis */
+.field label,
+.ytPitchLbl {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--d-ink-3);
+}
+
+/* ==================== PERMUKAAN ==================== */
+.sheet,
+.folderCard,
+.reminderCard,
+.bankItem,
+.pendingBanner {
+  background: var(--d-s1);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-lg);
+  box-shadow: none;
+}
+.modal,
+.drawer {
+  background: var(--d-s2);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-lg);
+  box-shadow: var(--d-e3);
+}
+.modalBackdrop {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* ==================== TOMBOL ==================== */
+/* slop = tiap tombol warna berbeda + gradien + bayangan tebal.
+   DNA = satu aksen solid, sisanya netral berbingkai. */
+.actionBtn {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line-strong);
+  border-radius: var(--d-r-md);
+  font-weight: 550;
+  letter-spacing: -0.006em;
+  box-shadow: none;
+  background-image: none;
+}
+.actionBtn:hover {
+  background: var(--d-s4);
+  border-color: #3d3d47;
+  transform: none;
+  box-shadow: none;
+}
+.actionBtn:active {
+  transform: scale(0.985);
+}
+.actionBtn.primary {
+  background: var(--d-accent);
+  color: var(--d-accent-ink);
+  border-color: var(--d-accent);
+  font-weight: 650;
+}
+.actionBtn.primary:hover {
+  background: var(--d-accent-hi);
+  border-color: var(--d-accent-hi);
+}
+.actionBtn.secondary {
+  background: transparent;
+  color: var(--d-ink-2);
+  border: 1px solid var(--d-line-strong);
+}
+.actionBtn.secondary:hover {
+  background: var(--d-s3);
+  color: var(--d-ink);
+}
+.actionBtn.danger {
+  background: transparent;
+  color: var(--d-danger);
+  border: 1px solid rgba(240, 97, 109, 0.35);
+}
+.actionBtn.danger:hover {
+  background: var(--d-danger-wash);
+  border-color: var(--d-danger);
+}
+
+.menuBtn,
+.xBtn,
+.dragHandle {
+  background: transparent;
+  color: var(--d-ink-2);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+  box-shadow: none;
+}
+.menuBtn:hover,
+.xBtn:hover,
+.dragHandle:hover {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border-color: var(--d-line-strong);
+}
+
+/* daftar lagu: baris tenang */
+.songBtn {
+  background: var(--d-s1);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+  box-shadow: none;
+  text-align: left;
+}
+.songBtn:hover {
+  background: var(--d-s3);
+  border-color: var(--d-line-strong);
+}
+.songBtn.active,
+.songRow.active .songBtn {
+  background: var(--d-accent-wash);
+  border-color: rgba(76, 157, 247, 0.4);
+  color: var(--d-ink);
+}
+
+/* pemilih nada: grid rapat, bukan tombol warna-warni */
+.keyBtn {
+  background: var(--d-s2);
+  color: var(--d-ink-2);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-sm);
+  font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+}
+.keyBtn:hover {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border-color: var(--d-line-strong);
+}
+.keyBtn.active {
+  background: var(--d-accent);
+  color: var(--d-accent-ink);
+  border-color: var(--d-accent);
+  font-weight: 700;
+}
+
+.pill {
+  background: var(--d-s3);
+  color: var(--d-ink-2);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-pill);
+  font-size: 12px;
+  font-weight: 550;
+  box-shadow: none;
+}
+
+/* ==================== INPUT ==================== */
+.field input,
+.field textarea,
+.field select,
+.modal input,
+.modal textarea,
+.modal select,
+#editLines,
+.bankFind input {
+  background: var(--d-s2);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line-strong);
+  border-radius: var(--d-r-md);
+  box-shadow: none;
+}
+.field input::placeholder,
+.field textarea::placeholder,
+.modal input::placeholder,
+.modal textarea::placeholder,
+#editLines::placeholder {
+  color: var(--d-ink-3);
+}
+.field input:focus,
+.field textarea:focus,
+.modal input:focus,
+.modal textarea:focus,
+#editLines:focus,
+.bankFind input:focus {
+  outline: none;
+  border-color: var(--d-accent);
+  box-shadow: var(--ring);
+}
+#editLines {
+  font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+  line-height: 1.7;
+}
+
+/* ==================== LEMBAR CHORD ==================== */
+.chord,
+.ic-ch {
+  color: var(--d-chord);
+  font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-weight: 700;
+}
+.line {
+  color: var(--d-ink);
+}
+.line.section {
+  color: var(--d-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+/* ==================== HEADER / FOOTER ==================== */
+.footer {
+  color: var(--d-ink-3);
+  border-top: 1px solid var(--d-line);
+  font-size: 12px;
+  text-align: left;
+  letter-spacing: 0;
+}
+
+/* ==================== BAR YOUTUBE + NADA ==================== */
+.ytBar,
+.ytPitch {
+  background: var(--d-s2);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-lg);
+  box-shadow: none;
+  color: var(--d-ink);
+}
+.ytTrack {
+  background: var(--d-s4);
+  border-radius: var(--d-r-pill);
+}
+.ytFill {
+  background: var(--d-accent);
+  border-radius: var(--d-r-pill);
+}
+.ytDot {
+  background: var(--d-ink);
+  box-shadow: none;
+}
+.ytTime,
+.semiVal,
+#ytRateVal {
+  font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--d-ink-2);
+}
+.semiBtn {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line-strong);
+  border-radius: var(--d-r-sm);
+  box-shadow: none;
+}
+.semiBtn:hover {
+  background: var(--d-s4);
+}
+
+/* ==================== DOK REKAMAN (di bawah pemutar) ==================== */
+.recDock {
+  margin: 12px 0 4px;
+  background: var(--d-s1);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-lg);
+  overflow: hidden;
+}
+.recDock:empty {
+  display: none;
+}
+.recDockHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.recDockBtn {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: var(--d-r-pill);
+  border: 1px solid var(--d-line-strong);
+  background: var(--d-s3);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background var(--dur-quick) var(--ease-out),
+    border-color var(--dur-quick) var(--ease-out);
+}
+.recDockBtn .recDotIn {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--d-r-pill);
+  background: var(--d-danger);
+  display: block;
+  transition:
+    width var(--dur-quick) var(--ease-out),
+    height var(--dur-quick) var(--ease-out),
+    border-radius var(--dur-quick) var(--ease-out);
+}
+.recDockBtn:hover {
+  border-color: var(--d-danger);
+}
+.recDockBtn.isRec {
+  border-color: var(--d-danger);
+  background: var(--d-danger-wash);
+}
+.recDockBtn.isRec .recDotIn {
+  border-radius: 2px;
+  width: 11px;
+  height: 11px;
+}
+.recDockLbl {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.recDockLbl > span:first-child {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--d-ink);
+  letter-spacing: -0.01em;
+}
+.recDockCount {
+  font-size: 11px;
+  color: var(--d-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.recDockTime {
+  font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--d-ink-3);
+}
+.recDockTime.isRec {
+  color: var(--d-danger);
+}
+.recDockMore {
+  background: transparent;
+  border: 1px solid var(--d-line-strong);
+  color: var(--d-ink-2);
+  border-radius: var(--d-r-sm);
+  font-size: 12px;
+  font-weight: 550;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.recDockMore:hover {
+  background: var(--d-s3);
+  color: var(--d-ink);
+}
+.recDockList {
+  border-top: 1px solid var(--d-line);
+  max-height: 216px;
+  overflow-y: auto;
+}
+.recDockList:empty {
+  display: none;
+}
+
+/* ==================== PANEL REKAMAN ==================== */
+.recModal {
+  background: var(--d-s2);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-lg);
+  color: var(--d-ink);
+}
+.recHead {
+  border-bottom: 1px solid var(--d-line);
+}
+.recTitle {
+  color: var(--d-ink);
+  letter-spacing: -0.02em;
+  font-weight: 650;
+}
+.recSub {
+  color: var(--d-ink-3);
+  font-size: 12px;
+}
+.recStage {
+  border-bottom: 1px solid var(--d-line);
+}
+.recMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.recList {
+  scrollbar-width: thin;
+}
+.recDot {
+  background: var(--d-s3);
+  border: 1px solid var(--d-line-strong);
+  box-shadow: none;
+}
+.recBack.isRec .recDot {
+  border-color: var(--d-danger);
+  background: var(--d-danger-wash);
+}
+.recTime {
+  font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--d-ink);
+}
+.recHint {
+  color: var(--d-ink-3);
+}
+.recItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--d-line-soft);
+  background: transparent;
+  border-radius: 0;
+}
+.recItem:last-child {
+  border-bottom: none;
+}
+.recItem:hover {
+  background: var(--d-s2);
+}
+.recItem.playing {
+  background: var(--d-accent-wash);
+}
+.recPlay {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: var(--d-r-pill);
+  border: 1px solid var(--d-line-strong);
+  background: var(--d-s3);
+  cursor: pointer;
+  position: relative;
+  padding: 0;
+}
+.recPlay::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 52%;
+  transform: translate(-50%, -50%);
+  border-left: 8px solid var(--d-ink);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+.recItem.playing .recPlay {
+  border-color: var(--d-accent);
+}
+.recItem.playing .recPlay::before {
+  border: none;
+  width: 8px;
+  height: 8px;
+  background: var(--d-accent);
+  border-radius: 1px;
+  left: 50%;
+}
+.recInfo {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recName {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  color: var(--d-ink);
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recName:hover {
+  color: var(--d-accent);
+}
+.recItemMeta {
+  font-size: 11px;
+  color: var(--d-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.recTag {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: var(--d-r-pill);
+  border: 1px solid var(--d-line-strong);
+  color: var(--d-ink-3);
+  flex: 0 0 auto;
+}
+.recTag.isOnline {
+  color: var(--d-ok);
+  border-color: rgba(62, 207, 142, 0.35);
+  background: var(--d-ok-wash);
+}
+.recMini {
+  background: transparent;
+  border: 1px solid var(--d-line-strong);
+  color: var(--d-ink-2);
+  border-radius: var(--d-r-sm);
+  font-size: 11px;
+  font-weight: 550;
+  padding: 5px 9px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.recMini:hover {
+  background: var(--d-s3);
+  color: var(--d-ink);
+}
+.recMini.danger {
+  color: var(--d-danger);
+  border-color: rgba(240, 97, 109, 0.3);
+}
+.recMini.danger:hover {
+  background: var(--d-danger-wash);
+  border-color: var(--d-danger);
+}
+.recEmpty {
+  color: var(--d-ink-3);
+  font-size: 12px;
+  padding: 16px 14px;
+  margin: 0;
+}
+.recFoot {
+  border-top: 1px solid var(--d-line);
+}
+.recNote {
+  color: var(--d-ink-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.recBadge {
+  color: var(--d-ok);
+  font-size: 10px;
+  font-weight: 600;
+}
+.recWave i {
+  background: var(--d-danger);
+}
+
+/* ==================== TOMBOL BANTU (assistive touch) ==================== */
+#atBtn {
+  background: var(--d-s3);
+  border: 1px solid var(--d-line-strong);
+  box-shadow: var(--d-e2);
+  color: var(--d-ink);
+}
+.atHub,
+.atItem {
+  background: var(--d-s2);
+  border: 1px solid var(--d-line);
+  color: var(--d-ink);
+  box-shadow: none;
+}
+.atLbl,
+.atHubSub {
+  color: var(--d-ink-3);
+}
+
+/* ==================== TOAST & BANNER ==================== */
+#toastWrap .toast {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line-strong);
+  border-radius: var(--d-r-md);
+  box-shadow: var(--d-e2);
+  font-size: 13px;
+}
+#toastWrap .toast.success {
+  border-color: rgba(62, 207, 142, 0.4);
+}
+#toastWrap .toast.error {
+  border-color: rgba(240, 97, 109, 0.4);
+}
+.pendingBanner {
+  background: var(--d-accent-wash);
+  border-color: rgba(76, 157, 247, 0.3);
+  color: var(--d-ink);
+}
+
+/* ==================== AKSESIBILITAS MOTION ==================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==================== CETAK: hitam di atas putih ==================== */
+@media print {
+  html,
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .line,
+  .chord,
+  .ic-ch {
+    color: #000 !important;
+  }
+  .recDock,
+  .no-print {
+    display: none !important;
+  }
+}

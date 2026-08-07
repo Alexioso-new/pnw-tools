@@ -28,7 +28,7 @@
       name="description"
       content="PNW TOOLS - alat transpose chord untuk tim pujian. Pilih lagu dan nada dasar, chord langsung menyesuaikan."
     />
-    <meta name="theme-color" content="#2783de" />
+    <meta name="theme-color" content="#0a0a0b" />
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -42,6 +42,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./css/styles.css" />
+    <link rel="stylesheet" href="./css/design.css" />
     <link
       rel="stylesheet"
       href="https://cdn-uicons.flaticon.com/uicons-solid-rounded/css/uicons-solid-rounded.css"
@@ -105,7 +106,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v4.1</span>
+            <span class="verTag" id="appVer">v4.2</span>
           </p>
         </div>
         <button
@@ -215,19 +216,11 @@
           <textarea id="editLines" spellcheck="false"></textarea>
           <div class="chordSuggest" id="chordSuggest" hidden></div>
           <div class="structWrap" id="structWrap" hidden>
-            <p class="small">
-              Ketuk bagian untuk menambah (atau seret ke kanvas). Seret ikon
-              &#8942; untuk mengurutkan. Modulasi per-bagian dengan
-              &#9650;/&#9660;.
-            </p>
+            <p class="small">Ketuk untuk menambah &middot; seret &#8942; untuk urutkan &middot; &#9650;&#9660; modulasi.</p>
             <div class="structPalette" id="structPalette"></div>
             <div class="structCanvas" id="structCanvas"></div>
           </div>
-          <p class="small" id="editHint">
-            Tulis chord dalam kurung siku sebelum suku kata, mis.
-            <b>[G]Na-ma-Nya Tu[D]hanku</b>. Hasil langsung tampil di
-            <b>Pratinjau</b>.
-          </p>
+          <p class="small" id="editHint">Chord dalam kurung siku sebelum suku kata &mdash; <b>[G]Na-ma-Nya Tu[D]hanku</b></p>
           <div class="editPreview" id="editPreview">
             <div class="pvHead">Pratinjau</div>
             <div id="editPreviewBody"></div>
@@ -340,29 +333,18 @@
               +
             </button>
           </div>
-          <p class="semiHint">
-            Chord langsung berpindah nada, dan <b>Nada acuan</b> membunyikan
-            nada dasar barunya supaya WL bisa mengukur jangkauan suara.
-            Catatan jujur: audio YouTube nadanya dikunci oleh YouTube sendiri,
-            jadi tidak ada aplikasi web yang bisa menggeser frekuensinya.
-            Untuk berlatih di nada baru, pakai <b>Rekaman</b>.
-          </p>
         </div>
         <div id="ytHost"></div>
+        <div class="recDock no-print" id="recDock"></div>
         <div id="content"></div>
       </main>
       <footer class="footer">
-        &copy; 2026 <b>Alex</b> &mdash; Youth Hosana Bandung.<br />Dibuat untuk
-        pelayanan pujian &amp; penyembahan.
+        &copy; 2026 <b>Alex</b> &mdash; Youth Hosana Bandung.
       </footer>
     </div>
     <div class="modalBackdrop no-print" id="backupModal">
       <div class="modal">
         <h2>Cadangkan / Pindahkan Lagu</h2>
-        <p class="small">
-          Pakai ini kalau ingin memindahkan lagu ke HP atau laptop lain, atau
-          menyimpan salinan sebelum mengganti file di server.
-        </p>
         <textarea id="backupText" spellcheck="false"></textarea>
         <div class="backupActions">
           <button class="actionBtn green" id="copyBackupBtn">
@@ -373,10 +355,7 @@
             Unduh JSON</button
           ><button class="actionBtn red" id="closeBackupBtn">Tutup</button>
         </div>
-        <p class="dangerText">
-          Kalau menekan Muat, semua lagu di perangkat ini akan diganti dengan
-          isi kotak cadangan.
-        </p>
+        <p class="dangerText">Muat mengganti semua lagu di perangkat ini.</p>
       </div>
     </div>
     <div class="modalBackdrop no-print" id="izinModal">
@@ -454,11 +433,7 @@
           />
           <button class="scBtn primary" id="onlineGo" type="button">Cari</button>
         </div>
-        <p class="small">
-          Sumber: iTunes (pratinjau 30 detik) + lirik otomatis dari lyrics.ovh.
-          Chord &amp; nada dasar diisi manual setelah lagu ditambahkan. Lagu masuk
-          ke folder Lainnya.
-        </p>
+        <p class="small">Chord dan nada dasar diisi manual setelah lagu ditambahkan.</p>
         <div class="bankGrid" id="onlineResults"></div>
       </div>
     </div>
@@ -467,9 +442,6 @@
         <h2>
           <span class="lottieIco lottieH2" data-anim="chat" data-seq="talking"></span>Bantu saran
         </h2>
-        <p class="small">
-          Ada ide fitur baru atau ada yang perlu diperbaiki? Tulis di sini ya.
-        </p>
         <div class="izinField">
           <label for="saranNama">Nama (opsional)</label>
           <input id="saranNama" type="text" placeholder="Nama kamu" />
@@ -500,7 +472,6 @@
     <div class="modalBackdrop no-print" id="infoModal">
       <div class="modal">
         <h2>Info &amp; pembaruan</h2>
-        <p class="small">Fitur terbaru dan perubahan pada aplikasi.</p>
         <div id="infoList" class="infoList"></div>
         <div class="backupActions">
           <button
@@ -805,10 +776,7 @@
               Kembali
             </button>
           </div>
-          <p class="small" style="margin-top: 8px">
-            Setelah daftar, akunmu perlu <b>disetujui pemilik</b> sebelum
-            menjadi admin.
-          </p>
+          <p class="small" style="margin-top: 8px">Akun baru perlu disetujui pemilik.</p>
         </div>
       </div>
     </div>
@@ -820,10 +788,7 @@
         </div>
         <div class="field">
           <label>Tanggal</label><input id="noteDate" type="date" />
-          <p class="small">
-            Urutan daftar Info &amp; Pembaruan mengikuti tanggal ini - yang
-            terbaru selalu di atas.
-          </p>
+          <p class="small">Terbaru tampil paling atas.</p>
         </div>
         <div class="field">
           <label>Perubahan (satu per baris)</label
@@ -885,6 +850,10 @@
     <script
       defer
       src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"
+    ></script>
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"
     ></script>
     <script src="./js/gsap/gsap.min.js"></script>
     <script src="./js/gsap/CustomEase.min.js"></script>

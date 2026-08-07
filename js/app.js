@@ -5593,6 +5593,10 @@
             ? "Keterangan: " + song.source
             : "";
           renderLinesInto(content, song.lines || [], shift, target);
+          try {
+            if (window.PNWRec && window.PNWRec.mountDock)
+              window.PNWRec.mountDock(song.id, song.title);
+          } catch (e) {}
           if (typeof broadcastLive === "function") broadcastLive();
         }
         // --- Editor lagu: ubah, tambah, duplikat, dan hapus ---
