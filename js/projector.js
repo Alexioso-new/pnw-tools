@@ -25,7 +25,7 @@
   var LOCAL_SET = "pnwProjectorSettings.v1";
 
   var DEFAULTS = {
-    font: "Plus Jakarta Sans",
+    font: "Inter",
     size: 40,
     align: "center",
     shadow: "soft",
@@ -434,7 +434,7 @@
     t.style.fontFamily =
       s.font === "JetBrains Mono"
         ? '"JetBrains Mono", monospace'
-        : '"Plus Jakarta Sans", sans-serif';
+        : '"' + s.font + '", "Inter", sans-serif';
     t.style.fontSize = Math.max(14, Math.round(s.size * 0.45)) + "px";
     t.style.textAlign = s.align;
     t.style.textShadow =

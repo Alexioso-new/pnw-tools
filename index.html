@@ -4,7 +4,7 @@
   index.html — markup utama PNW TOOLS.
   Memuat CSS berurutan: css/styles.css lalu css/design.css (design.css MENIMPA styles.css).
   Memuat JS lewat <script defer> di bagian bawah: logger -> firebase -> gsap -> motion -> recorder -> app -> guide -> projector -> hosana-flame-data -> logo-anim.
-  Font: Google Fonts (Plus Jakarta Sans + JetBrains Mono). Ikon: dimuat malas (lazy) dari js/animations.js.
+  Font: Google Fonts (Inter + JetBrains Mono) + Fontshare (Satoshi). Ikon: dimuat malas (lazy) dari js/animations.js.
   PERHATIAN: mengubah id/class elemen di sini berpengaruh ke js/app.js (getElementById) dan css/design.css — cek keduanya.
 -->
 <!--
@@ -36,7 +36,7 @@
       name="description"
       content="PNW TOOLS - alat transpose chord untuk tim pujian. Pilih lagu dan nada dasar, chord langsung menyesuaikan."
     />
-    <meta name="theme-color" content="#0b0e14" />
+    <meta name="theme-color" content="#FEFCFB" />
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -46,7 +46,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400..800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://api.fontshare.com/v2/css?f[]=satoshi@500,700,900&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./css/styles.css" />
@@ -115,7 +119,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v4.5</span>
+            <span class="verTag" id="appVer">v4.6</span>
           </p>
         </div>
         <button
@@ -523,189 +527,115 @@
     <div class="drawerBackdrop no-print" id="menuBackdrop">
       <aside class="drawer">
         <div class="drawerHead">
-          <b>Menu</b
-          ><button class="xBtn" id="closeMenuBtn" type="button">
-            &#10005;
-          </button>
+          <b>Menu</b>
+          <span class="menuVer">v4.6</span>
+          <button class="xBtn" id="closeMenuBtn" type="button">&#10005;</button>
         </div>
-        <section class="menuSec">
-          <p class="label">Song Bank</p>
-          <div class="bankFind">
-            <input id="songSearch" type="search" placeholder="Cari lagu..." />
-            <select id="songJump">
-              <option value="">Pilih lagu…</option>
-            </select>
+        <div class="menuScroll">
+          <div class="menuSearch">
+            <span class="lottieIco menuSearchIco" data-anim="search"></span>
+            <input id="songSearch" type="search" placeholder="Cari lagu…" />
           </div>
+          <select id="songJump" class="menuJump">
+            <option value="">Pilih lagu…</option>
+          </select>
           <div class="searchResults" id="searchResults"></div>
-          <button
-            class="actionBtn"
-            id="openBankBtn"
-            type="button"
-            style="width: 100%; margin-top: 10px"
-          >
-            <span class="lottieIco lottieBtn" data-anim="songbank"></span>Buka
-            Song Bank
-          </button>
-        </section>
-        <section class="menuSec">
-          <p class="label">Izin</p>
-          <button
-            class="actionBtn orange"
-            id="openIzinBtn"
-            type="button"
-            style="width: 100%"
-          >
-            <span class="lottieIco lottieBtn" data-anim="pencil"></span>Kirim
-            izin
-          </button>
-        </section>
-        <section class="menuSec" id="schedMenuSec">
-          <p class="label">Penjadwalan</p>
-          <button
-            class="actionBtn"
-            id="openSchedBtn"
-            type="button"
-            style="width: 100%"
-          >
-            <span class="lottieIco lottieBtn" data-anim="calendar"></span
-            >Penjadwal Pelayanan
-          </button>
-        </section>
-        <section class="menuSec">
-          <p class="label">Metronome</p>
-          <div class="metroRow">
-            <button class="touchBtn metroToggle" id="metroToggle" type="button">
-              Mulai
+
+          <p class="menuGroupLabel">Navigasi</p>
+          <div class="menuCard">
+            <button class="menuRow" id="openBankBtn" type="button">
+              <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="songbank"></span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">Song Bank</span><span class="menuRowDesc">Cari, tambah &amp; atur daftar lagu</span></span>
+              <span class="menuRowGo" aria-hidden="true">›</span>
             </button>
-            <div class="metroBpm">
-              <button class="mBtn" id="bpmDown" type="button">&minus;</button
-              ><span id="bpmVal">80</span
-              ><button class="mBtn" id="bpmUp" type="button">+</button>
+            <button class="menuRow" id="openProjBtn" type="button">
+              <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="layer"></span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">Proyektor</span><span class="menuRowDesc">Mode persiapan tampilan layar</span></span>
+              <span class="menuRowGo" aria-hidden="true">›</span>
+            </button>
+            <button class="menuRow" id="openGuideBtn" type="button">
+              <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="struktur"></span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">Buku Panduan</span><span class="menuRowDesc">Cara pakai semua fitur</span></span>
+              <span class="menuRowGo" aria-hidden="true">›</span>
+            </button>
+            <div id="schedMenuSec" class="menuRowWrap">
+              <button class="menuRow" id="openSchedBtn" type="button">
+                <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="calendar"></span></span>
+                <span class="menuRowMain"><span class="menuRowTitle">Penjadwal Pelayanan</span><span class="menuRowDesc">Atur jadwal tim &amp; ibadah</span></span>
+                <span class="menuRowGo" aria-hidden="true">›</span>
+              </button>
             </div>
           </div>
-          <div class="metroRow stepRow">
-            <span class="small">Langkah &plusmn;</span>
-            <button class="stepBtn" id="step1" type="button">1</button>
-            <button class="stepBtn on" id="step5" type="button">5</button>
-          </div>
-          <div class="metroRow">
-            <button
-              class="actionBtn secondary"
-              id="tapTempo"
-              type="button"
-              style="flex: 1"
-            >
-              Ketuk tempo
+
+          <p class="menuGroupLabel">Aksi</p>
+          <div class="menuCard">
+            <button class="menuRow" id="openIzinBtn" type="button">
+              <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="pencil"></span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">Kirim Izin</span><span class="menuRowDesc">Ajukan izin tidak hadir</span></span>
+              <span class="menuRowGo" aria-hidden="true">›</span>
+            </button>
+            <button class="menuRow" id="openSaranBtn" type="button">
+              <span class="menuRowIco"><span class="lottieIco lottieBtn lottieLg" data-anim="talking" data-seq="talking"></span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">Beri Saran &amp; Lapor Bug</span><span class="menuRowDesc">Kirim masukan untuk tim</span></span>
+              <span class="menuRowGo" aria-hidden="true">›</span>
+            </button>
+            <button class="menuRow" id="openInfoBtn" type="button">
+              <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="wheel"></span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">Pembaruan</span><span class="menuRowDesc">Lihat catatan rilis terbaru</span></span>
+              <span class="menuRowGo" aria-hidden="true">›</span>
             </button>
           </div>
-        </section>
-        <section class="menuSec">
-          <p class="label">Tampilan</p>
-          <div class="rowBtns">
-            <button class="actionBtn secondary" id="darkToggle" type="button">
-              Mode panggung
-            </button>
-            <button class="actionBtn secondary" id="eyeToggle" type="button">
-              Eye saver
-            </button>
+
+          <p class="menuGroupLabel">Tampilan</p>
+          <div class="menuCard menuCardPad">
+            <div class="menuToggles">
+              <button class="menuToggle" id="darkToggle" type="button">Mode panggung</button>
+              <button class="menuToggle" id="eyeToggle" type="button">Eye saver</button>
+              <button class="menuToggle" id="numToggle" type="button">Chord jadi angka (1-7)</button>
+              <button class="menuToggle" id="compactToggle" type="button">Mode rapat</button>
+            </div>
+            <div class="menuSub">
+              <span class="menuSubLabel">Ukuran huruf</span>
+              <div class="segStepper">
+                <button class="segBtn" id="textSmaller" type="button">A&minus;</button>
+                <span class="segVal" id="textSizeLabel">Sedang</span>
+                <button class="segBtn" id="textBigger" type="button">A+</button>
+              </div>
+            </div>
+            <div class="menuSub">
+              <span class="menuSubLabel">Posisi judul bagian</span>
+              <div class="segGroup">
+                <button class="secAlignBtn" id="secAlignL" type="button">Kiri</button>
+                <button class="secAlignBtn" id="secAlignC" type="button">Tengah</button>
+                <button class="secAlignBtn" id="secAlignR" type="button">Kanan</button>
+              </div>
+            </div>
           </div>
-          <div class="rowBtns">
-            <button class="actionBtn secondary" id="numToggle" type="button">
-              Chord jadi angka (1-7)
-            </button>
+
+          <p class="menuGroupLabel">Metronome</p>
+          <div class="menuCard menuCardPad">
+            <div class="metroTop">
+              <div class="metroBpmBox">
+                <button class="mBtn" id="bpmDown" type="button">&minus;</button>
+                <div class="metroBpmVal"><span id="bpmVal">80</span><small>BPM</small></div>
+                <button class="mBtn" id="bpmUp" type="button">+</button>
+              </div>
+              <button class="metroStartBtn" id="metroToggle" type="button">Mulai</button>
+            </div>
+            <div class="metroBottom">
+              <div class="segGroup segGroupSm">
+                <span class="menuSubLabel">Langkah &plusmn;</span>
+                <button class="stepBtn" id="step1" type="button">1</button>
+                <button class="stepBtn on" id="step5" type="button">5</button>
+              </div>
+              <button class="tapBtn" id="tapTempo" type="button">Ketuk tempo</button>
+            </div>
           </div>
-          <div class="rowBtns">
-            <button
-              class="actionBtn secondary"
-              id="compactToggle"
-              type="button"
-            >
-              Mode rapat
-            </button>
-          </div>
-          <p class="label">Ukuran huruf</p>
-          <div class="textSize">
-            <button class="touchBtn" id="textSmaller" type="button">
-              A&minus;</button
-            ><span id="textSizeLabel">Sedang</span
-            ><button class="touchBtn" id="textBigger" type="button">A+</button>
-          </div>
-          <p class="label">Posisi judul bagian</p>
-          <div class="secAlignRow">
-            <button class="secAlignBtn" id="secAlignL" type="button">
-              Kiri
-            </button>
-            <button class="secAlignBtn" id="secAlignC" type="button">
-              Tengah
-            </button>
-            <button class="secAlignBtn" id="secAlignR" type="button">
-              Kanan
-            </button>
-          </div>
-        </section>
-        <section class="menuSec">
-          <p class="label">Panduan &amp; Proyektor</p>
-          <button
-            class="actionBtn secondary"
-            id="openGuideBtn"
-            type="button"
-            style="width: 100%"
-          >
-            Buku Panduan
-          </button>
-          <button
-            class="actionBtn secondary"
-            id="openProjBtn"
-            type="button"
-            style="width: 100%"
-          >
-            Proyektor &mdash; Mode Persiapan
-          </button>
-        </section>
-        <section class="menuSec">
-          <p class="label">Bantu saran</p>
-          <button
-            class="actionBtn secondary"
-            id="openSaranBtn"
-            type="button"
-            style="width: 100%"
-          >
-            <span
-              class="lottieIco lottieBtn lottieLg"
-              data-anim="talking"
-              data-seq="talking"
-            ></span
-            >Beri Saran &amp; lapor bug
-          </button>
-        </section>
-        <section class="menuSec">
-          <p class="label">Info &amp; pembaruan</p>
-          <button
-            class="actionBtn secondary"
-            id="openInfoBtn"
-            type="button"
-            style="width: 100%"
-          >
-            <span
-              class="lottieIco lottieBtn lottieLg"
-              data-anim="layer"
-              data-seq="layer"
-            ></span
-            >Lihat pembaruan
-          </button>
-        </section>
-        <section class="menuSec">
-          <p class="label">Admin</p>
-          <button
-            class="actionBtn secondary"
-            id="adminLoginBtn"
-            type="button"
-            style="width: 100%"
-          >
-            <span class="lottieIco lottieBtn" data-anim="adminlogin"></span
-            >Login admin
-          </button>
-          <div id="adminPanel" hidden>
+
+          <p class="menuGroupLabel">Admin</p>
+          <div class="menuCard menuCardPad">
+            <button class="adminPrimaryBtn" id="adminLoginBtn" type="button"><span class="lottieIco lottieBtn" data-anim="adminlogin"></span>Login Admin</button>
+            <div id="adminPanel" hidden>
             <label class="lockRow"
               ><input type="checkbox" id="lockToggle" /> Kunci daftar
               lagu</label
@@ -756,8 +686,9 @@
               Keluar admin
             </button>
           </div>
-          <p class="small" id="lockStatus"></p>
-        </section>
+            <p class="small" id="lockStatus"></p>
+          </div>
+        </div>
       </aside>
     </div>
     <div class="modalBackdrop no-print" id="loginModal">
@@ -994,7 +925,8 @@
           <div class="projField">
             <label for="projFont">Font</label>
             <select id="projFont">
-              <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+              <option value="Inter">Inter</option>
+              <option value="Satoshi">Satoshi</option>
               <option value="JetBrains Mono">JetBrains Mono</option>
             </select>
           </div>

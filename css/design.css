@@ -16,10 +16,12 @@
 :root {
   /* --- tipografi: Geist Sans untuk semua teks, JetBrains Mono BOLD untuk judul --- */
   --font-sans:
-    "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     system-ui, sans-serif;
   --font-mono:
     "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-head:
+    "Satoshi", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   /* =====================================================================
      PALET HOSANA YOUTH TOOLS - dark mode taktis, minimalis, futuristik
@@ -32,50 +34,50 @@
 
   /* --- 60%: Background Utama. Near-black bernuansa biru, bukan hitam murni:
          mengurangi halation/silau di ruangan gelap saat ibadah. --- */
-  --d-canvas: #0b1120;
+  --d-canvas: #FEFCFB;
 
   /* --- 30%: Background Sekunder / Surface (kartu, tabel, menu nav) --- */
-  --d-s1: #1e293b; /* kartu, baris daftar */
-  --d-s2: #263449; /* modal, drawer menu, header */
-  --d-s3: #334155; /* hover, input, keadaan tertekan */
-  --d-s4: #3b4a63; /* tumpukan tertinggi */
+  --d-s1: #FFFFFF; /* kartu, baris daftar */
+  --d-s2: #FFFFFF; /* modal, drawer menu, header */
+  --d-s3: #F3F6F8; /* hover, input, keadaan tertekan */
+  --d-s4: #EDF2F6; /* tumpukan tertinggi */
 
   /* --- garis hairline: pengganti bayangan --- */
-  --d-line: #334155;
-  --d-line-strong: #475569;
-  --d-line-soft: #1e293b;
+  --d-line: #E2E8F0;
+  --d-line-strong: #CBD5E1;
+  --d-line-soft: #EEF2F6;
 
   /* --- Teks: putih sejuk, bukan #fff murni (menekan glare di ruang gelap) --- */
-  --d-ink: #f8fafc; /* Teks Utama  - 16.5:1 di kanvas  -> AAA */
-  --d-ink-2: #94a3b8; /* Teks Sekunder - 7.1:1 di surface -> AAA */
+  --d-ink: #0A1128; /* Teks Utama  - 16.5:1 di kanvas  -> AAA */
+  --d-ink-2: #034078; /* Teks Sekunder - 7.1:1 di surface -> AAA */
   --d-ink-3: #64748b; /* Teks Tersier  - 4.6:1 di kanvas  -> AA  */
 
   /* --- 10%: Primary Color, biru logo --- */
-  --d-accent: #38bdf8; /* aksi utama, indikator aktif - 6.9:1 -> AA/AAA besar */
-  --d-accent-hi: #7dd3fc; /* hover */
-  --d-accent-deep: #0284c7; /* tertekan */
-  --d-accent-wash: #0e2a3f; /* latar tint */
-  --d-accent-ink: #082f49; /* teks di atas tombol biru - 6.9:1 -> AA */
+  --d-accent: #1282A2; /* aksi utama, indikator aktif - 6.9:1 -> AA/AAA besar */
+  --d-accent-hi: #0E6E88; /* hover */
+  --d-accent-deep: #0B5A70; /* tertekan */
+  --d-accent-wash: #E5F3F8; /* latar tint */
+  --d-accent-ink: #FFFFFF; /* teks di atas tombol biru - 6.9:1 -> AA */
 
   /* --- Semantic Colors khusus mode gelap --- */
-  --d-ok: #10b981; /* sukses  - 9.4:1 -> AAA */
-  --d-ok-wash: #0b2a22;
-  --d-warn: #f59e0b; /* peringatan - 10.8:1 -> AAA */
-  --d-warn-wash: #2a1e0a;
-  --d-danger: #ef4444; /* error  - 6.5:1 -> AA */
-  --d-danger-wash: #301417;
-  --d-chord: #ffb86b; /* akor/kunci - 10.6:1 -> AAA */
+  --d-ok: #047857; /* sukses  - 9.4:1 -> AAA */
+  --d-ok-wash: #E7F6F0;
+  --d-warn: #B45309; /* peringatan - 10.8:1 -> AAA */
+  --d-warn-wash: #FCF3E6;
+  --d-danger: #DC2626; /* error  - 6.5:1 -> AA */
+  --d-danger-wash: #FDECEC;
+  --d-chord: #1282A2; /* akor/kunci - 10.6:1 -> AAA */
 
   /* --- radius: panduan memakai 8px konsisten (tactical), pill tetap bulat --- */
   --d-r-sm: 8px;
-  --d-r-md: 8px;
-  --d-r-lg: 8px;
+  --d-r-md: 10px;
+  --d-r-lg: 12px;
   --d-r-pill: 999px;
 
   /* --- elevasi: ambient halus saja --- */
-  --d-e1: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --d-e2: 0 8px 24px -12px rgba(0, 0, 0, 0.7);
-  --d-e3: 0 24px 60px -24px rgba(0, 0, 0, 0.85);
+  --d-e1: 0 1px 2px rgba(10, 17, 40, 0.04);
+  --d-e2: 0 4px 20px rgba(10, 17, 40, 0.06);
+  --d-e3: 0 12px 32px rgba(10, 17, 40, 0.1);
 
   /* --- token lama dipetakan ulang --- */
   --text: var(--d-ink);
@@ -91,7 +93,7 @@
   --red: var(--d-danger);
   --redSoft: var(--d-danger-wash);
 
-  --ring: 0 0 0 3px rgba(76, 157, 247, 0.32);
+  --ring: 0 0 0 3px rgba(18, 130, 162, 0.28);
   --lift: var(--d-e2);
   --lift-sm: var(--d-e1);
 
@@ -1636,8 +1638,8 @@ body.projOpen {
 
 /* --- Warna chord: mayor = biru lembut, minor = merah lembut (tidak silau) --- */
 :root {
-  --d-chord-maj: #7fb0e8; /* mayor: biru lembut, terbaca di gelap */
-  --d-chord-min: #e07a6b; /* minor: merah/terakota lembut */
+  --d-chord-maj: #1282A2; /* mayor: biru lembut, terbaca di gelap */
+  --d-chord-min: #B23A2E; /* minor: merah/terakota lembut */
 }
 .sheet .line.chord .chord-maj,
 #editPreviewBody .chord-maj,
@@ -1830,4 +1832,421 @@ body.stage .sheet #content {
   color: var(--d-ink-2);
   margin-top: 2px;
   font-style: italic;
+}
+
+/* ============================================================
+   MENU v4.6 - kartu vertikal modern (Light Mode)
+   Ditambahkan di akhir design.css (menimpa gaya drawer lama).
+   ============================================================ */
+.drawer {
+  width: min(384px, 92vw);
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+  background: var(--d-s1);
+}
+.drawer .drawerHead {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--d-line-soft);
+  gap: 10px;
+}
+.drawer .drawerHead b {
+  font-family: var(--font-head);
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  margin-right: auto;
+  color: var(--d-ink);
+}
+.menuVer {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--d-accent-deep);
+  background: var(--d-accent-wash);
+  border: 1px solid var(--d-accent);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+.menuScroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 16px 32px;
+}
+
+.menuGroupLabel {
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--d-ink-3);
+  margin: 22px 4px 9px;
+}
+
+/* --- Pencarian --- */
+.menuSearch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--d-s3);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+  padding: 0 12px;
+  height: 46px;
+}
+.menuSearch:focus-within {
+  border-color: var(--d-accent);
+  box-shadow: var(--ring);
+}
+.menuSearch .lottieIco {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+.drawer .menuSearch input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font: inherit;
+  color: var(--d-ink);
+  min-height: 44px;
+  padding: 0;
+}
+.drawer select.menuJump {
+  margin-top: 10px;
+  height: 46px;
+}
+.drawer .searchResults:not(:empty) {
+  margin-top: 10px;
+}
+
+/* --- Kartu + baris --- */
+.menuCard {
+  background: var(--d-s1);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-lg);
+  box-shadow: var(--d-e1);
+  overflow: hidden;
+}
+.menuCardPad {
+  padding: 14px;
+}
+.menuRow {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  min-height: 62px;
+  padding: 12px 14px;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--d-line-soft);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--d-ink);
+}
+.menuCard > .menuRow:first-child,
+.menuCard > .menuRowWrap:first-child .menuRow {
+  border-top: 0;
+}
+.menuRow:hover {
+  background: var(--d-accent-wash);
+}
+.menuRow:active {
+  background: var(--d-s3);
+}
+.menuRowIco {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--d-accent-wash);
+  border-radius: 11px;
+}
+.menuRowIco .lottieIco {
+  width: 24px;
+  height: 24px;
+}
+.menuRowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.menuRowTitle {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--d-ink);
+}
+.menuRowDesc {
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--d-ink-3);
+}
+.menuRowGo {
+  flex: 0 0 auto;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--d-ink-3);
+}
+
+/* --- Toggle pills (Tampilan) --- */
+.menuToggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.menuToggle {
+  min-height: 48px;
+  padding: 8px 10px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s3);
+  color: var(--d-ink-2);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.25;
+  cursor: pointer;
+  text-align: center;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+.menuToggle:hover {
+  border-color: var(--d-line-strong);
+  color: var(--d-ink);
+}
+.menuToggle.active {
+  background: var(--d-accent-wash);
+  border-color: var(--d-accent);
+  color: var(--d-accent-deep);
+  font-weight: 700;
+}
+
+/* --- Sub-baris (label + kontrol) --- */
+.menuSub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+.menuSubLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--d-ink-2);
+}
+
+/* --- Stepper ukuran huruf --- */
+.segStepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--d-s3);
+  border: 1px solid var(--d-line);
+  border-radius: 999px;
+  padding: 3px;
+}
+.segStepper .segBtn {
+  min-width: 40px;
+  height: 34px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: var(--d-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.segStepper .segBtn:hover {
+  background: var(--d-s1);
+}
+.segVal {
+  min-width: 64px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--d-ink-2);
+}
+
+/* --- Segmented (posisi judul + langkah) --- */
+.segGroup {
+  display: inline-flex;
+  gap: 6px;
+}
+.drawer .secAlignBtn,
+.drawer .segGroup .stepBtn {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s3);
+  color: var(--d-ink-2);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+.drawer .secAlignBtn:hover,
+.drawer .segGroup .stepBtn:hover {
+  color: var(--d-ink);
+  border-color: var(--d-line-strong);
+}
+.drawer .secAlignBtn.isOn,
+.drawer .segGroup .stepBtn.on {
+  background: var(--d-accent);
+  border-color: var(--d-accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* --- Metronome --- */
+.metroTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.metroBpmBox {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--d-s3);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+  padding: 6px;
+}
+.drawer .metroBpmBox .mBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+  color: var(--d-ink);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.drawer .metroBpmBox .mBtn:hover {
+  background: var(--d-accent-wash);
+  border-color: var(--d-accent);
+}
+.metroBpmVal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+.metroBpmVal #bpmVal {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+.metroBpmVal small {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--d-ink-3);
+  margin-top: 3px;
+}
+.drawer .metroStartBtn {
+  flex: 0 0 auto;
+  min-width: 92px;
+  height: 52px;
+  padding: 0 18px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-accent);
+  background: var(--d-accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.drawer .metroStartBtn:hover {
+  background: var(--d-accent-hi);
+  border-color: var(--d-accent-hi);
+}
+.drawer .metroStartBtn.active {
+  background: var(--d-danger);
+  border-color: var(--d-danger);
+}
+.metroBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.segGroupSm {
+  align-items: center;
+  gap: 8px;
+}
+.drawer .tapBtn {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s3);
+  color: var(--d-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.drawer .tapBtn:hover {
+  background: var(--d-accent-wash);
+  border-color: var(--d-accent);
+}
+
+/* --- Admin --- */
+.drawer .adminPrimaryBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  border-radius: var(--d-r-md);
+  border: 1px solid #001f54;
+  background: #001f54;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+.drawer .adminPrimaryBtn:hover {
+  background: #0a1128;
+}
+.drawer .adminPrimaryBtn .lottieIco {
+  width: 22px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 7px;
+  padding: 3px;
+  box-sizing: content-box;
+}
+#adminPanel {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#adminPanel .lockRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--d-ink);
 }

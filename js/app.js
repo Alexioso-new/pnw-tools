@@ -6229,13 +6229,17 @@
   function applyIzinUI() {
     var btn = document.getElementById("openIzinBtn");
     if (btn) {
+      var izinTitle = btn.querySelector(".menuRowTitle");
+      var izinDesc = btn.querySelector(".menuRowDesc");
       if (!izinFormOpen && !isAdmin) {
         btn.disabled = true;
-        btn.textContent = "Form izin ditutup admin";
-        btn.style.opacity = "0.6";
+        if (izinTitle) izinTitle.textContent = "Kirim Izin";
+        if (izinDesc) izinDesc.textContent = "Form izin ditutup admin";
+        btn.style.opacity = "0.55";
       } else {
         btn.disabled = false;
-        btn.textContent = "Kirim izin";
+        if (izinTitle) izinTitle.textContent = "Kirim Izin";
+        if (izinDesc) izinDesc.textContent = "Ajukan izin tidak hadir";
         btn.style.opacity = "";
       }
     }
@@ -9022,7 +9026,10 @@
       localStorage.setItem("ptEye", on ? "1" : "0");
     } catch (e) {}
     const b = document.getElementById("eyeToggle");
-    if (b) b.textContent = on ? "Eye saver: aktif" : "Eye saver";
+    if (b) {
+      b.textContent = on ? "Eye saver: aktif" : "Eye saver";
+      b.classList.toggle("active", !!on);
+    }
   }
   function toggleEye() {
     applyEye(!document.body.classList.contains("eye"));
