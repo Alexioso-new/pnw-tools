@@ -131,7 +131,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v5.7</span>
+            <span class="verTag" id="appVer">v5.8</span>
           </p>
         </div>
         <button
@@ -563,7 +563,7 @@
       <aside class="drawer">
         <div class="drawerHead">
           <b>Menu</b>
-          <span class="menuVer">v5.7</span>
+          <span class="menuVer">v5.8</span>
           <button class="xBtn" id="closeMenuBtn" type="button">&#10005;</button>
         </div>
         <div class="menuScroll">
@@ -583,11 +583,14 @@
               <span class="menuRowMain"><span class="menuRowTitle">Song Bank</span><span class="menuRowDesc">Cari, tambah &amp; atur daftar lagu</span></span>
               <span class="menuRowGo" aria-hidden="true">›</span>
             </button>
-            <button class="menuRow" id="openProjBtn" type="button">
+            <a class="menuRow" id="openYvLink" href="./youthviews.html" target="_blank" rel="noopener">
               <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="layer"></span></span>
-              <span class="menuRowMain"><span class="menuRowTitle">youTh Views</span><span class="menuRowDesc">Presenter, proyektor, teks &amp; ayat</span></span>
-              <span class="menuRowGo" aria-hidden="true">›</span>
-            </button>
+              <span class="menuRowMain"><span class="menuRowTitle">youTh Views</span><span class="menuRowDesc">Halaman mandiri · presenter, proyektor, teks &amp; ayat</span></span>
+              <span class="menuRowGo" aria-hidden="true">↗</span>
+            </a>
+            <!-- v5.8: tombol lama disembunyikan supaya js/projector.js tetap
+                 bisa memasang binding-nya tanpa error. -->
+            <button class="menuRow" id="openProjBtn" type="button" hidden aria-hidden="true"></button>
             <button class="menuRow" id="openGuideBtn" type="button">
               <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="struktur"></span></span>
               <span class="menuRowMain"><span class="menuRowTitle">Buku Panduan</span><span class="menuRowDesc">Cara pakai semua fitur</span></span>

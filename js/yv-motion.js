@@ -482,7 +482,7 @@
     return inst;
   }
 
-  window.PNWMotion = {
+  var YV_ENGINE = {
     create: create,
     defaults: defaults,
     presets: PRESETS,
@@ -506,4 +506,9 @@
       { id: "rings", name: "Cincin pulsa" },
     ],
   };
+
+  // v5.8: gabungkan, jangan timpa. js/motion.js memasang stagger &
+  // revealLines di window.PNWMotion dan dipakai Song Bank + output lirik.
+  window.PNWYVMotion = YV_ENGINE;
+  window.PNWMotion = Object.assign({}, window.PNWMotion || {}, YV_ENGINE);
 })();

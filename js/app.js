@@ -1379,8 +1379,13 @@
       if (msg) msg.textContent = "Gagal: " + ((err && err.message) || "");
     });
   }
+  // v5.8: youTh Views punya kanal siaran SENDIRI, terpisah dari spectate.
+  var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var spectateOn = false,
     liveRef = null,
+    yvLiveRef = null,
+    _yvLive = null,
+    _yvLiveActive = false,
     applyingLive = false,
     liveThrottle = 0,
     liveShowChords = false,
@@ -1396,7 +1401,19 @@
         var v = s.val();
         _lastLive = v;
         applyLive(v);
-        if (DISPLAY_MODE) renderDisplay(v);
+        if (DISPLAY_MODE && !_yvLiveActive) renderDisplay(v);
+      });
+    } catch (e) {}
+    // Kanal youTh Views: isinya TIDAK PERNAH dikirim ke applyLive(), jadi
+    // menyalakan output youTh Views tidak lagi menarik layar anggota masuk
+    // ke mode spectate.
+    try {
+      yvLiveRef = firebase.database().ref(YV_LIVE_PATH);
+      yvLiveRef.on("value", function (s) {
+        var v = s.val();
+        _yvLive = v;
+        _yvLiveActive = !!(v && v.active);
+        if (DISPLAY_MODE) renderDisplay(_yvLiveActive ? v : _lastLive);
       });
     } catch (e) {}
   }
@@ -1414,6 +1431,7 @@
     try {
       liveRef.set({
         active: true,
+        src: "spectate",
         songId: selectedSongId,
         key: selectedKey,
         scroll: currentScrollFrac(),
@@ -1426,6 +1444,13 @@
   }
   function applyLive(v) {
     var banner = document.getElementById("liveBanner");
+    // v5.8: HANYA siaran spectate (src "spectate") yang boleh mengunci layar
+    // anggota. Siaran youTh Views (src "youthviews") diabaikan sepenuhnya.
+    if (v && v.src && v.src !== "spectate") {
+      if (banner) banner.hidden = true;
+      document.body.classList.remove("spectating");
+      return;
+    }
     if (!v || !v.active || isAdmin) {
       if (banner) banner.hidden = true;
       document.body.classList.remove("spectating");
@@ -1854,7 +1879,7 @@
         if (titleEl) titleEl.textContent = "";
         if (keyEl) keyEl.textContent = "";
         renderDispText(body, v.text || "");
-        if (window.PNWMotion) window.PNWMotion.revealLines(body);
+        if (window.PNWMotion && window.PNWMotion.revealLines) window.PNWMotion.revealLines(body);
       }
       return;
     }
@@ -1870,7 +1895,7 @@
         if (titleEl) titleEl.textContent = "";
         if (keyEl) keyEl.textContent = "";
         renderDispVerse(body, v.text || "", v.ref || "");
-        if (window.PNWMotion) window.PNWMotion.revealLines(body);
+        if (window.PNWMotion && window.PNWMotion.revealLines) window.PNWMotion.revealLines(body);
       }
       return;
     }
@@ -1929,7 +1954,7 @@
               : "Nada " + target + " (asli " + song.originalKey + ")";
         renderLinesInto(body, song.lines || [], shift, target);
         screen.classList.toggle("hideChords", !showCh);
-        if (window.PNWMotion) window.PNWMotion.revealLines(body);
+        if (window.PNWMotion && window.PNWMotion.revealLines) window.PNWMotion.revealLines(body);
       }
     }
     if (!useSlide && typeof v.scroll === "number" && stage) {
@@ -1985,7 +2010,7 @@
     container.appendChild(wrap);
   }
   function broadcastText() {
-    if (!isAdmin || !liveRef) return;
+    if (!isAdmin || !(yvLiveRef || liveRef)) return;
     var ta = document.getElementById("liveTextInput");
     var txt = ta ? (ta.value || "").trim() : "";
     if (!txt) {
@@ -1994,15 +2019,15 @@
     }
     try {
       var bg = yvReadBg();
-      liveRef.set({ active: true, kind: "text", text: txt, style: yvReadStyle(), bg: bg.url, bgPreset: bg.preset, t: Date.now() });
+      (yvLiveRef || liveRef).set({ active: true, src: "youthviews", kind: "text", text: txt, style: yvReadStyle(), bg: bg.url, bgPreset: bg.preset, t: Date.now() });
       if (typeof toast === "function")
         toast("Teks ditampilkan di proyektor.", "success");
     } catch (e) {}
   }
   function clearText() {
-    if (!isAdmin || !liveRef) return;
+    if (!isAdmin || !(yvLiveRef || liveRef)) return;
     try {
-      liveRef.set({ active: false, t: Date.now() });
+      (yvLiveRef || liveRef).set({ active: false, src: "youthviews", t: Date.now() });
       if (typeof toast === "function") toast("Teks disembunyikan.", "info");
     } catch (e) {}
   }
@@ -2032,7 +2057,7 @@
     container.appendChild(wrap);
   }
   function broadcastVerse() {
-    if (!isAdmin || !liveRef) return;
+    if (!isAdmin || !(yvLiveRef || liveRef)) return;
     var ta = document.getElementById("liveVerseInput");
     var rf = document.getElementById("liveVerseRef");
     var txt = ta ? (ta.value || "").trim() : "";
@@ -2043,7 +2068,7 @@
     }
     try {
       var bg = yvReadBg();
-      liveRef.set({ active: true, kind: "verse", text: txt, ref: ref, style: yvReadStyle(), bg: bg.url, bgPreset: bg.preset, t: Date.now() });
+      (yvLiveRef || liveRef).set({ active: true, src: "youthviews", kind: "verse", text: txt, ref: ref, style: yvReadStyle(), bg: bg.url, bgPreset: bg.preset, t: Date.now() });
       if (typeof toast === "function")
         toast("Ayat ditampilkan di proyektor.", "success");
     } catch (e) {}
@@ -8403,12 +8428,28 @@
     registerNewBankSong();
   }
   function openBankPage() {
-    closeMenu();
+    // v5.8: BUKA HALAMAN DULU, render isinya belakangan di dalam try/catch.
+    // Dulu satu error kecil di renderBankPage() membuat baris .add("open")
+    // tidak pernah jalan, jadi Song Bank sama sekali tidak bisa dibuka.
+    try {
+      closeMenu();
+    } catch (e) {}
     currentBankFolder = null;
     var si = document.getElementById("bankPageSearch");
     if (si) si.value = "";
-    renderBankPage("");
-    document.getElementById("bankPage").classList.add("open");
+    var pg = document.getElementById("bankPage");
+    if (pg) pg.classList.add("open");
+    try {
+      renderBankPage("");
+    } catch (e) {
+      window.PNWDiag.push({
+        feature: "songbank.render",
+        error: String((e && e.message) || e),
+        at: Date.now(),
+      });
+      if (typeof toast === "function")
+        toast("Song Bank terbuka, tapi daftar gagal dimuat.", "info");
+    }
   }
   function closeBankPage() {
     var pg = document.getElementById("bankPage");
@@ -8764,7 +8805,7 @@
       results.forEach(function (s) {
         box.appendChild(buildBankCard(s));
       });
-      if (window.PNWMotion) window.PNWMotion.stagger(box);
+      if (window.PNWMotion && window.PNWMotion.stagger) window.PNWMotion.stagger(box);
       return;
     }
     if (!currentBankFolder) {
@@ -8775,7 +8816,7 @@
       BANK_CATS.forEach(function (c) {
         box.appendChild(buildFolderCard(c));
       });
-      if (window.PNWMotion) window.PNWMotion.stagger(box);
+      if (window.PNWMotion && window.PNWMotion.stagger) window.PNWMotion.stagger(box);
       return;
     }
     renderBankCrumb(box, bankCatLabel(currentBankFolder), false);
@@ -8790,7 +8831,7 @@
     inFolder.forEach(function (s) {
       box.appendChild(buildBankCard(s));
     });
-    if (window.PNWMotion) window.PNWMotion.stagger(box);
+    if (window.PNWMotion && window.PNWMotion.stagger) window.PNWMotion.stagger(box);
   }
   function pullFromBank(master) {
     if (
@@ -9632,7 +9673,7 @@
 
   // === Mesin youTh Views yang dipakai js/projector.js ===
   window.PNWYouthViews = {
-    version: "v77",
+    version: "v80",
     getSongs: function () {
       return Array.isArray(songs) ? songs : [];
     },
@@ -9649,12 +9690,14 @@
       return !!isAdmin;
     },
     canBroadcast: function () {
-      return !!(isAdmin && liveRef);
+      return !!(isAdmin && (yvLiveRef || liveRef));
     },
     broadcast: function (payload) {
-      if (!isAdmin || !liveRef) return false;
+      var ref = yvLiveRef || liveRef;
+      if (!isAdmin || !ref) return false;
       try {
-        liveRef.set(Object.assign({ t: Date.now() }, payload || {}));
+        // src "youthviews" -> aplikasi utama TIDAK ikut spectate.
+        ref.set(Object.assign({ t: Date.now(), src: "youthviews" }, payload || {}));
         return true;
       } catch (e) {
         window.PNWDiag.push({ feature: "youthviews.broadcast", error: String((e && e.message) || e), at: Date.now() });
@@ -9662,9 +9705,10 @@
       }
     },
     clear: function () {
-      if (!isAdmin || !liveRef) return false;
+      var ref = yvLiveRef || liveRef;
+      if (!isAdmin || !ref) return false;
       try {
-        liveRef.set({ active: false, t: Date.now() });
+        ref.set({ active: false, src: "youthviews", t: Date.now() });
         return true;
       } catch (e) {
         return false;

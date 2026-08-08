@@ -146,5 +146,9 @@
     },
   };
 
-  window.PNWMotion = API;
+  // v5.8: JANGAN saling menimpa dengan js/yv-motion.js.
+  // Dulu yv-motion.js menimpa objek ini sehingga stagger() & revealLines()
+  // hilang -> renderBankPage() melempar error -> Song Bank tidak bisa dibuka.
+  window.PNWUiMotion = API;
+  window.PNWMotion = Object.assign({}, window.PNWMotion || {}, API);
 })();
