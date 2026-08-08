@@ -89,7 +89,7 @@
       <div class="dispBg" id="dispBg" aria-hidden="true"></div>
       <div class="dispBar">
         <span class="dispDot off" id="dispDot" title="Menyambung…"></span>
-        <span class="dispBrand">PNW TOOLS — Proyektor</span>
+        <span class="dispBrand">youTh Views — Live Output</span>
       </div>
       <div class="dispIdle" id="dispIdle">
         <div class="dispIdleInner">
@@ -121,7 +121,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v5.2</span>
+            <span class="verTag" id="appVer">v5.3</span>
           </p>
         </div>
         <button
@@ -553,7 +553,7 @@
       <aside class="drawer">
         <div class="drawerHead">
           <b>Menu</b>
-          <span class="menuVer">v5.2</span>
+          <span class="menuVer">v5.3</span>
           <button class="xBtn" id="closeMenuBtn" type="button">&#10005;</button>
         </div>
         <div class="menuScroll">
@@ -575,7 +575,7 @@
             </button>
             <button class="menuRow" id="openProjBtn" type="button">
               <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="layer"></span></span>
-              <span class="menuRowMain"><span class="menuRowTitle">Proyektor</span><span class="menuRowDesc">Mode persiapan tampilan layar</span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">youTh Views</span><span class="menuRowDesc">Presenter, proyektor, teks &amp; ayat</span></span>
               <span class="menuRowGo" aria-hidden="true">›</span>
             </button>
             <button class="menuRow" id="openGuideBtn" type="button">
@@ -676,7 +676,7 @@
               type="button"
               style="width: 100%"
             >
-              Buka layar proyektor
+              Buka output youTh Views
             </button>
             <button
               class="actionBtn secondary"
@@ -687,45 +687,12 @@
               Buka Stage Display (musisi)
             </button>
             <p class="menuGroupLabel" style="margin: 10px 0 4px">
-              Teks / pengumuman ke proyektor
+              youTh Views
             </p>
-            <textarea
-              id="liveTextInput"
-              rows="3"
-              placeholder="Tulis pengumuman / ayat singkat&hellip;"
-              style="width: 100%; box-sizing: border-box; resize: vertical; font: inherit; padding: 8px"
-            ></textarea>
-            <div style="display: flex; gap: 6px; margin-top: 6px">
-              <button class="actionBtn" id="showTextBtn" type="button" style="flex: 1">
-                Tampilkan teks
-              </button>
-              <button class="actionBtn secondary" id="clearTextBtn" type="button" style="flex: 1">
-                Sembunyikan
-              </button>
-            </div>
-            <p class="menuGroupLabel" style="margin: 10px 0 4px">
-              Ayat Alkitab ke proyektor
+            <p class="small">
+              Kontrol Teks/Pengumuman dan Ayat Alkitab sekarang berada di modul
+              youTh Views supaya output proyektor berdiri independen.
             </p>
-            <input
-              id="liveVerseRef"
-              type="text"
-              placeholder="Referensi &mdash; mis. Yohanes 3:16"
-              style="width: 100%; box-sizing: border-box; font: inherit; padding: 8px; margin-bottom: 6px"
-            />
-            <textarea
-              id="liveVerseInput"
-              rows="3"
-              placeholder="Isi ayat&hellip;"
-              style="width: 100%; box-sizing: border-box; resize: vertical; font: inherit; padding: 8px"
-            ></textarea>
-            <button
-              class="actionBtn"
-              id="showVerseBtn"
-              type="button"
-              style="width: 100%; margin-top: 6px"
-            >
-              Tampilkan ayat
-            </button>
             <label class="lockRow"
               ><input type="checkbox" id="liveChordsToggle" /> Tampilkan chord
               di proyektor</label
@@ -923,19 +890,19 @@
         <div class="guideBody" id="guideBody"></div>
       </div>
     </div>
-    <div class="projPage no-print" id="projPage" aria-hidden="true">
+    <div class="projPage youthViewsPage no-print" id="projPage" aria-hidden="true">
       <header class="projTop">
         <div class="projTopL">
-          <span class="projBrand">Proyektor</span>
-          <span class="projBadge">Mode Persiapan</span>
-          <span class="projDev">Dalam pengembangan</span>
+          <span class="projBrand">youTh Views</span>
+          <span class="projBadge">Presenter Beta</span>
+          <span class="projDev">EasyWorship / ProPresenter workflow</span>
         </div>
         <button class="xBtn" id="closeProjBtn" type="button">&#10005;</button>
       </header>
       <div class="projGrid">
         <aside class="projPane projPaneL">
           <div class="projPaneHead">
-            <h3>Rencana Ibadah</h3>
+            <h3>Playlist / Rundown</h3>
             <div class="projPaneOps">
               <button class="projMiniBtn" id="projNewPlan" type="button">
                 Baru
@@ -968,7 +935,7 @@
             </button>
           </div>
           <div class="projSearchRow">
-            <input id="projSearch" type="search" placeholder="Cari lagu..." />
+            <input id="projSearch" type="search" placeholder="Cari lagu / filter library..." />
           </div>
           <div class="projFilters" id="projFilters">
             <button class="projChip on" data-filter="semua" type="button">
@@ -982,7 +949,7 @@
         </section>
         <aside class="projPane projPaneR">
           <div class="projPaneHead">
-            <h3>Item Aktif</h3>
+            <h3>Active Item</h3>
             <span class="projLive" id="projLiveDot">LIVE</span>
           </div>
           <div class="projActiveBody" id="projActiveBody"></div>
@@ -1027,8 +994,9 @@
           </div>
           <p class="label">Latar Belakang</p>
           <div class="projSolids" id="projSolids"></div>
-          <p class="projSub">Gambar preset</p>
+          <p class="projSub">Preset gerak / API / plugin URL</p>
           <div class="projPresets" id="projPresets"></div>
+          <input id="projBgUrl" class="projBgUrl" placeholder="Custom image/API/plugin URL (opsional)" />
           <p class="label">Pratinjau</p>
           <div class="projPreview" id="projPreview">
             <span id="projPreviewText">Contoh teks lirik</span>

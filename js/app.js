@@ -403,6 +403,7 @@
       originalKey: song.originalKey,
       source: song.source || "",
       youtube: song.youtube || "",
+      bg: song.bg || "",
       lines: (song.lines || []).slice(),
     };
     var i = -1;
@@ -1386,7 +1387,7 @@
     _lastLive = null,
     _dispSig = "",
     _wakeLock = null,
-    DISPLAY_MODE = /[?&]mode=(display|stage)/.test(location.search);
+    DISPLAY_MODE = /[?&]mode=(display|stage|youthviews|youth-views|views)/.test(location.search);
   var STAGE_MODE = /[?&]mode=stage/.test(location.search);
   function initSpectate() {
     try {
@@ -1521,15 +1522,82 @@
     }
   }
   var _lastBg = "";
-  function applyDispBg(url) {
+  function cleanChordText(line) {
+    return String(line || "")
+      .replace(/\[[^\]]+\]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  function yvSongSlides(song) {
+    var lines = (song && song.lines) || [];
+    var slides = [];
+    var cur = null;
+    function pushCur() {
+      if (cur && cur.lines && cur.lines.length) slides.push(cur);
+    }
+    lines.forEach(function (raw) {
+      var ln = raw || "";
+      if (sectionWords.test(ln.trim())) {
+        pushCur();
+        cur = { title: cleanChordText(ln) || "Slide", lines: [ln] };
+      } else {
+        if (!cur) cur = { title: "Slide 1", lines: [] };
+        cur.lines.push(ln);
+      }
+    });
+    pushCur();
+    if (!slides.length && lines.length) {
+      for (var i = 0; i < lines.length; i += 4) {
+        slides.push({ title: "Slide " + (slides.length + 1), lines: lines.slice(i, i + 4) });
+      }
+    }
+    return slides.length ? slides : [{ title: "Slide 1", lines: lines }];
+  }
+  function yvReadStyle() {
+    var font = (document.getElementById("projFont") || {}).value || "Inter";
+    var size = parseInt(((document.getElementById("projSize") || {}).value || "56"), 10) || 56;
+    var sh = (document.getElementById("projShadow") || {}).value || "strong";
+    var on = document.querySelector("#projAlign button.on");
+    var align = (on && on.dataset.align) || "center";
+    return { font: font, size: size, align: align, shadow: sh };
+  }
+  function yvReadBg() {
+    var active = document.querySelector("#projPresets .projBgPreset.on, #projSolids .projBgPreset.on");
+    var bgUrlEl = document.getElementById("projBgUrl");
+    var url = bgUrlEl ? (bgUrlEl.value || "").trim() : "";
+    return {
+      url: url,
+      preset: active ? active.getAttribute("data-bg") || "" : "",
+    };
+  }
+  function applyViewStyle(style) {
+    var screen = document.getElementById("displayScreen");
+    if (!screen) return;
+    var st = style || {};
+    screen.style.setProperty("--yv-font", st.font || "Inter");
+    screen.style.setProperty("--yv-size", (parseInt(st.size, 10) || 56) + "px");
+    screen.style.setProperty("--yv-align", st.align || "center");
+    screen.classList.remove("yvShadowNone", "yvShadowSoft", "yvShadowStrong");
+    screen.classList.add(st.shadow === "none" ? "yvShadowNone" : st.shadow === "soft" ? "yvShadowSoft" : "yvShadowStrong");
+  }
+  function applyDispBg(url, preset) {
     var el = document.getElementById("dispBg");
     if (!el) return;
     var u = (url || "").trim();
-    if (u === _lastBg) return;
-    _lastBg = u;
+    var p = (preset || "").trim();
+    var sig = p + "|" + u;
+    if (sig === _lastBg) return;
+    _lastBg = sig;
+    el.className = "dispBg";
+    el.removeAttribute("data-bg");
     if (u) {
       el.style.backgroundImage = 'url("' + u.replace(/"/g, "%22") + '")';
       el.classList.add("on");
+      el.setAttribute("data-bg", "custom");
+    } else if (p) {
+      el.style.backgroundImage = "";
+      el.classList.add("on");
+      el.setAttribute("data-bg", p);
     } else {
       el.style.backgroundImage = "";
       el.classList.remove("on");
@@ -1545,10 +1613,11 @@
     var keyEl = document.getElementById("dispKey");
     var body = document.getElementById("dispContent");
     var wait = document.getElementById("dispWait");
+    if (v && v.active) applyViewStyle(v.style || {});
     if (v && v.active && v.kind === "text") {
       if (idle) idle.hidden = true;
       if (stage) stage.hidden = false;
-      applyDispBg("");
+      applyDispBg(v.bg || "", v.bgPreset || "");
       screen.classList.add("dispTextMode");
       screen.classList.add("hideChords");
       var _tsig = "text|" + (v.text || "");
@@ -1564,7 +1633,7 @@
     if (v && v.active && v.kind === "verse") {
       if (idle) idle.hidden = true;
       if (stage) stage.hidden = false;
-      applyDispBg("");
+      applyDispBg(v.bg || "", v.bgPreset || "");
       screen.classList.add("dispTextMode");
       screen.classList.add("hideChords");
       var _vsig = "verse|" + (v.ref || "") + "|" + (v.text || "");
@@ -1580,7 +1649,8 @@
     screen.classList.remove("dispTextMode");
     if (!v || !v.active || !v.songId) {
       _dispSig = "";
-      applyDispBg("");
+      applyDispBg("", "");
+      applyViewStyle({});
       if (idle) idle.hidden = false;
       if (wait) wait.textContent = "Menunggu live dimulai\u2026";
       if (stage) stage.hidden = true;
@@ -1591,7 +1661,8 @@
     });
     if (!song) {
       _dispSig = "";
-      applyDispBg("");
+      applyDispBg("", "");
+      applyViewStyle({});
       if (idle) idle.hidden = false;
       if (wait)
         wait.textContent = v.songTitle
@@ -1602,25 +1673,35 @@
     }
     if (idle) idle.hidden = true;
     if (stage) stage.hidden = false;
-    applyDispBg(v.bg || song.bg || "");
+    applyDispBg(v.bg || song.bg || "", v.bgPreset || "");
     var target = v.key || song.originalKey;
     var shift =
       (noteToIndex[target] || 0) - (noteToIndex[song.originalKey] || 0);
     var showCh = STAGE_MODE ? true : !!v.showChords;
-    var sig = song.id + "|" + target + "|" + (showCh ? "1" : "0");
+    var useSlide = typeof v.slideIndex === "number";
+    var slideTitle = "";
+    var linesToRender = song.lines || [];
+    if (useSlide) {
+      var deck = yvSongSlides(song);
+      var idx = Math.max(0, Math.min(deck.length - 1, parseInt(v.slideIndex, 10) || 0));
+      linesToRender = (deck[idx] && deck[idx].lines) || linesToRender;
+      slideTitle = deck[idx] && deck[idx].title ? " — " + deck[idx].title : "";
+    }
+    var sig = song.id + "|" + target + "|" + (showCh ? "1" : "0") + "|" + (useSlide ? v.slideIndex : "scroll") + "|" + JSON.stringify(v.style || {}) + "|" + (v.bg || song.bg || "") + "|" + (v.bgPreset || "");
     if (sig !== _dispSig) {
       _dispSig = sig;
-      if (titleEl) titleEl.textContent = (song.num || "") + ". " + song.title;
+      if (titleEl) titleEl.textContent = (song.num || "") + ". " + song.title + slideTitle;
       if (keyEl)
         keyEl.textContent =
           target === song.originalKey
             ? "Nada " + target
             : "Nada " + target + " (asli " + song.originalKey + ")";
-      renderLinesInto(body, song.lines || [], shift, target);
+      renderLinesInto(body, linesToRender, shift, target);
       screen.classList.toggle("hideChords", !showCh);
+      screen.classList.toggle("yvSlideMode", useSlide);
       if (window.PNWMotion) window.PNWMotion.revealLines(body);
     }
-    if (typeof v.scroll === "number" && stage) {
+    if (!useSlide && typeof v.scroll === "number" && stage) {
       var m = stage.scrollHeight - stage.clientHeight;
       if (m > 0) stage.scrollTop = m * v.scroll;
     }
@@ -1681,7 +1762,8 @@
       return;
     }
     try {
-      liveRef.set({ active: true, kind: "text", text: txt, t: Date.now() });
+      var bg = yvReadBg();
+      liveRef.set({ active: true, kind: "text", text: txt, style: yvReadStyle(), bg: bg.url, bgPreset: bg.preset, t: Date.now() });
       if (typeof toast === "function")
         toast("Teks ditampilkan di proyektor.", "success");
     } catch (e) {}
@@ -1729,7 +1811,8 @@
       return;
     }
     try {
-      liveRef.set({ active: true, kind: "verse", text: txt, ref: ref, t: Date.now() });
+      var bg = yvReadBg();
+      liveRef.set({ active: true, kind: "verse", text: txt, ref: ref, style: yvReadStyle(), bg: bg.url, bgPreset: bg.preset, t: Date.now() });
       if (typeof toast === "function")
         toast("Ayat ditampilkan di proyektor.", "success");
     } catch (e) {}
@@ -9293,6 +9376,296 @@
   }
 
   // --- Pasang aksi menu & fitur baru ---
+
+  // === youTh Views Beta (v75): presenter independen ala ProPresenter/EasyWorship ===
+  var YV_STATE_KEY = "pnwYouthViews.v1";
+  var yvState = {
+    tab: "lagu",
+    filter: "semua",
+    active: null,
+    plan: [],
+    style: { font: "Inter", size: 56, align: "center", shadow: "strong" },
+    bg: { preset: "aurora", url: "" },
+  };
+  function yvLoad() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(YV_STATE_KEY) || "{}");
+      if (saved && typeof saved === "object") {
+        yvState = Object.assign(yvState, saved);
+        yvState.style = Object.assign({ font: "Inter", size: 56, align: "center", shadow: "strong" }, yvState.style || {});
+        yvState.bg = Object.assign({ preset: "aurora", url: "" }, yvState.bg || {});
+        yvState.plan = Array.isArray(yvState.plan) ? yvState.plan : [];
+      }
+    } catch (e) {}
+  }
+  function yvSave() {
+    try { localStorage.setItem(YV_STATE_KEY, JSON.stringify(yvState)); } catch (e) {}
+  }
+  function yvOpen() {
+    var p = document.getElementById("projPage");
+    if (!p) return;
+    p.classList.add("open");
+    p.setAttribute("aria-hidden", "false");
+    yvRender();
+  }
+  function yvClose() {
+    var p = document.getElementById("projPage");
+    if (!p) return;
+    p.classList.remove("open");
+    p.setAttribute("aria-hidden", "true");
+  }
+  function yvSongById(id) {
+    return (songs || []).find(function (s) { return s && s.id === id; }) || null;
+  }
+  function yvSetActive(item) {
+    yvState.active = item;
+    yvSave();
+    yvRenderActive();
+    yvPreview();
+  }
+  function yvApplyControlsToState() {
+    yvState.style = yvReadStyle();
+    yvState.bg = yvReadBg();
+    yvSave();
+    yvPreview();
+  }
+  function yvPayload(item) {
+    if (!item) return null;
+    var st = yvReadStyle();
+    var bg = yvReadBg();
+    if (item.kind === "song") {
+      var song = yvSongById(item.songId);
+      if (!song) return null;
+      return {
+        active: true,
+        kind: "song",
+        songId: song.id,
+        songTitle: song.title,
+        key: selectedKey || song.originalKey,
+        slideIndex: item.slideIndex || 0,
+        showChords: false,
+        style: st,
+        bg: bg.url || song.bg || "",
+        bgPreset: bg.url ? "" : (bg.preset || "aurora"),
+        t: Date.now(),
+      };
+    }
+    if (item.kind === "text") {
+      var t = (document.getElementById("liveTextInput") || {}).value || item.text || "";
+      t = String(t).trim();
+      if (!t) return null;
+      return { active: true, kind: "text", text: t, style: st, bg: bg.url, bgPreset: bg.url ? "" : bg.preset, t: Date.now() };
+    }
+    if (item.kind === "verse") {
+      var tx = (document.getElementById("liveVerseInput") || {}).value || item.text || "";
+      var rf = (document.getElementById("liveVerseRef") || {}).value || item.ref || "";
+      tx = String(tx).trim();
+      if (!tx) return null;
+      return { active: true, kind: "verse", text: tx, ref: String(rf).trim(), style: st, bg: bg.url, bgPreset: bg.url ? "" : bg.preset, t: Date.now() };
+    }
+    return null;
+  }
+  function yvGoLive(item) {
+    if (!isAdmin || !liveRef) {
+      if (typeof toast === "function") toast("Login admin dulu untuk menayangkan youTh Views.", "info");
+      return;
+    }
+    yvApplyControlsToState();
+    var payload = yvPayload(item || yvState.active);
+    if (!payload) {
+      if (typeof toast === "function") toast("Pilih atau isi konten youTh Views dulu.", "info");
+      return;
+    }
+    try {
+      liveRef.set(payload);
+      if (typeof toast === "function") toast("youTh Views ditayangkan.", "success");
+    } catch (e) {}
+  }
+  function yvClear() {
+    if (!isAdmin || !liveRef) return;
+    try {
+      liveRef.set({ active: false, t: Date.now() });
+      if (typeof toast === "function") toast("Layar youTh Views dibersihkan.", "info");
+    } catch (e) {}
+  }
+  function yvAddPlan(item) {
+    yvState.plan.push(item);
+    yvSave();
+    yvRenderPlan();
+  }
+  function yvRenderPlan() {
+    var el = document.getElementById("projPlanList");
+    if (!el) return;
+    el.innerHTML = "";
+    if (!yvState.plan.length) {
+      el.innerHTML = '<div class="yvEmpty">Belum ada rundown. Tambahkan lagu/slide dari library.</div>';
+      return;
+    }
+    yvState.plan.forEach(function (it, i) {
+      var song = it.kind === "song" ? yvSongById(it.songId) : null;
+      var row = document.createElement("button");
+      row.className = "yvPlanItem";
+      row.type = "button";
+      row.innerHTML = '<b>' + (i + 1) + '. ' + (song ? song.title : (it.kind === "verse" ? (it.ref || "Ayat") : "Teks")) + '</b><small>' + (it.kind || "item") + '</small>';
+      row.onclick = function () { yvSetActive(it); };
+      el.appendChild(row);
+    });
+  }
+  function yvRenderCatalog() {
+    var el = document.getElementById("projCatalogList");
+    if (!el) return;
+    var q = ((document.getElementById("projSearch") || {}).value || "").toLowerCase();
+    el.innerHTML = "";
+    if (yvState.tab === "lagu") {
+      var list = (songs || []).filter(function (s) {
+        return !q || (s.title || "").toLowerCase().indexOf(q) >= 0 || (s.source || "").toLowerCase().indexOf(q) >= 0;
+      });
+      var cnt = document.getElementById("projCountAll");
+      if (cnt) cnt.textContent = list.length;
+      list.forEach(function (song) {
+        var slides = yvSongSlides(song);
+        var card = document.createElement("div");
+        card.className = "yvCatalogCard";
+        card.innerHTML = '<div class="yvCardTop"><b>' + (song.num ? song.num + '. ' : '') + song.title + '</b><span>' + slides.length + ' slide</span></div><small>Nada ' + song.originalKey + (song.bg ? ' · custom bg' : '') + '</small><div class="yvSlideBtns"></div><div class="yvCardOps"><button type="button" data-act="plan">+ Rundown</button><button type="button" data-act="live">Tayangkan awal</button></div>';
+        var btns = card.querySelector('.yvSlideBtns');
+        slides.forEach(function (sl, idx) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = (idx + 1) + ' ' + (sl.title || 'Slide');
+          b.onclick = function () { yvSetActive({ kind: 'song', songId: song.id, slideIndex: idx }); };
+          btns.appendChild(b);
+        });
+        card.querySelector('[data-act="plan"]').onclick = function () { yvAddPlan({ kind: 'song', songId: song.id, slideIndex: 0 }); };
+        card.querySelector('[data-act="live"]').onclick = function () { yvSetActive({ kind: 'song', songId: song.id, slideIndex: 0 }); yvGoLive(); };
+        el.appendChild(card);
+      });
+      return;
+    }
+    if (yvState.tab === "teks") {
+      el.innerHTML = '<div class="yvComposer"><h3>Teks / Pengumuman</h3><p>Konten cepat yang hanya tampil di youTh Views output.</p><textarea id="liveTextInput" rows="7" placeholder="Tulis pengumuman, arahan, atau teks bebas..."></textarea><div class="yvComposerOps"><button id="showTextBtn" type="button">Tampilkan teks</button><button id="clearTextBtn" type="button">Bersihkan</button></div></div>';
+      document.getElementById("showTextBtn").onclick = function () { yvSetActive({ kind: "text" }); yvGoLive(); };
+      document.getElementById("clearTextBtn").onclick = yvClear;
+      return;
+    }
+    if (yvState.tab === "alkitab") {
+      el.innerHTML = '<div class="yvComposer"><h3>Ayat Alkitab</h3><p>Beta manual: isi referensi dan teks ayat. Nanti bisa disambungkan ke API/plugin Alkitab.</p><input id="liveVerseRef" placeholder="Referensi — mis. Yohanes 3:16" /><textarea id="liveVerseInput" rows="7" placeholder="Isi ayat..."></textarea><div class="yvComposerOps"><button id="showVerseBtn" type="button">Tampilkan ayat</button><button id="clearVerseBtn" type="button">Bersihkan</button></div></div>';
+      document.getElementById("showVerseBtn").onclick = function () { yvSetActive({ kind: "verse" }); yvGoLive(); };
+      document.getElementById("clearVerseBtn").onclick = yvClear;
+      return;
+    }
+    if (yvState.tab === "media") {
+      el.innerHTML = '<div class="yvComposer"><h3>Media / Praise Deck</h3><p>Pilih preset gerak di kanan, atau tempel image/API/plugin URL pada kolom background. Output memakai scrim dan shadow agar teks tetap terbaca.</p><ul><li>Aurora / Waves / Fire / Deep Space = background animasi CSS offline.</li><li>Custom URL = gambar/API/plugin yang kamu masukkan sendiri.</li></ul></div>';
+      return;
+    }
+    el.innerHTML = '<div class="yvComposer"><h3>Template / Looks</h3><p>Fondasi ProPresenter: style teks, alignment, shadow, background preset, dan active slide disimpan sebagai look youTh Views Beta.</p><p>Roadmap berikutnya: save tema, current/next preview, macros, dan scripture API.</p></div>';
+  }
+  function yvRenderActive() {
+    var el = document.getElementById("projActiveBody");
+    if (!el) return;
+    var it = yvState.active;
+    if (!it) {
+      el.innerHTML = '<div class="yvEmpty">Belum ada Active Item. Pilih slide lagu, teks, atau ayat.</div>';
+      return;
+    }
+    if (it.kind === "song") {
+      var song = yvSongById(it.songId);
+      var slides = yvSongSlides(song);
+      var sl = slides[it.slideIndex || 0] || slides[0];
+      el.innerHTML = '<b>' + (song ? song.title : 'Lagu') + '</b><small>Slide ' + ((it.slideIndex || 0) + 1) + ' · ' + ((sl && sl.title) || '') + '</small><div class="yvActivePreview">' + ((sl && sl.lines) || []).map(cleanChordText).filter(Boolean).slice(0, 5).join('<br>') + '</div><div class="yvComposerOps"><button id="yvPrevSlide" type="button">◀ Slide</button><button id="yvLiveActive" type="button">Go Live</button><button id="yvNextSlide" type="button">Slide ▶</button></div>';
+      document.getElementById("yvLiveActive").onclick = function () { yvGoLive(); };
+      document.getElementById("yvPrevSlide").onclick = function () { it.slideIndex = Math.max(0, (it.slideIndex || 0) - 1); yvSetActive(it); yvGoLive(it); };
+      document.getElementById("yvNextSlide").onclick = function () { it.slideIndex = Math.min(slides.length - 1, (it.slideIndex || 0) + 1); yvSetActive(it); yvGoLive(it); };
+    } else {
+      el.innerHTML = '<b>' + (it.kind === "verse" ? "Ayat Alkitab" : "Teks / Pengumuman") + '</b><small>Konten cepat youTh Views</small><div class="yvActivePreview">Siap ditayangkan dari tab ' + yvState.tab + '.</div>';
+    }
+  }
+  function yvPreview() {
+    var pv = document.getElementById("projPreview");
+    if (!pv) return;
+    var bg = yvReadBg();
+    pv.className = "projPreview yvPreview";
+    pv.setAttribute("data-bg", bg.url ? "custom" : (bg.preset || "aurora"));
+    pv.style.backgroundImage = bg.url ? 'linear-gradient(rgba(0,0,0,.50),rgba(0,0,0,.72)),url("' + bg.url.replace(/"/g, "%22") + '")' : "";
+    pv.style.fontFamily = yvState.style.font;
+    pv.style.textAlign = yvState.style.align;
+    var txt = document.getElementById("projPreviewText");
+    if (txt) {
+      txt.textContent = yvState.active && yvState.active.kind === "song" ? "Slide lagu aktif" : "Contoh teks youTh Views";
+      txt.style.fontSize = Math.max(18, Math.round((yvState.style.size || 56) * .45)) + "px";
+    }
+  }
+  function yvRenderBgControls() {
+    var solids = document.getElementById("projSolids");
+    var presets = document.getElementById("projPresets");
+    var url = document.getElementById("projBgUrl");
+    if (url) {
+      url.value = yvState.bg.url || "";
+      url.oninput = yvApplyControlsToState;
+    }
+    function mk(container, items) {
+      if (!container) return;
+      container.innerHTML = "";
+      items.forEach(function (it) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "projBgPreset" + (yvState.bg.preset === it.id ? " on" : "");
+        b.setAttribute("data-bg", it.id);
+        b.textContent = it.label;
+        b.onclick = function () { yvState.bg.preset = it.id; yvState.bg.url = ""; yvSave(); yvRender(); };
+        container.appendChild(b);
+      });
+    }
+    mk(solids, [{id:"deep",label:"Deep"},{id:"cerulean",label:"Cerulean"},{id:"purple",label:"Purple"}]);
+    mk(presets, [{id:"aurora",label:"Aurora"},{id:"waves",label:"Waves"},{id:"fire",label:"Fire"},{id:"space",label:"Space"}]);
+  }
+  function yvRender() {
+    yvLoad();
+    document.querySelectorAll("#projTabs .projTab").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.tab === yvState.tab);
+    });
+    var fs = document.getElementById("projFont"), sz = document.getElementById("projSize"), sh = document.getElementById("projShadow"), sv = document.getElementById("projSizeVal");
+    if (fs) fs.value = yvState.style.font;
+    if (sz) sz.value = yvState.style.size;
+    if (sv) sv.textContent = yvState.style.size + "px";
+    if (sh) sh.value = yvState.style.shadow;
+    document.querySelectorAll("#projAlign button").forEach(function (b) { b.classList.toggle("on", b.dataset.align === yvState.style.align); });
+    yvRenderBgControls();
+    yvRenderPlan();
+    yvRenderCatalog();
+    yvRenderActive();
+    yvPreview();
+  }
+  function initYouthViews() {
+    yvLoad();
+    var op = document.getElementById("openProjBtn");
+    if (op) op.onclick = yvOpen;
+    var cp = document.getElementById("closeProjBtn");
+    if (cp) cp.onclick = yvClose;
+    var go = document.getElementById("projGoLive");
+    if (go) go.onclick = function () { yvGoLive(); };
+    var cl = document.getElementById("projClear");
+    if (cl) cl.onclick = yvClear;
+    var np = document.getElementById("projNewPlan");
+    if (np) np.onclick = function () { yvState.plan = []; yvSave(); yvRenderPlan(); };
+    var sp = document.getElementById("projSavePlan");
+    if (sp) sp.onclick = function () { yvSave(); if (typeof toast === "function") toast("Rundown youTh Views tersimpan.", "success"); };
+    var search = document.getElementById("projSearch");
+    if (search) search.oninput = yvRenderCatalog;
+    document.querySelectorAll("#projTabs .projTab").forEach(function (b) {
+      b.onclick = function () { yvState.tab = b.dataset.tab || "lagu"; yvSave(); yvRender(); };
+    });
+    ["projFont", "projShadow"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.onchange = function () { yvState.style = yvReadStyle(); yvSave(); yvRender(); };
+    });
+    var size = document.getElementById("projSize");
+    if (size) size.oninput = function () { yvState.style = yvReadStyle(); yvSave(); yvRender(); };
+    document.querySelectorAll("#projAlign button").forEach(function (b) {
+      b.onclick = function () { yvState.style.align = b.dataset.align || "center"; yvSave(); yvRender(); };
+    });
+    yvRender();
+  }
+
   function initExtras() {
     document.getElementById("menuBtn").onclick = openMenu;
     ensureLottie(0);
@@ -9379,13 +9752,14 @@
       );
     });
     setTimeout(seedBankFromSongs, 1800);
+    initYouthViews();
     var spx = document.getElementById("spectateToggle");
     if (spx) spx.onclick = toggleSpectate;
     var odb = document.getElementById("openDisplayBtn");
     if (odb)
       odb.onclick = function () {
         window.open(
-          location.origin + location.pathname + "?mode=display",
+          location.origin + location.pathname + "?mode=youthviews",
           "_blank",
         );
       };
@@ -9857,7 +10231,7 @@
       { k: "tampilan", lbl: "Tampilan", anim: "layer", sub: true },
       {
         k: "proyektor",
-        lbl: "Proyektor",
+        lbl: "youTh Views",
         ico: "\u25A3",
         act: function () {
           var b = document.getElementById("openDisplayBtn");
