@@ -14,32 +14,14 @@
    ========================================================================= */
 
 :root {
-  /* ============================================================
-     PANEL KONTROL FONT  (ganti font DI SINI saja)
-     Alur: (1) daftar TYPEFACE  ->  (2) tetapkan ke KATEGORI teks.
-     Ubah nilai kategori -> semua teks kategori itu ikut berubah.
-     Font BARU? Muat dulu <link>-nya di index.html.
-     ============================================================ */
-
-  /* (1) TYPEFACE tersedia (harus dimuat di index.html) */
-  --ff-sans:
+  /* --- tipografi: Geist Sans untuk semua teks, JetBrains Mono BOLD untuk judul --- */
+  --font-sans:
     "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     system-ui, sans-serif;
-  --ff-display:
-    "Satoshi", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --ff-mono:
+  --font-mono:
     "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-
-  /* (2) KATEGORI TEKS  ->  cukup ganti isian di kanan ini */
-  --font-judul: var(--ff-mono); /* Judul utama: nama app, judul lagu, judul proyektor (H1/H2) */
-  --font-subjudul: var(--ff-display); /* Subjudul: label section & kartu, judul menu (H3/H4) */
-  --font-body: var(--ff-sans); /* Teks isi: paragraf, tombol, input, menu, tabel */
-  --font-chord: var(--ff-mono); /* Chord, angka & lirik (selaras kolom) */
-
-  /* alias lama (dipakai internal oleh banyak aturan - biarkan) */
-  --font-sans: var(--font-body);
-  --font-head: var(--font-subjudul);
-  --font-mono: var(--font-chord);
+  --font-head:
+    "Satoshi", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   /* =====================================================================
      PALET HOSANA YOUTH TOOLS - dark mode taktis, minimalis, futuristik
@@ -52,7 +34,7 @@
 
   /* --- 60%: Background Utama. Near-black bernuansa biru, bukan hitam murni:
          mengurangi halation/silau di ruangan gelap saat ibadah. --- */
-  --d-canvas: #FEFCFB;
+  --d-canvas: #fdfaf1b8;
 
   /* --- 30%: Background Sekunder / Surface (kartu, tabel, menu nav) --- */
   --d-s1: #FFFFFF; /* kartu, baris daftar */
@@ -354,7 +336,7 @@ h5 {
   color: var(--d-ink-2);
   border: 1px solid var(--d-line);
   border-radius: var(--d-r-sm);
-  font-family: var(--font-chord);
+  font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   box-shadow: none;
@@ -414,7 +396,7 @@ h5 {
   box-shadow: var(--ring);
 }
 #editLines {
-  font-family: var(--font-chord);
+  font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
   line-height: 1.7;
 }
 
@@ -422,7 +404,7 @@ h5 {
 .chord,
 .ic-ch {
   color: var(--d-chord);
-  font-family: var(--font-chord);
+  font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
   font-weight: 700;
 }
 .line {
@@ -468,7 +450,7 @@ h5 {
 .ytTime,
 .semiVal,
 #ytRateVal {
-  font-family: var(--font-chord);
+  font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
   color: var(--d-ink-2);
 }
@@ -557,7 +539,7 @@ h5 {
   font-variant-numeric: tabular-nums;
 }
 .recDockTime {
-  font-family: var(--font-chord);
+  font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   color: var(--d-ink-3);
@@ -629,7 +611,7 @@ h5 {
   background: var(--d-danger-wash);
 }
 .recTime {
-  font-family: var(--font-chord);
+  font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
   color: var(--d-ink);
 }
@@ -861,22 +843,17 @@ textarea,
   font-feature-settings: "cv11", "ss01";
 }
 
-/* JUDUL & SUBJUDUL -> diatur oleh kategori (lihat "PANEL KONTROL FONT" di atas) */
+/* TITLE -> JetBrains Mono BOLD, tegas dan taktis */
 h1,
 h2,
+h3,
+h4,
 #songTitle,
 #editTitle,
 #dispTitle,
 .brand,
 .dispBrand {
-  font-family: var(--font-judul);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--d-ink);
-}
-h3,
-h4 {
-  font-family: var(--font-subjudul);
+  font-family: var(--font-mono);
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--d-ink);
@@ -889,7 +866,7 @@ h4 {
 #keyLine,
 .recDockTime,
 #recDockTime {
-  font-family: var(--font-chord);
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
