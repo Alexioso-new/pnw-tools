@@ -1417,6 +1417,7 @@
         key: selectedKey,
         scroll: currentScrollFrac(),
         showChords: liveShowChords,
+        bg: (currentSong() || {}).bg || "",
         songTitle: (currentSong() || {}).title || "",
         t: now,
       });
@@ -1468,6 +1469,71 @@
       st.textContent = spectateOn
         ? "Spectate AKTIF - layar member mengikuti Anda."
         : "";
+    var nv = document.getElementById("baitNav");
+    if (nv) nv.hidden = !spectateOn;
+  }
+  function sheetSections() {
+    var sh = document.getElementById("sheet");
+    if (!sh) return { sh: null, tops: [] };
+    var blocks = sh.querySelectorAll(".secBlock");
+    var base = sh.getBoundingClientRect().top;
+    var tops = [];
+    for (var i = 0; i < blocks.length; i++) {
+      if (!blocks[i].textContent || !blocks[i].textContent.trim()) continue;
+      var r = blocks[i].getBoundingClientRect();
+      tops.push(Math.max(0, Math.round(r.top - base + sh.scrollTop)));
+    }
+    return { sh: sh, tops: tops };
+  }
+  function gotoSection(dir) {
+    var s = sheetSections();
+    if (!s.sh || !s.tops.length) return;
+    var max = s.sh.scrollHeight - s.sh.clientHeight;
+    var cur = s.sh.scrollTop;
+    var tol = 6;
+    var target = null;
+    if (dir > 0) {
+      for (var i = 0; i < s.tops.length; i++) {
+        if (s.tops[i] > cur + tol) {
+          target = s.tops[i];
+          break;
+        }
+      }
+      if (target === null) target = max;
+    } else {
+      for (var j = s.tops.length - 1; j >= 0; j--) {
+        if (s.tops[j] < cur - tol) {
+          target = s.tops[j];
+          break;
+        }
+      }
+      if (target === null) target = 0;
+    }
+    target = Math.max(0, Math.min(target, max));
+    try {
+      s.sh.scrollTo({ top: target, behavior: "smooth" });
+    } catch (e) {
+      s.sh.scrollTop = target;
+    }
+    if (typeof broadcastLive === "function") {
+      setTimeout(broadcastLive, 320);
+      setTimeout(broadcastLive, 640);
+    }
+  }
+  var _lastBg = "";
+  function applyDispBg(url) {
+    var el = document.getElementById("dispBg");
+    if (!el) return;
+    var u = (url || "").trim();
+    if (u === _lastBg) return;
+    _lastBg = u;
+    if (u) {
+      el.style.backgroundImage = 'url("' + u.replace(/"/g, "%22") + '")';
+      el.classList.add("on");
+    } else {
+      el.style.backgroundImage = "";
+      el.classList.remove("on");
+    }
   }
   // === MODE PROYEKTOR / LIVE (Fitur 3) ===
   function renderDisplay(v) {
@@ -1482,6 +1548,7 @@
     if (v && v.active && v.kind === "text") {
       if (idle) idle.hidden = true;
       if (stage) stage.hidden = false;
+      applyDispBg("");
       screen.classList.add("dispTextMode");
       screen.classList.add("hideChords");
       var _tsig = "text|" + (v.text || "");
@@ -1497,6 +1564,7 @@
     if (v && v.active && v.kind === "verse") {
       if (idle) idle.hidden = true;
       if (stage) stage.hidden = false;
+      applyDispBg("");
       screen.classList.add("dispTextMode");
       screen.classList.add("hideChords");
       var _vsig = "verse|" + (v.ref || "") + "|" + (v.text || "");
@@ -1512,6 +1580,7 @@
     screen.classList.remove("dispTextMode");
     if (!v || !v.active || !v.songId) {
       _dispSig = "";
+      applyDispBg("");
       if (idle) idle.hidden = false;
       if (wait) wait.textContent = "Menunggu live dimulai\u2026";
       if (stage) stage.hidden = true;
@@ -1522,6 +1591,7 @@
     });
     if (!song) {
       _dispSig = "";
+      applyDispBg("");
       if (idle) idle.hidden = false;
       if (wait)
         wait.textContent = v.songTitle
@@ -1532,6 +1602,7 @@
     }
     if (idle) idle.hidden = true;
     if (stage) stage.hidden = false;
+    applyDispBg(v.bg || song.bg || "");
     var target = v.key || song.originalKey;
     var shift =
       (noteToIndex[target] || 0) - (noteToIndex[song.originalKey] || 0);
@@ -5778,6 +5849,7 @@
     document.getElementById("editOriginalKey").value = song.originalKey;
     document.getElementById("editSource").value = song.source || "";
     document.getElementById("editYoutube").value = song.youtube || "";
+    document.getElementById("editBg").value = song.bg || "";
     document.getElementById("editLines").value = (song.lines || []).join("\n");
     document.getElementById("editor").classList.add("open");
     document
@@ -6154,6 +6226,7 @@
     song.originalKey = key;
     song.source = document.getElementById("editSource").value.trim();
     song.youtube = document.getElementById("editYoutube").value.trim();
+    song.bg = document.getElementById("editBg").value.trim();
     song.lines = document
       .getElementById("editLines")
       .value.replace(/\r/g, "")
@@ -6171,6 +6244,7 @@
       originalKey: "C",
       source: "",
       youtube: "",
+      bg: "",
       lines: [
         "Intro :",
         "[C] [G] [Am] [F]",
@@ -9329,6 +9403,16 @@
     if (ctb) ctb.onclick = clearText;
     var svb = document.getElementById("showVerseBtn");
     if (svb) svb.onclick = broadcastVerse;
+    var pbb = document.getElementById("prevBaitBtn");
+    if (pbb)
+      pbb.onclick = function () {
+        gotoSection(-1);
+      };
+    var nbb = document.getElementById("nextBaitBtn");
+    if (nbb)
+      nbb.onclick = function () {
+        gotoSection(1);
+      };
     var lct = document.getElementById("liveChordsToggle");
     if (lct) lct.onclick = toggleLiveChords;
     initDisplayMode();

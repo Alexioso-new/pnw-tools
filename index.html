@@ -86,6 +86,7 @@
       <div class="reminderBody" id="reminderBody"></div>
     </div>
     <div id="displayScreen" class="displayScreen" hidden>
+      <div class="dispBg" id="dispBg" aria-hidden="true"></div>
       <div class="dispBar">
         <span class="dispDot off" id="dispDot" title="Menyambung…"></span>
         <span class="dispBrand">PNW TOOLS — Proyektor</span>
@@ -120,7 +121,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v5.0</span>
+            <span class="verTag" id="appVer">v5.2</span>
           </p>
         </div>
         <button
@@ -202,6 +203,10 @@
         <div class="field">
           <label>Link YouTube (opsional)</label
           ><input id="editYoutube" placeholder="Tempel link YouTube lagu ini" />
+        </div>
+        <div class="field">
+          <label>Gambar latar proyektor (opsional)</label
+          ><input id="editBg" placeholder="Tempel URL gambar (jpg/png) untuk background proyektor" />
         </div>
         <div class="field">
           <label>Chord &amp; lirik</label>
@@ -357,6 +362,25 @@
         <div class="recDock no-print" id="recDock"></div>
         <div id="content"></div>
       </main>
+      <div class="baitNav no-print" id="baitNav" hidden>
+        <button
+          class="baitNavBtn"
+          id="prevBaitBtn"
+          type="button"
+          aria-label="Bait sebelumnya"
+        >
+          &#9664; Bait
+        </button>
+        <span class="baitNavLbl">Navigasi bait</span>
+        <button
+          class="baitNavBtn"
+          id="nextBaitBtn"
+          type="button"
+          aria-label="Bait berikutnya"
+        >
+          Bait &#9654;
+        </button>
+      </div>
       <footer class="footer">
         &copy; 2026 <b>Alex</b> &mdash; Youth Hosana Bandung.
       </footer>
@@ -529,7 +553,7 @@
       <aside class="drawer">
         <div class="drawerHead">
           <b>Menu</b>
-          <span class="menuVer">v5.0</span>
+          <span class="menuVer">v5.2</span>
           <button class="xBtn" id="closeMenuBtn" type="button">&#10005;</button>
         </div>
         <div class="menuScroll">

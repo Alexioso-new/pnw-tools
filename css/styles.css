@@ -4629,3 +4629,23 @@ body.stage-mode #displayScreen.dispTextMode .dispTextLine{font-size:clamp(24px,5
 .dispVerseText .dispTextLine{font-weight:700;}
 .dispVerseRef{font-family:var(--font-judul,"JetBrains Mono",monospace);font-size:clamp(18px,3.2vh,40px);font-weight:700;color:#7fe0ff;letter-spacing:.04em;}
 body.stage-mode #displayScreen.dispTextMode .dispVerseRef{color:#8fd0e0;}
+
+/* === Navigasi per-bait (Fitur 4) v73 === */
+.baitNav{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:60;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(14,18,28,.92);border:1px solid rgba(127,224,255,.35);box-shadow:0 8px 28px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
+.baitNav[hidden]{display:none !important;}
+.baitNavLbl{font-size:12px;letter-spacing:.04em;color:#9fb3c8;text-transform:uppercase;}
+.baitNavBtn{font:inherit;font-weight:700;cursor:pointer;border-radius:999px;padding:8px 16px;border:1px solid rgba(127,224,255,.45);background:linear-gradient(180deg,#1b2740,#141d30);color:#eaf2ff;}
+.baitNavBtn:active{transform:translateY(1px);}
+@media (max-width:520px){.baitNavLbl{display:none;}.baitNav{bottom:12px;padding:6px 10px;gap:6px;}.baitNavBtn{padding:8px 14px;}}
+
+/* === Background/media per lagu (Fitur 5) v74 === */
+.dispBg{position:absolute;inset:0;z-index:0;background-position:center;background-size:cover;background-repeat:no-repeat;opacity:0;transition:opacity .5s ease;pointer-events:none;}
+.dispBg.on{opacity:1;}
+.dispBg.on::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,9,16,.60),rgba(6,9,16,.80));}
+#displayScreen .dispBar,#displayScreen .dispIdle,#displayScreen .dispStage{position:relative;z-index:1;}
+
+/* === Proyektor: keterbacaan teks di atas permukaan gelap + gambar latar (Fitur 5) === */
+#displayScreen{color:#f4f8ff;}
+#displayScreen .dispContent .line{color:#f4f8ff;}
+#displayScreen #dispWait,#displayScreen .dispKey{color:#dbe6f5;}
+#dispBg.on ~ .dispStage h2,#dispBg.on ~ .dispStage .dispContent{text-shadow:0 2px 12px rgba(0,0,0,.72),0 1px 3px rgba(0,0,0,.85);}
