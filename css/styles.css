@@ -5,7 +5,7 @@
  */
 
 :root {
-  --text: #f8fafc;
+  --text: #000000;
   --muted: var(--d-ink-3);
   --line: var(--d-line);
   --soft: var(--d-s2);
