@@ -2690,8 +2690,6 @@ body.stage .sheet #content {
 /* 1. cegah geser horizontal & teks meluber di semua halaman */
 html, body { max-width: 100%; overflow-x: hidden; }
 img, video, canvas, svg { max-width: 100%; }
-.projPane, .projPane * , .yvCard, .recItem { min-width: 0; }
-.projCard2Main b, .projPlanItem, .projActiveTitle, .recItem b { overflow-wrap: anywhere; }
 
 /* 2. tinggi layar penuh yang benar di iOS (bar URL Safari bikin teks meleset) */
 .projPage { height: 100vh; height: 100dvh; }
@@ -2761,4 +2759,122 @@ img, video, canvas, svg { max-width: 100%; }
 /* 9. hormati pengguna yang mematikan animasi */
 @media (prefers-reduced-motion: reduce) {
   .yvLine { animation: none !important; opacity: 1 !important; }
+}
+
+
+/* ================= v5.7 - kartu terbaca + navigasi per kolom ================= */
+/* A. hanya anak langsung grid yang boleh menyusut (bukan semua turunan) */
+.projGrid > * { min-width: 0; min-height: 0; }
+.projPlanItem, .projActiveTitle { overflow-wrap: break-word; }
+
+/* B. KARTU LAGU - judul wajib mendatar & terbaca */
+#projCatalogList { display: block; }
+#projCatalogList .projCard2 {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 8px;
+  width: auto;
+  min-width: 0;
+  padding: 11px 13px;
+  margin-bottom: 8px;
+}
+#projCatalogList .projCard2Main { display: block; min-width: 0; }
+#projCatalogList .projCard2Main b {
+  display: block;
+  font-size: 13.5px;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+}
+#projCatalogList .projCard2Main small { display: block; margin-top: 3px; }
+#projCatalogList .projCard2Ops { display: flex; flex-wrap: wrap; gap: 6px; }
+#projCatalogList .projCard2Ops .projMiniBtn { flex: 0 0 auto; }
+
+/* C. hasil pencarian latar: video tidak boleh dimuat sebagai gambar */
+.projBgThumb { position: relative; overflow: hidden; }
+.projBgThumb.noThumb {
+  background: linear-gradient(135deg, #14204a, #2b1840);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.projBgThumb.noThumb::after {
+  content: "\25B6";
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 15px;
+}
+.projBgVid {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 8.5px;
+  letter-spacing: 0.07em;
+  padding: 2px 5px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+.projPvVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.projPreview { position: relative; overflow: hidden; }
+
+/* D. RAIL - satu kolom navigasi, tiap fitur punya tempatnya sendiri */
+.projRail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 8px;
+  background: var(--d-canvas);
+  border-right: 1px solid rgba(0, 0, 0, 0.09);
+  overflow: auto;
+}
+.projRailTitle {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  padding: 8px 8px 3px;
+}
+.projRailBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  min-height: 38px;
+}
+.projRailBtn span.ic { font-size: 14px; width: 17px; text-align: center; flex: 0 0 auto; }
+.projRailBtn:hover { background: rgba(124, 140, 255, 0.1); }
+.projRailBtn.on {
+  background: rgba(20, 130, 160, 0.14);
+  border-color: rgba(20, 130, 160, 0.5);
+  font-weight: 700;
+}
+
+/* E. empat kolom di layar lebar (selector disamakan agar menang cascade) */
+.youthViewsPage .projGrid { grid-template-columns: 148px 224px minmax(0, 1fr) 336px !important; }
+@media (max-width: 1200px) and (min-width: 901px) {
+  .youthViewsPage .projGrid { grid-template-columns: 124px 186px minmax(0, 1fr) 296px !important; }
+}
+@media (max-width: 900px) {
+  .youthViewsPage .projRail { display: none; }
 }

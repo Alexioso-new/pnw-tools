@@ -1048,12 +1048,19 @@
           } else if (data && data.hits) {
             items = data.hits.map(function (p) {
               if (p.videos) {
-                var vv = p.videos.large && p.videos.large.url ? p.videos.large : p.videos.medium || p.videos.small || {};
-                return {
-                  thumb: "https://i.vimeocdn.com/video/" + (p.picture_id || "") + "_295x166.jpg",
-                  url: vv.url || "",
-                  kind: "video",
-                };
+                var V = p.videos || {};
+                var vv =
+                  (V.large && V.large.url ? V.large : null) ||
+                  (V.medium && V.medium.url ? V.medium : null) ||
+                  (V.small && V.small.url ? V.small : null) ||
+                  (V.tiny && V.tiny.url ? V.tiny : null) || {};
+                var th =
+                  (V.large && V.large.thumbnail) ||
+                  (V.medium && V.medium.thumbnail) ||
+                  (V.small && V.small.thumbnail) ||
+                  (V.tiny && V.tiny.thumbnail) ||
+                  (p.picture_id ? "https://i.vimeocdn.com/video/" + p.picture_id + "_295x166.jpg" : "");
+                return { thumb: th, url: vv.url || "", kind: "video" };
               }
               return { thumb: p.previewURL, url: p.largeImageURL || p.webformatURL, kind: "image" };
             }).filter(function (it) { return !!it.url; });
@@ -1075,9 +1082,28 @@
     if (!out) return;
     out.innerHTML = items
       .map(function (it, i) {
-        return '<button class="projBgThumb" type="button" data-i="' + i + '"><img src="' + esc(it.thumb || it.url) + '" alt="" /></button>';
+        var isVid = (it.kind || "image") === "video";
+        // penting: untuk video HANYA thumbnail. Dulu URL .mp4 dipakai sebagai
+        // src <img> sehingga 12 video terunduh sekaligus -> tab crash.
+        var t = isVid ? it.thumb || "" : it.thumb || it.url || "";
+        var img = t
+          ? '<img loading="lazy" src="' + esc(t) + '" alt="" />'
+          : "";
+        return (
+          '<button class="projBgThumb' + (t ? "" : " noThumb") + '" type="button" data-i="' + i + '">' +
+          img +
+          (isVid ? '<span class="projBgVid">VIDEO</span>' : "") +
+          "</button>"
+        );
       })
       .join("");
+    // gambar rusak -> jadikan kotak placeholder, bukan ikon patah
+    out.querySelectorAll(".projBgThumb img").forEach(function (im) {
+      im.onerror = function () {
+        im.style.display = "none";
+        if (im.parentNode) im.parentNode.classList.add("noThumb");
+      };
+    });
     out.querySelectorAll(".projBgThumb").forEach(function (b) {
       b.onclick = function () {
         var it = items[parseInt(b.getAttribute("data-i"), 10) || 0];
@@ -1099,8 +1125,47 @@
       var b = s.bg || {};
       if (b.kind === "color") p.style.background = b.value;
       else if (b.kind === "motion") p.setAttribute("data-bg", b.value);
-      else if (b.kind === "image" || b.kind === "video")
+      else if (b.kind === "image")
         p.style.background = "#000 center/cover no-repeat url('" + String(b.value).replace(/'/g, "%27") + "')";
+      else if (b.kind === "studio" || b.kind === "lottie") p.style.background = "#0b1020";
+      // video / unggahan: WAJIB elemen <video>. Kalau dipasang sebagai
+      // background-image, browser mengunduh seluruh berkas .mp4 dan hang.
+      var pv = p.querySelector(".projPvVideo");
+      if (b.kind === "video" || b.kind === "upload") {
+        p.style.background = "#000";
+        if (!pv) {
+          pv = document.createElement("video");
+          pv.className = "projPvVideo";
+          pv.muted = true;
+          pv.loop = true;
+          pv.autoplay = true;
+          pv.setAttribute("playsinline", "");
+          pv.setAttribute("preload", "metadata");
+          pv.onerror = function () {
+            pv.style.display = "none";
+          };
+          p.insertBefore(pv, p.firstChild);
+        }
+        pv.style.display = "";
+        if (b.kind === "upload") {
+          if (window.PNWMedia && window.PNWMedia.resolve && pv.getAttribute("data-src") !== b.value) {
+            pv.setAttribute("data-src", b.value);
+            window.PNWMedia.resolve(b.value)
+              .then(function (u) { if (u) pv.src = u; })
+              .catch(function () {});
+          }
+        } else if (pv.getAttribute("data-src") !== b.value) {
+          pv.setAttribute("data-src", b.value);
+          pv.src = b.value;
+        }
+      } else if (pv) {
+        try {
+          pv.pause();
+          pv.removeAttribute("src");
+          pv.load();
+        } catch (e) {}
+        pv.remove();
+      }
       var t = el("projPreviewText");
       if (!t) return;
       t.style.fontFamily = '"' + s.font + '", Inter, sans-serif';
@@ -1371,4 +1436,113 @@
   else init();
 
   window.PNWProjector = { open: open, close: close, init: init, audit: runAudit, fonts: FONTS };
+})();
+
+
+/* ============ v5.7 - rail navigasi: satu fitur satu kolom ============ */
+(function () {
+  "use strict";
+  var ITEMS = [
+    { id: "rundown", ic: "\u2630", label: "Rundown", pane: "L" },
+    { id: "lagu", ic: "\u266B", label: "Lagu", tab: "lagu" },
+    { id: "alkitab", ic: "\u271D", label: "Alkitab", tab: "alkitab" },
+    { id: "teks", ic: "\u270E", label: "Teks", tab: "teks" },
+    { id: "media", ic: "\u25A3", label: "Media", tab: "media" },
+    { id: "template", ic: "\u2699", label: "Template", tab: "template" },
+    { id: "tampilan", ic: "A", label: "Teks & Font", pane: "R", find: "PENGATURAN TEKS" },
+    { id: "latar", ic: "\u25D1", label: "Latar", pane: "R", find: "LATAR BELAKANG" },
+    { id: "pratinjau", ic: "\u25A0", label: "Pratinjau", pane: "R", find: "PRATINJAU" },
+  ];
+
+  function q(s, r) { return (r || document).querySelector(s); }
+
+  function scrollToLabel(pane, text) {
+    if (!pane) return;
+    var found = null;
+    pane.querySelectorAll("h3, h4, .projSecTitle, .projPaneHead, label, b, strong").forEach(function (n) {
+      if (found) return;
+      var t = (n.textContent || "").trim().toUpperCase();
+      if (t.indexOf(String(text).toUpperCase()) === 0) found = n;
+    });
+    if (found && found.scrollIntoView) found.scrollIntoView({ block: "start", behavior: "smooth" });
+    else pane.scrollTop = 0;
+  }
+
+  function activate(it, btn) {
+    var rail = q("#projRail");
+    if (rail) rail.querySelectorAll(".projRailBtn").forEach(function (b) { b.classList.remove("on"); });
+    if (btn) btn.classList.add("on");
+    try {
+      if (it.tab) {
+        var t = q('#projTabs [data-tab="' + it.tab + '"]');
+        if (t) t.click();
+        var pc = q(".projPaneC");
+        if (pc) pc.scrollTop = 0;
+      } else if (it.pane === "L") {
+        var pl = q(".projPaneL");
+        if (pl && pl.scrollIntoView) pl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        if (pl) pl.scrollTop = 0;
+      } else if (it.pane === "R") {
+        scrollToLabel(q(".projPaneR"), it.find);
+      }
+    } catch (e) {
+      (window.PNWDiag = window.PNWDiag || []).push({
+        feature: "youthviews.rail",
+        error: String((e && e.message) || e),
+        at: Date.now(),
+      });
+    }
+  }
+
+  function buildRail() {
+    var grid = q("#projPage .projGrid");
+    if (!grid || q("#projRail")) return;
+    var rail = document.createElement("nav");
+    rail.className = "projPane projRail";
+    rail.id = "projRail";
+    rail.setAttribute("aria-label", "Navigasi fitur youTh Views");
+    var html = '<div class="projRailTitle">Fitur</div>';
+    ITEMS.forEach(function (it, i) {
+      if (i === 6) html += '<div class="projRailTitle">Tampilan</div>';
+      html +=
+        '<button class="projRailBtn" type="button" data-rail="' + it.id + '">' +
+        '<span class="ic">' + it.ic + "</span><span>" + it.label + "</span></button>";
+    });
+    rail.innerHTML = html;
+    grid.insertBefore(rail, grid.firstChild);
+    rail.querySelectorAll(".projRailBtn").forEach(function (b) {
+      var it = ITEMS.filter(function (x) { return x.id === b.getAttribute("data-rail"); })[0];
+      if (!it) return;
+      b.onclick = function () { activate(it, b); };
+    });
+    var first = rail.querySelector('[data-rail="lagu"]');
+    if (first) first.classList.add("on");
+  }
+
+  function hook() {
+    try {
+      if (window.PNWProjector && typeof window.PNWProjector.open === "function" && !window.PNWProjector.__railed) {
+        var open0 = window.PNWProjector.open;
+        window.PNWProjector.open = function () {
+          var r = open0.apply(this, arguments);
+          try { buildRail(); } catch (e) {}
+          return r;
+        };
+        window.PNWProjector.__railed = true;
+      }
+    } catch (e) {}
+    var page = document.getElementById("projPage");
+    if (page) {
+      if (page.classList.contains("open")) buildRail();
+      try {
+        new MutationObserver(function () {
+          if (page.classList.contains("open")) buildRail();
+        }).observe(page, { attributes: true, attributeFilter: ["class"] });
+      } catch (e) {}
+    }
+  }
+
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", hook);
+  else hook();
 })();
