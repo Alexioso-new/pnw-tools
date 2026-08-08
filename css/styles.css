@@ -5,7 +5,7 @@
  */
 
 :root {
-  --text: #000000;
+  --text: #f8fafc;
   --muted: var(--d-ink-3);
   --line: var(--d-line);
   --soft: var(--d-s2);
@@ -32,16 +32,7 @@
 }
 body {
   margin: 0;
-  font-family:
-    "Inter",
-    "Plus Jakarta Sans",
-    "PJS-fallback",
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    Arial,
-    sans-serif;
+  font-family: var(--font-body);
   color: var(--text);
   background: var(--paper);
   line-height: 1.42;
@@ -214,7 +205,7 @@ h1 {
   white-space: pre-wrap;
 }
 .chord {
-  font-family: "JetBrains Mono", Consolas, "Courier New", monospace;
+  font-family: var(--font-chord);
   font-weight: 800;
   color: var(--blue);
   font-size: 15px;
@@ -992,7 +983,7 @@ body.compact .secBlock {
   width: 100%;
   min-height: 60px;
   resize: vertical;
-  font-family: "JetBrains Mono", Consolas, monospace;
+  font-family: var(--font-chord);
   font-size: 13px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1421,7 +1412,7 @@ body.dark .ytX {
   vertical-align: bottom;
 }
 .ic-ch {
-  font-family: "JetBrains Mono", Consolas, monospace;
+  font-family: var(--font-chord);
   font-weight: 700;
   color: var(--blue);
   font-size: 0.85em;
@@ -3344,8 +3335,7 @@ body.xl {
 }
 .sheet .line:not(.inlineChord),
 #editPreviewBody .line:not(.inlineChord) {
-  font-family:
-    "JetBrains Mono", "Courier New", Consolas, ui-monospace, monospace;
+  font-family: var(--font-chord);
   font-size: var(--sheetSize);
   line-height: 1.5;
   letter-spacing: 0;
@@ -3372,12 +3362,7 @@ body.xl {
 }
 .sheet .line.section,
 #editPreviewBody .line.section {
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    sans-serif;
+  font-family: var(--font-subjudul);
   white-space: normal;
   letter-spacing: 0.02em;
   margin: 12px 0 2px;
