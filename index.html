@@ -87,6 +87,14 @@
     </div>
     <div id="displayScreen" class="displayScreen" hidden>
       <div class="dispBg" id="dispBg" aria-hidden="true"></div>
+      <video
+        class="dispVideo"
+        id="dispVideo"
+        muted
+        loop
+        playsinline
+        aria-hidden="true"
+      ></video>
       <div class="dispBar">
         <span class="dispDot off" id="dispDot" title="Menyambung…"></span>
         <span class="dispBrand">youTh Views — Live Output</span>
@@ -121,7 +129,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v5.3</span>
+            <span class="verTag" id="appVer">v5.4</span>
           </p>
         </div>
         <button
@@ -553,7 +561,7 @@
       <aside class="drawer">
         <div class="drawerHead">
           <b>Menu</b>
-          <span class="menuVer">v5.3</span>
+          <span class="menuVer">v5.4</span>
           <button class="xBtn" id="closeMenuBtn" type="button">&#10005;</button>
         </div>
         <div class="menuScroll">
@@ -946,6 +954,7 @@
             </button>
           </div>
           <div class="projCatalogList" id="projCatalogList"></div>
+          <div class="projSlideGrid" id="projSlideGrid" hidden></div>
         </section>
         <aside class="projPane projPaneR">
           <div class="projPaneHead">
@@ -954,8 +963,14 @@
           </div>
           <div class="projActiveBody" id="projActiveBody"></div>
           <div class="projRowBtns">
+            <button class="projMiniBtn" id="projPrevSlide" type="button" title="Slide sebelumnya (←)">
+              ◀
+            </button>
             <button class="projMiniBtn primary" id="projGoLive" type="button">
               Tayangkan
+            </button>
+            <button class="projMiniBtn" id="projNextSlide" type="button" title="Slide berikutnya (→ / Spasi)">
+              ▶
             </button>
             <button class="projMiniBtn" id="projClear" type="button">
               Bersihkan Layar
@@ -965,16 +980,20 @@
           <div class="projField">
             <label for="projFont">Font</label>
             <select id="projFont">
-              <option value="Inter">Inter</option>
-              <option value="Satoshi">Satoshi</option>
-              <option value="JetBrains Mono">JetBrains Mono</option>
+              <option value="Montserrat">Montserrat</option>
             </select>
           </div>
           <div class="projField">
             <label for="projSize"
-              >Ukuran <span id="projSizeVal">40px</span></label
+              >Ukuran <span id="projSizeVal">56px</span></label
             >
-            <input type="range" id="projSize" min="20" max="96" step="2" />
+            <input type="range" id="projSize" min="24" max="140" step="2" />
+          </div>
+          <div class="projField">
+            <label for="projMaxLines"
+              >Baris per slide <span id="projMaxLinesVal">4</span></label
+            >
+            <input type="range" id="projMaxLines" min="1" max="8" step="1" />
           </div>
           <div class="projField">
             <label>Perataan</label>
@@ -993,10 +1012,31 @@
             </select>
           </div>
           <p class="label">Latar Belakang</p>
+          <div class="projBgTabs" id="projBgTabs">
+            <button class="projBgTab on" data-bgtab="warna" type="button">Warna</button>
+            <button class="projBgTab" data-bgtab="animasi" type="button">Animasi</button>
+            <button class="projBgTab" data-bgtab="preset" type="button">Preset</button>
+            <button class="projBgTab" data-bgtab="api" type="button">API</button>
+          </div>
           <div class="projSolids" id="projSolids"></div>
-          <p class="projSub">Preset gerak / API / plugin URL</p>
-          <div class="projPresets" id="projPresets"></div>
-          <input id="projBgUrl" class="projBgUrl" placeholder="Custom image/API/plugin URL (opsional)" />
+          <div class="projPresets" id="projPresets" hidden></div>
+          <div class="projBgApi" id="projBgApi" hidden>
+            <div class="projBgApiRow">
+              <select id="projBgProvider">
+                <option value="pexels">Pexels</option>
+                <option value="pixabay">Pixabay</option>
+                <option value="picsum">Picsum (tanpa key)</option>
+              </select>
+              <input id="projBgKey" type="password" placeholder="API key kamu" autocomplete="off" />
+            </div>
+            <div class="projBgApiRow">
+              <input id="projBgQuery" placeholder="worship, light rays, clouds…" />
+              <button class="projMiniBtn primary" id="projBgSearch" type="button">Cari</button>
+            </div>
+            <div class="projBgChips" id="projBgChips"></div>
+            <div class="projBgResults" id="projBgResults"></div>
+          </div>
+          <input id="projBgUrl" class="projBgUrl" placeholder="Tempel URL gambar / video .mp4 sendiri" />
           <p class="label">Pratinjau</p>
           <div class="projPreview" id="projPreview">
             <span id="projPreviewText">Contoh teks lirik</span>

@@ -2318,3 +2318,336 @@ body.stage .sheet #content {
 /* === youTh Views output title readability v75 === */
 #displayScreen .dispStage h2{color:#eaf7ff;text-shadow:0 4px 18px rgba(0,0,0,.78),0 1px 3px rgba(0,0,0,.92);}
 #displayScreen .dispKey{color:#cfe8f5;text-shadow:0 2px 10px rgba(0,0,0,.55);}
+
+
+/* ========================================================================
+   youTh Views v5.4 — output presenter (1 halaman, lirik bertahap)
+   ======================================================================== */
+.dispVideo {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.dispVideo.on { opacity: 1; }
+#dispBg[data-bg="video"] { background: transparent !important; }
+#dispBg[data-bg="video"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 9, 16, 0.55);
+}
+
+/* mode slide: satu halaman, lirik saja, terpusat */
+#displayScreen.yvSlideMode .dispStage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 8vh 4vw;
+}
+#displayScreen.yvSlideMode #dispTitle {
+  position: absolute;
+  top: 3vh;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-size: clamp(11px, 1.5vh, 18px);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(240, 248, 255, 0.55);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+#displayScreen.yvSlideMode #dispKey {
+  position: absolute;
+  bottom: 3vh;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: clamp(10px, 1.3vh, 15px);
+  letter-spacing: 0.1em;
+  color: rgba(219, 230, 245, 0.42);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+#displayScreen.yvSlideMode #dispContent {
+  width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: none !important;
+}
+#displayScreen.yvSlideMode .line.chord,
+#displayScreen.yvSlideMode .line.section { display: none !important; }
+
+.yvSlide {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28em;
+  width: 100%;
+}
+.yvSlideLabel {
+  font-size: clamp(11px, 1.4vh, 16px);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(124, 140, 255, 0.85);
+  text-align: var(--yv-align, center);
+  margin-bottom: 0.6em;
+}
+.yvLine {
+  font-family: var(--yv-font, "Montserrat"), "Inter", system-ui, sans-serif;
+  font-size: var(--yv-fit, 56px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-align: var(--yv-align, center);
+  color: #ffffff;
+  opacity: 0;
+  transform: translateY(20px) scale(0.99);
+  animation: yvLineIn 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  text-wrap: balance;
+}
+@keyframes yvLineIn {
+  to { opacity: 1; transform: none; }
+}
+#displayScreen.yvShadowStrong .yvLine { text-shadow: 0 4px 22px rgba(0, 0, 0, 0.92), 0 1px 3px rgba(0, 0, 0, 0.9); }
+#displayScreen.yvShadowSoft .yvLine { text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7); }
+#displayScreen.yvShadowNone .yvLine { text-shadow: none; }
+
+/* latar animasi tambahan */
+#dispBg[data-bg="glow"],
+.projPreview[data-bg="glow"],
+.projMotionThumb[data-bg="glow"] {
+  background:
+    radial-gradient(60% 60% at 50% 40%, rgba(255, 226, 168, 0.42), transparent 70%),
+    linear-gradient(180deg, #0b1020, #05070f);
+  animation: yvDrift 22s ease-in-out infinite alternate;
+}
+#dispBg[data-bg="rays"],
+.projPreview[data-bg="rays"],
+.projMotionThumb[data-bg="rays"] {
+  background:
+    repeating-conic-gradient(from 210deg at 50% -10%, rgba(255, 255, 255, 0.09) 0deg 4deg, transparent 4deg 12deg),
+    linear-gradient(180deg, #0a1226, #04060d);
+  animation: yvDrift 30s linear infinite alternate;
+}
+#dispBg[data-bg="bokeh"],
+.projPreview[data-bg="bokeh"],
+.projMotionThumb[data-bg="bokeh"] {
+  background:
+    radial-gradient(12% 12% at 20% 30%, rgba(255, 214, 165, 0.5), transparent 70%),
+    radial-gradient(10% 10% at 70% 25%, rgba(168, 214, 255, 0.42), transparent 70%),
+    radial-gradient(14% 14% at 45% 75%, rgba(255, 178, 214, 0.36), transparent 70%),
+    linear-gradient(180deg, #0a0f1e, #05070f);
+  animation: yvDrift 26s ease-in-out infinite alternate;
+}
+
+/* ===================== panel youTh Views ===================== */
+.projCard2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  margin-bottom: 8px;
+}
+.projCard2:hover { border-color: rgba(124, 140, 255, 0.45); background: rgba(124, 140, 255, 0.07); }
+.projCard2Main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.projCard2Main b { font-size: 13.5px; font-weight: 700; }
+.projCard2Main small { font-size: 11.5px; opacity: 0.6; }
+.projCard2Ops { display: flex; gap: 6px; flex: 0 0 auto; }
+
+.projSlideGrid { display: block; }
+.projDeckHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 4px 2px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 10px;
+}
+.projDeckHead b { font-size: 14px; }
+.projDeckHead span { font-size: 11.5px; opacity: 0.6; }
+.projDeckGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.projSlideCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 92px;
+  padding: 22px 10px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(12, 16, 28, 0.95), rgba(8, 10, 18, 0.95));
+  color: #eaf1ff;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.projSlideCard:hover { transform: translateY(-2px); border-color: rgba(124, 140, 255, 0.6); }
+.projSlideCard.on { border-color: #7c8cff; box-shadow: 0 0 0 2px rgba(124, 140, 255, 0.35); }
+.projSlideNo {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+.projSlideBody { font-size: 11.5px; line-height: 1.45; font-weight: 600; }
+
+.projBgTabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.projBgTab {
+  padding: 5px 10px;
+  font-size: 11.5px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.projBgTab.on { background: #7c8cff; border-color: #7c8cff; color: #060913; font-weight: 700; }
+.projMotion {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 10.5px;
+}
+.projMotion span:last-child { padding: 0 6px 6px; opacity: 0.75; }
+.projMotion.on { border-color: #7c8cff; box-shadow: 0 0 0 2px rgba(124, 140, 255, 0.3); }
+.projMotionThumb { display: block; height: 44px; background: #0b0e14; }
+#projPresets { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+
+.projBgApi { display: flex; flex-direction: column; gap: 8px; }
+.projBgApiRow { display: flex; gap: 6px; }
+.projBgApiRow > select,
+.projBgApiRow > input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 9px;
+  font-size: 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+}
+.projBgApiRow > button { flex: 0 0 auto; }
+.projBgChips { display: flex; flex-wrap: wrap; gap: 5px; }
+.projBgChips .projChip { font-size: 10.5px; padding: 4px 8px; }
+.projBgResults {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 6px;
+}
+.projBgThumb {
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0b0e14;
+  cursor: pointer;
+  aspect-ratio: 16 / 9;
+}
+.projBgThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.projComposer { display: flex; flex-direction: column; gap: 10px; }
+.projComposer h3 { margin: 0; font-size: 15px; }
+.projComposer p, .projComposer li { font-size: 12.5px; opacity: 0.72; line-height: 1.55; margin: 0; }
+.projComposer ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.projComposer textarea,
+.projComposer input {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  resize: vertical;
+}
+.projComposerOps { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.projAuditOut { display: flex; flex-direction: column; gap: 8px; }
+.projAuditList { display: flex; flex-direction: column; gap: 6px; }
+.projAuditRow {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 12.5px;
+}
+.projAuditRow > span { font-weight: 800; text-align: center; }
+.projAuditRow.ok > span { color: #4ade80; }
+.projAuditRow.bad > span { color: #fbbf24; }
+.projAuditRow.bad { border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.07); }
+.projAuditRow small { opacity: 0.6; font-size: 11.5px; }
+.projAuditLog {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  line-height: 1.6;
+  opacity: 0.7;
+  max-height: 120px;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.projActiveTitle { margin: 0; font-size: 14px; font-weight: 700; }
+.projActiveKind { margin: 2px 0 8px; font-size: 11.5px; opacity: 0.6; }
+.projActiveLines {
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(124, 140, 255, 0.28);
+  background: rgba(124, 140, 255, 0.08);
+}
+.projNextLbl {
+  margin: 10px 0 4px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+.projNextLines {
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.62;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+}
+.projPlanItem.isActive { border-color: #7c8cff; background: rgba(124, 140, 255, 0.12); }
