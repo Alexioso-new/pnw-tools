@@ -20,6 +20,52 @@
   var CLOUD_PATH = "pujianYouth/recordings";
   var MAX_UPLOAD = 25 * 1024 * 1024; // 25 MB
 
+  /* ---------------- deteksi perangkat Apple ----------------
+     iOS/iPadOS Safari perlu perlakuan khusus:
+     - wajib wadah audio/mp4 (AAC); webm/ogg tidak didukung -> file patah
+     - echo cancellation WAJIB menyala, kalau tidak suara speaker masuk lagi
+       ke mikrofon -> feedback melengking
+     - perekaman putus saat layar terkunci / pindah aplikasi -> harus diamankan */
+  var IS_APPLE = (function () {
+    try {
+      var ua = navigator.userAgent || "";
+      var iOS = /iPad|iPhone|iPod/.test(ua);
+      var iPadOS = navigator.platform === "MacIntel" && (navigator.maxTouchPoints || 0) > 1;
+      var safari = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
+      return iOS || iPadOS || safari;
+    } catch (e) {
+      return false;
+    }
+  })();
+
+  /* Hentikan semua suara aplikasi sebelum merekam.
+     Ini sumber utama feedback: speaker HP membunyikan lagu/metronom,
+     lalu mikrofon merekamnya kembali. */
+  function hushApp() {
+    var stopped = 0;
+    try {
+      document.querySelectorAll("audio, video").forEach(function (a) {
+        if (!a.paused && a !== _playingAudio) {
+          try { a.pause(); stopped++; } catch (e) {}
+        }
+        if (a === _playingAudio) {
+          try { a.pause(); stopped++; } catch (e) {}
+        }
+      });
+    } catch (e) {}
+    try {
+      if (window.PNWMetro && typeof window.PNWMetro.stop === "function") {
+        window.PNWMetro.stop();
+        stopped++;
+      }
+    } catch (e) {}
+    try {
+      var btn = document.getElementById("metroBtn");
+      if (btn && btn.classList.contains("on")) { btn.click(); stopped++; }
+    } catch (e) {}
+    return stopped;
+  }
+
   var _db = null;
   var _counts = {};
   var _openFor = null; // { id, title }
@@ -29,6 +75,8 @@
   var _startAt = 0;
   var _timerId = 0;
   var _stream = null;
+  var _onHide = null;
+  var _wake = null;
   var _playingUrl = null;
   var _playingAudio = null;
   var _playingId = null;
@@ -474,12 +522,11 @@
   }
 
   function pickMime() {
-    var opts = [
-      "audio/webm;codecs=opus",
-      "audio/webm",
-      "audio/ogg;codecs=opus",
-      "audio/mp4",
-    ];
+    // Apple: audio/mp4 (AAC) HARUS didahulukan. Safari kadang bilang "support"
+    // untuk webm padahal hasilnya rusak/patah.
+    var opts = IS_APPLE
+      ? ["audio/mp4;codecs=mp4a.40.2", "audio/mp4", "audio/aac", "audio/webm"]
+      : ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"];
     for (var i = 0; i < opts.length; i++) {
       try {
         if (window.MediaRecorder && MediaRecorder.isTypeSupported(opts[i]))
@@ -491,7 +538,7 @@
 
   function extFor(mime) {
     if (!mime) return "webm";
-    if (mime.indexOf("mp4") >= 0) return "m4a";
+    if (mime.indexOf("mp4") >= 0 || mime.indexOf("aac") >= 0) return "m4a";
     if (mime.indexOf("ogg") >= 0) return "ogg";
     return "webm";
   }
@@ -856,13 +903,24 @@
       toast("Mikrofon butuh koneksi HTTPS.", "error");
       return;
     }
+    var hushed = hushApp();
+    if (hushed && IS_APPLE) toast("Suara aplikasi dihentikan supaya tidak feedback.", "info");
     navigator.mediaDevices
       .getUserMedia({
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        },
+        audio: IS_APPLE
+          ? {
+              // WAJIB menyala di iOS: memakai mode "voice processing" milik sistem
+              // sehingga suara dari speaker tidak ikut terekam (hilang feedback).
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              channelCount: 1,
+            }
+          : {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false,
+            },
       })
       .then(function (stream) {
         _stream = stream;
@@ -880,6 +938,14 @@
         };
         _mr.onstop = function () {
           var dur = Date.now() - _startAt;
+          try {
+            if (_onHide) {
+              document.removeEventListener("visibilitychange", _onHide);
+              window.removeEventListener("pagehide", _onHide);
+              _onHide = null;
+            }
+            if (_wake && _wake.release) { _wake.release(); _wake = null; }
+          } catch (e) {}
           var type = (_mr && _mr.mimeType) || mime || "audio/webm";
           var blob = new Blob(_chunks, { type: type });
           _chunks = [];
@@ -952,7 +1018,34 @@
               );
             });
         };
-        _mr.start();
+        _mr.onerror = function (ev) {
+          var msg = (ev && ev.error && ev.error.name) || "tidak diketahui";
+          toast("Perekaman bermasalah (" + msg + "). Rekaman dihentikan & disimpan.", "error");
+          try { if (_mr && _mr.state === "recording") _mr.stop(); } catch (e) {}
+        };
+        // timeslice: potongan tiap 1 detik. Di iOS, tanpa ini seluruh rekaman
+        // hanya dibuat saat stop -> kalau ada gangguan (telepon masuk, layar
+        // terkunci, pindah aplikasi) hasilnya patah atau kosong.
+        try {
+          _mr.start(1000);
+        } catch (e) {
+          _mr.start();
+        }
+        // iOS menghentikan mikrofon saat halaman disembunyikan: simpan yang sudah ada
+        _onHide = function () {
+          if (document.visibilityState === "hidden" && _mr && _mr.state === "recording") {
+            try { _mr.stop(); } catch (e) {}
+            toast("Layar berpindah/terkunci - rekaman disimpan sampai detik itu.", "info");
+          }
+        };
+        document.addEventListener("visibilitychange", _onHide);
+        window.addEventListener("pagehide", _onHide);
+        // jaga layar tetap menyala supaya sesi mikrofon tidak diputus iOS
+        try {
+          if (navigator.wakeLock && navigator.wakeLock.request) {
+            navigator.wakeLock.request("screen").then(function (w) { _wake = w; }).catch(function () {});
+          }
+        } catch (e) {}
         _startAt = Date.now();
         setRecordingUi(true);
         tick();

@@ -1765,6 +1765,7 @@
     applyDispBackground(url ? { kind: "image", value: url } : preset ? { kind: "motion", value: preset } : null);
   }
   // ---- render 1 slide output: lirik bertahap + auto-fit ----
+  var _yvLastLines = null;
   function yvAutoFit(container, lines) {
     if (!container) return;
     var maxLen = 1;
@@ -1797,12 +1798,31 @@
       wrap.appendChild(d);
     });
     container.appendChild(wrap);
-    yvAutoFit(container, (slide && slide.lines) || []);
+    _yvLastLines = (slide && slide.lines) || [];
+    yvAutoFit(container, _yvLastLines);
     yvMotionCue(slide && slide.label, 1);
     ((slide && slide.lines) || []).forEach(function (l, i) {
       setTimeout(function () { yvMotionCue(null, 0.3); }, 140 + i * 110);
     });
   }
+  // hitung ulang ukuran teks saat layar berubah (rotasi HP, resize / minimize di PC)
+  var _yvFitTimer = 0;
+  function yvRefit() {
+    clearTimeout(_yvFitTimer);
+    _yvFitTimer = setTimeout(function () {
+      try {
+        var c = document.getElementById("dispContent");
+        if (c && _yvLastLines && _yvLastLines.length) yvAutoFit(c, _yvLastLines);
+        if (_yvMotion) _yvMotion.resize();
+      } catch (e) {}
+    }, 120);
+  }
+  window.addEventListener("resize", yvRefit);
+  window.addEventListener("orientationchange", yvRefit);
+  try {
+    if (window.visualViewport) window.visualViewport.addEventListener("resize", yvRefit);
+  } catch (e) {}
+
   // === MODE PROYEKTOR / LIVE (Fitur 3) ===
   function renderDisplay(v) {
     try {
