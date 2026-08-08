@@ -1386,7 +1386,8 @@
     _lastLive = null,
     _dispSig = "",
     _wakeLock = null,
-    DISPLAY_MODE = /[?&]mode=display/.test(location.search);
+    DISPLAY_MODE = /[?&]mode=(display|stage)/.test(location.search);
+  var STAGE_MODE = /[?&]mode=stage/.test(location.search);
   function initSpectate() {
     try {
       liveRef = firebase.database().ref("pujianYouth/live");
@@ -1502,7 +1503,7 @@
     var target = v.key || song.originalKey;
     var shift =
       (noteToIndex[target] || 0) - (noteToIndex[song.originalKey] || 0);
-    var showCh = !!v.showChords;
+    var showCh = STAGE_MODE ? true : !!v.showChords;
     var sig = song.id + "|" + target + "|" + (showCh ? "1" : "0");
     if (sig !== _dispSig) {
       _dispSig = sig;
@@ -1555,6 +1556,7 @@
   function initDisplayMode() {
     if (!DISPLAY_MODE) return;
     document.body.classList.add("display-mode");
+    if (STAGE_MODE) document.body.classList.add("stage-mode");
     var screen = document.getElementById("displayScreen");
     if (screen) screen.hidden = false;
     requestWake();
@@ -9200,6 +9202,14 @@
       odb.onclick = function () {
         window.open(
           location.origin + location.pathname + "?mode=display",
+          "_blank",
+        );
+      };
+    var osb = document.getElementById("openStageBtn");
+    if (osb)
+      osb.onclick = function () {
+        window.open(
+          location.origin + location.pathname + "?mode=stage",
           "_blank",
         );
       };

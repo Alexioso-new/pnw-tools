@@ -4585,3 +4585,26 @@ body.dark #recDot {
     display: none !important;
   }
 }
+
+
+/* === PROYEKTOR v69: logo animasi (Lottie presenter.json) + jam layar standby === */
+#displayScreen .dispIdleInner{opacity:1;}
+#displayScreen .dispLogo{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:22px;}
+#displayScreen .dispLogoAnim{box-sizing:border-box;width:min(38vh,320px);height:min(38vh,320px);max-width:70vw;margin:0 auto;padding:7%;display:flex;align-items:center;justify-content:center;border-radius:32px;background:radial-gradient(120% 120% at 50% 32%, #FFFFFF 0%, #E5F3F8 100%);box-shadow:0 26px 70px rgba(0,0,0,.5), inset 0 0 0 1px rgba(18,130,162,.18);}
+#displayScreen .dispLogoAnim svg{width:100%!important;height:100%!important;display:block;}
+#displayScreen .dispLogo.hasLogo .dispLogoFallback{display:none;}
+.dispLogoFallback{font-size:72px;line-height:1;}
+#displayScreen #dispWait{font-size:clamp(15px,2.4vh,22px);color:#c7d0dc;letter-spacing:.02em;margin:0;}
+#displayScreen .dispClock{margin-top:10px;font-family:var(--font-chord,"JetBrains Mono",monospace);font-size:clamp(30px,7vh,72px);font-weight:700;letter-spacing:.04em;color:#fff;opacity:.92;}
+
+
+/* === STAGE DISPLAY (mode=stage) v69: layar musisi === */
+body.stage-mode .dispBar{background:#05070c;color:#cdd6e2;}
+body.stage-mode .dispBrand{letter-spacing:.5px;font-weight:700;color:#e6edf5;}
+.stageClock{margin-left:auto;font-family:var(--font-chord,"JetBrains Mono",monospace);font-weight:700;font-size:16px;letter-spacing:.06em;color:#8fd0e0;}
+body.stage-mode #dispClock{display:none;}
+body.stage-mode .dispStage{padding:2.5vh 4vw;}
+body.stage-mode .dispStage h2{font-size:clamp(30px,5.2vw,80px);}
+body.stage-mode .dispContent{font-size:clamp(20px,3.2vw,44px);line-height:1.5;}
+body.stage-mode .dispContent .line.chord,
+body.stage-mode .dispContent .ic-ch{color:#7fe0ff !important;font-weight:700;}

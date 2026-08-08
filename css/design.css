@@ -23,15 +23,15 @@
 
   /* (1) TYPEFACE tersedia (harus dimuat di index.html) */
   --ff-sans:
-     "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-  system-ui, sans-serif;
+    "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    system-ui, sans-serif;
   --ff-display:
     "Satoshi", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --ff-mono:
     "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* (2) KATEGORI TEKS  ->  cukup ganti isian di kanan ini */
-  --font-judul: var(--ff-sans;"Inter"); /* Judul utama: nama app, judul lagu, judul proyektor (H1/H2) */
+  --font-judul: var(--ff-mono); /* Judul utama: nama app, judul lagu, judul proyektor (H1/H2) */
   --font-subjudul: var(--ff-display); /* Subjudul: label section & kartu, judul menu (H3/H4) */
   --font-body: var(--ff-sans); /* Teks isi: paragraf, tombol, input, menu, tabel */
   --font-chord: var(--ff-mono); /* Chord, angka & lirik (selaras kolom) */

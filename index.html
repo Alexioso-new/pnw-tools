@@ -47,7 +47,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
     />
     <link
       href="https://api.fontshare.com/v2/css?f[]=satoshi@500,700,900&display=swap"
@@ -91,7 +92,7 @@
       </div>
       <div class="dispIdle" id="dispIdle">
         <div class="dispIdleInner">
-          <div class="dispLogo">🎵</div>
+          <div class="dispLogo" id="dispLogo"><div class="dispLogoAnim" id="dispLogoAnim" aria-hidden="true"></div><span class="dispLogoFallback">🎵</span></div>
           <p id="dispWait">Menunggu live dimulai…</p>
         </div>
       </div>
@@ -119,7 +120,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v4.6</span>
+            <span class="verTag" id="appVer">v4.8</span>
           </p>
         </div>
         <button
@@ -528,7 +529,7 @@
       <aside class="drawer">
         <div class="drawerHead">
           <b>Menu</b>
-          <span class="menuVer">v4.6</span>
+          <span class="menuVer">v4.8</span>
           <button class="xBtn" id="closeMenuBtn" type="button">&#10005;</button>
         </div>
         <div class="menuScroll">
@@ -652,6 +653,14 @@
               style="width: 100%"
             >
               Buka layar proyektor
+            </button>
+            <button
+              class="actionBtn secondary"
+              id="openStageBtn"
+              type="button"
+              style="width: 100%; margin-top: 6px"
+            >
+              Buka Stage Display (musisi)
             </button>
             <label class="lockRow"
               ><input type="checkbox" id="liveChordsToggle" /> Tampilkan chord
@@ -988,6 +997,9 @@
     <script defer src="./js/projector.js"></script>
     <script defer src="./js/hosana-flame-data.js"></script>
     <script defer src="./js/logo-anim.js"></script>
+    <script defer src="./js/presenter-logo-data.js"></script>
+    <script defer src="./js/presenter-logo.js"></script>
+    <script defer src="./js/stage-display.js"></script>
     <script>
       /* v66 perf: muat registri ikon (1,4 MB) + Lottie HANYA setelah render
          pertama. Ikon berukuran tetap (btnIco/lottieBtn/lottieLg) jadi tidak
