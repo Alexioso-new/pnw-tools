@@ -1,0 +1,31 @@
+CARA MEMASANG RULES INI (v80 / v5.8)
+====================================
+
+A. REALTIME DATABASE
+   1. Buka console.firebase.google.com -> proyek "chord-youth-hosana"
+   2. Build > Realtime Database > tab "Rules"
+   3. Hapus isi lama, tempel isi berkas: database.rules.json
+      (Console Firebase menerima komentar /* */ dan //.
+       Kalau ternyata ditolak, pakai database.rules.tanpa-komentar.json)
+   4. Klik "Publish"
+
+B. CLOUD STORAGE
+   1. Build > Storage > tab "Rules"
+   2. Hapus isi lama, tempel isi berkas: storage.rules
+   3. Klik "Publish"
+
+C. UJI CEPAT SETELAH PUBLISH
+   1. Login sebagai admin di aplikasi utama.
+   2. Buka menu > youTh Views (tab baru / youthviews.html).
+   3. Susun rundown lalu Simpan -> harus tersimpan tanpa error di console.
+   4. Klik "Buka jendela Output", lalu "Tayangkan".
+   5. Di HP anggota (login biasa): teks live TIDAK boleh muncul dan
+      layar TIDAK boleh terkunci ke mode spectate.
+   6. Nyalakan tombol Spectate di aplikasi utama -> baru layar anggota ikut.
+
+CATATAN PENTING
+- Node "pujianYouth" hanya bisa dibaca setelah login. Jadi laptop/HP yang
+  dipakai sebagai OUTPUT proyektor juga harus login (perilaku ini sama
+  seperti sebelum v80, bukan hal baru).
+- Hanya akun yang terdaftar di pujianYouth/admins (atau UID pemilik) yang
+  boleh menyiarkan lewat kanal youTh Views.

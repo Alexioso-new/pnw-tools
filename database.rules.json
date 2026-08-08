@@ -1,0 +1,121 @@
+{
+  /* ============================================================
+     HOSANA YOUTH TOOLS — Realtime Database Rules
+     Versi: v80 / label v5.8  ·  9 Agustus 2026
+
+     PERUBAHAN DARI VERSI SESI SEBELUMNYA:
+     1. TAMBAH "youthviews"  -> kanal siaran baru youTh Views.
+        Tanpa aturan ini, output youTh Views ditolak server
+        (permission_denied) karena induk "pujianYouth" tidak punya .write.
+     2. TAMBAH "projector"   -> rundown & pengaturan youTh Views.
+        Path ini SUDAH dipakai js/projector.js sejak lama tetapi TIDAK PERNAH
+        ada di rules, sehingga semua penyimpanan rundown ke cloud ditolak
+        diam-diam dan hanya tersimpan di localStorage.
+     3. Sisanya dipertahankan apa adanya supaya tidak ada regresi.
+
+     Catatan: "pujianYouth" hanya bisa DIBACA setelah login (auth != null).
+     Jadi laptop proyektor yang membuka youthviews.html?mode=display juga
+     harus login. Ini perilaku yang sama seperti sebelumnya.
+     ============================================================ */
+
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "pujianYouth": {
+      ".read": "auth != null",
+
+      "admins": {
+        ".write": "auth.uid == 'l9U1ktYog2X3vSA81JdsjHln5qu1'"
+      },
+      "adminRequests": {
+        ".read": "auth != null && (auth.uid == 'l9U1ktYog2X3vSA81JdsjHln5qu1' || root.child('pujianYouth/admins').child(auth.uid).exists())",
+        "$uid": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": "auth != null && (auth.uid == $uid || auth.uid == 'l9U1ktYog2X3vSA81JdsjHln5qu1')",
+          ".validate": "newData.hasChildren(['email','nama','status'])"
+        }
+      },
+      "songs": {
+        ".write": "auth != null && (root.child('pujianYouth/admins').child(auth.uid).exists() || root.child('pujianYouth/config/locked').val() !== true)"
+      },
+      "songBank": {
+        ".write": "auth != null && (root.child('pujianYouth/admins').child(auth.uid).exists() || root.child('pujianYouth/config/locked').val() !== true)"
+      },
+      "schedule4": {
+        ".write": "auth != null && root.child('pujianYouth/admins').child(auth.uid).exists()"
+      },
+      "notes": {
+        ".write": "auth != null && root.child('pujianYouth/admins').child(auth.uid).exists()"
+      },
+      "noteOverrides": {
+        ".write": "auth != null && root.child('pujianYouth/admins').child(auth.uid).exists()"
+      },
+      "config": {
+        ".write": "auth != null && root.child('pujianYouth/admins').child(auth.uid).exists()"
+      },
+      "noteLikes": {
+        ".write": "auth != null"
+      },
+
+      /* Kanal SPECTATE (aplikasi utama). Payload wajib punya src "spectate".
+         Dibiarkan "auth != null" supaya tidak ada regresi bagi pengurus yang
+         belum terdaftar di node admins.
+         OPSIONAL PENGERASAN: ganti .write di bawah menjadi
+         "auth != null && (auth.uid == 'l9U1ktYog2X3vSA81JdsjHln5qu1' || root.child('pujianYouth/admins').child(auth.uid).exists())"
+         supaya anggota biasa tidak bisa membajak layar semua orang. */
+      "live": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChild('active')"
+      },
+
+      /* BARU (v5.8) — kanal siaran khusus youTh Views.
+         Terpisah total dari "live" supaya output youTh Views tidak pernah
+         lagi memicu mode spectate di perangkat anggota.
+         Hanya admin yang boleh menyiarkan (di kode juga sudah digate isAdmin). */
+      "youthviews": {
+        ".read": "auth != null",
+        "live": {
+          ".write": "auth != null && (auth.uid == 'l9U1ktYog2X3vSA81JdsjHln5qu1' || root.child('pujianYouth/admins').child(auth.uid).exists())",
+          ".validate": "newData.hasChild('active')"
+        }
+      },
+
+      /* BARU di rules (path-nya sendiri sudah lama dipakai js/projector.js).
+         plan     = rundown / playlist youTh Views
+         settings = font, ukuran, perataan, bayangan, latar belakang
+         Pola izinnya mengikuti songs/songBank: admin selalu boleh, pengurus
+         lain boleh selama workspace tidak dikunci (config/locked). */
+      "projector": {
+        ".read": "auth != null",
+        "plan": {
+          ".write": "auth != null && (root.child('pujianYouth/admins').child(auth.uid).exists() || root.child('pujianYouth/config/locked').val() !== true)"
+        },
+        "settings": {
+          ".write": "auth != null && (root.child('pujianYouth/admins').child(auth.uid).exists() || root.child('pujianYouth/config/locked').val() !== true)"
+        }
+      },
+
+      "saran": {
+        ".write": "auth != null"
+      },
+      "recordings": {
+        ".read": true,
+        ".write": "auth != null"
+      },
+      "guide": {
+        ".read": true,
+        ".write": "auth.uid == 'l9U1ktYog2X3vSA81JdsjHln5qu1'"
+      }
+    },
+
+    "logs": {
+      ".read": "auth != null && root.child('pujianYouth/admins').child(auth.uid).exists()",
+      ".write": "auth != null && root.child('pujianYouth/admins').child(auth.uid).exists()",
+      "$logId": {
+        ".write": "auth != null && !data.exists()",
+        ".validate": "newData.hasChildren(['at','type'])"
+      }
+    }
+  }
+}
