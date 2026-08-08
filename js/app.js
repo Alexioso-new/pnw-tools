@@ -1429,6 +1429,7 @@
       document.body.classList.remove("spectating");
       return;
     }
+    if (v.kind && v.kind !== "song") return;
     document.body.classList.add("spectating");
     if (banner) banner.hidden = false;
     applyingLive = true;
@@ -1478,6 +1479,37 @@
     var keyEl = document.getElementById("dispKey");
     var body = document.getElementById("dispContent");
     var wait = document.getElementById("dispWait");
+    if (v && v.active && v.kind === "text") {
+      if (idle) idle.hidden = true;
+      if (stage) stage.hidden = false;
+      screen.classList.add("dispTextMode");
+      screen.classList.add("hideChords");
+      var _tsig = "text|" + (v.text || "");
+      if (_tsig !== _dispSig) {
+        _dispSig = _tsig;
+        if (titleEl) titleEl.textContent = "";
+        if (keyEl) keyEl.textContent = "";
+        renderDispText(body, v.text || "");
+        if (window.PNWMotion) window.PNWMotion.revealLines(body);
+      }
+      return;
+    }
+    if (v && v.active && v.kind === "verse") {
+      if (idle) idle.hidden = true;
+      if (stage) stage.hidden = false;
+      screen.classList.add("dispTextMode");
+      screen.classList.add("hideChords");
+      var _vsig = "verse|" + (v.ref || "") + "|" + (v.text || "");
+      if (_vsig !== _dispSig) {
+        _dispSig = _vsig;
+        if (titleEl) titleEl.textContent = "";
+        if (keyEl) keyEl.textContent = "";
+        renderDispVerse(body, v.text || "", v.ref || "");
+        if (window.PNWMotion) window.PNWMotion.revealLines(body);
+      }
+      return;
+    }
+    screen.classList.remove("dispTextMode");
     if (!v || !v.active || !v.songId) {
       _dispSig = "";
       if (idle) idle.hidden = false;
@@ -1552,6 +1584,84 @@
     var c = document.getElementById("liveChordsToggle");
     liveShowChords = c ? !!c.checked : !liveShowChords;
     if (typeof broadcastLive === "function") broadcastLive();
+  }
+  function renderDispText(container, text) {
+    if (!container) return;
+    container.innerHTML = "";
+    var wrap = document.createElement("div");
+    wrap.className = "dispTextBlock";
+    String(text || "")
+      .replace(/\r/g, "")
+      .split("\n")
+      .forEach(function (line) {
+        var d = document.createElement("div");
+        d.className = "dispTextLine";
+        d.textContent = line;
+        wrap.appendChild(d);
+      });
+    container.appendChild(wrap);
+  }
+  function broadcastText() {
+    if (!isAdmin || !liveRef) return;
+    var ta = document.getElementById("liveTextInput");
+    var txt = ta ? (ta.value || "").trim() : "";
+    if (!txt) {
+      if (typeof toast === "function") toast("Teks masih kosong.", "info");
+      return;
+    }
+    try {
+      liveRef.set({ active: true, kind: "text", text: txt, t: Date.now() });
+      if (typeof toast === "function")
+        toast("Teks ditampilkan di proyektor.", "success");
+    } catch (e) {}
+  }
+  function clearText() {
+    if (!isAdmin || !liveRef) return;
+    try {
+      liveRef.set({ active: false, t: Date.now() });
+      if (typeof toast === "function") toast("Teks disembunyikan.", "info");
+    } catch (e) {}
+  }
+  function renderDispVerse(container, text, ref) {
+    if (!container) return;
+    container.innerHTML = "";
+    var wrap = document.createElement("div");
+    wrap.className = "dispVerseBlock";
+    var t = document.createElement("div");
+    t.className = "dispVerseText";
+    String(text || "")
+      .replace(/\r/g, "")
+      .split("\n")
+      .forEach(function (line) {
+        var d = document.createElement("div");
+        d.className = "dispTextLine";
+        d.textContent = line;
+        t.appendChild(d);
+      });
+    wrap.appendChild(t);
+    if (ref && String(ref).trim()) {
+      var r = document.createElement("div");
+      r.className = "dispVerseRef";
+      r.textContent = "\u2014 " + String(ref).trim();
+      wrap.appendChild(r);
+    }
+    container.appendChild(wrap);
+  }
+  function broadcastVerse() {
+    if (!isAdmin || !liveRef) return;
+    var ta = document.getElementById("liveVerseInput");
+    var rf = document.getElementById("liveVerseRef");
+    var txt = ta ? (ta.value || "").trim() : "";
+    var ref = rf ? (rf.value || "").trim() : "";
+    if (!txt) {
+      if (typeof toast === "function") toast("Teks ayat masih kosong.", "info");
+      return;
+    }
+    try {
+      liveRef.set({ active: true, kind: "verse", text: txt, ref: ref, t: Date.now() });
+      if (typeof toast === "function")
+        toast("Ayat ditampilkan di proyektor.", "success");
+    } catch (e) {}
   }
   function initDisplayMode() {
     if (!DISPLAY_MODE) return;
@@ -9213,6 +9323,12 @@
           "_blank",
         );
       };
+    var stb = document.getElementById("showTextBtn");
+    if (stb) stb.onclick = broadcastText;
+    var ctb = document.getElementById("clearTextBtn");
+    if (ctb) ctb.onclick = clearText;
+    var svb = document.getElementById("showVerseBtn");
+    if (svb) svb.onclick = broadcastVerse;
     var lct = document.getElementById("liveChordsToggle");
     if (lct) lct.onclick = toggleLiveChords;
     initDisplayMode();

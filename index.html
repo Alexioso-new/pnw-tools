@@ -120,7 +120,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v4.8</span>
+            <span class="verTag" id="appVer">v5.0</span>
           </p>
         </div>
         <button
@@ -529,7 +529,7 @@
       <aside class="drawer">
         <div class="drawerHead">
           <b>Menu</b>
-          <span class="menuVer">v4.8</span>
+          <span class="menuVer">v5.0</span>
           <button class="xBtn" id="closeMenuBtn" type="button">&#10005;</button>
         </div>
         <div class="menuScroll">
@@ -661,6 +661,46 @@
               style="width: 100%; margin-top: 6px"
             >
               Buka Stage Display (musisi)
+            </button>
+            <p class="menuGroupLabel" style="margin: 10px 0 4px">
+              Teks / pengumuman ke proyektor
+            </p>
+            <textarea
+              id="liveTextInput"
+              rows="3"
+              placeholder="Tulis pengumuman / ayat singkat&hellip;"
+              style="width: 100%; box-sizing: border-box; resize: vertical; font: inherit; padding: 8px"
+            ></textarea>
+            <div style="display: flex; gap: 6px; margin-top: 6px">
+              <button class="actionBtn" id="showTextBtn" type="button" style="flex: 1">
+                Tampilkan teks
+              </button>
+              <button class="actionBtn secondary" id="clearTextBtn" type="button" style="flex: 1">
+                Sembunyikan
+              </button>
+            </div>
+            <p class="menuGroupLabel" style="margin: 10px 0 4px">
+              Ayat Alkitab ke proyektor
+            </p>
+            <input
+              id="liveVerseRef"
+              type="text"
+              placeholder="Referensi &mdash; mis. Yohanes 3:16"
+              style="width: 100%; box-sizing: border-box; font: inherit; padding: 8px; margin-bottom: 6px"
+            />
+            <textarea
+              id="liveVerseInput"
+              rows="3"
+              placeholder="Isi ayat&hellip;"
+              style="width: 100%; box-sizing: border-box; resize: vertical; font: inherit; padding: 8px"
+            ></textarea>
+            <button
+              class="actionBtn"
+              id="showVerseBtn"
+              type="button"
+              style="width: 100%; margin-top: 6px"
+            >
+              Tampilkan ayat
             </button>
             <label class="lockRow"
               ><input type="checkbox" id="liveChordsToggle" /> Tampilkan chord

@@ -4608,3 +4608,24 @@ body.stage-mode .dispStage h2{font-size:clamp(30px,5.2vw,80px);}
 body.stage-mode .dispContent{font-size:clamp(20px,3.2vw,44px);line-height:1.5;}
 body.stage-mode .dispContent .line.chord,
 body.stage-mode .dispContent .ic-ch{color:#7fe0ff !important;font-weight:700;}
+
+
+/* === Slide teks/pengumuman (kind:text) v71 === */
+/* Hormati atribut hidden pada #dispIdle: sebelumnya .dispIdle{display:flex} menimpa [hidden],
+   sehingga logo standby tetap tampil saat lagu/teks aktif. Ini memperbaikinya. */
+.dispIdle[hidden]{display:none !important;}
+#displayScreen.dispTextMode #dispStage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;height:100%;}
+#displayScreen.dispTextMode #dispTitle,
+#displayScreen.dispTextMode #dispKey{display:none;}
+#displayScreen.dispTextMode #dispContent{display:flex;align-items:center;justify-content:center;width:100%;}
+.dispTextBlock{max-width:88vw;display:flex;flex-direction:column;gap:.35em;}
+.dispTextLine{font-family:var(--font-judul,"JetBrains Mono",monospace);font-weight:800;color:#fff;font-size:clamp(28px,6.5vh,88px);line-height:1.22;}
+.dispTextLine:empty{min-height:.5em;}
+body.stage-mode #displayScreen.dispTextMode .dispTextLine{font-size:clamp(24px,5vh,64px);}
+
+/* === Slide ayat Alkitab (kind:verse) v72 === */
+.dispVerseBlock{max-width:90vw;display:flex;flex-direction:column;gap:1.1em;align-items:center;}
+.dispVerseText{display:flex;flex-direction:column;gap:.3em;}
+.dispVerseText .dispTextLine{font-weight:700;}
+.dispVerseRef{font-family:var(--font-judul,"JetBrains Mono",monospace);font-size:clamp(18px,3.2vh,40px);font-weight:700;color:#7fe0ff;letter-spacing:.04em;}
+body.stage-mode #displayScreen.dispTextMode .dispVerseRef{color:#8fd0e0;}
