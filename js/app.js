@@ -1614,6 +1614,58 @@
       document.head.appendChild(l);
     } catch (e) {}
   }
+  // ---- lapisan animasi (canvas) + Lottie + media lokal ----
+  var _yvMotion = null, _yvLottie = null;
+  function yvMotionInst() {
+    var cv = document.getElementById("dispMotion");
+    if (!cv || !window.PNWMotion) return null;
+    if (!_yvMotion) _yvMotion = window.PNWMotion.create(cv);
+    return _yvMotion;
+  }
+  function yvStopMotion() {
+    if (_yvMotion) { try { _yvMotion.stop(); } catch (e) {} }
+    var cv = document.getElementById("dispMotion");
+    if (cv) cv.classList.remove("on");
+  }
+  function yvStopLottie() {
+    if (_yvLottie) { try { _yvLottie.destroy(); } catch (e) {} _yvLottie = null; }
+    var host = document.getElementById("dispLottie");
+    if (host) { host.classList.remove("on"); host.innerHTML = ""; }
+  }
+  function yvNeedLottie() {
+    if (window.lottie) return Promise.resolve(window.lottie);
+    return new Promise(function (res, rej) {
+      var sc = document.createElement("script");
+      sc.src = "./lottie.min.js";
+      sc.onload = function () { res(window.lottie); };
+      sc.onerror = function () { rej(new Error("lottie gagal dimuat")); };
+      document.head.appendChild(sc);
+    });
+  }
+  function yvPlayLottie(src) {
+    var host = document.getElementById("dispLottie");
+    if (!host) return;
+    host.classList.add("on");
+    yvNeedLottie()
+      .then(function (lot) {
+        return (window.PNWMedia ? window.PNWMedia.resolve(src) : Promise.resolve(src)).then(function (url) {
+          yvStopLottie();
+          host.classList.add("on");
+          _yvLottie = lot.loadAnimation({ container: host, renderer: "svg", loop: true, autoplay: true, path: url });
+        });
+      })
+      .catch(function (e) {
+        window.PNWDiag.push({ feature: "youthviews.lottie", error: String((e && e.message) || e), at: Date.now() });
+      });
+  }
+  // hentakan latar mengikuti alur lirik
+  function yvMotionCue(label, strength) {
+    if (!_yvMotion) return;
+    try {
+      if (label != null) _yvMotion.setMood(label);
+      _yvMotion.pulse(typeof strength === "number" ? strength : 1);
+    } catch (e) {}
+  }
   // ---- latar belakang output: warna / gambar / video / animasi ----
   function yvBgFromLive(v, song) {
     if (v && v.bg && typeof v.bg === "object" && v.bg.kind) return v.bg;
@@ -1627,7 +1679,7 @@
     var vid = document.getElementById("dispVideo");
     if (!layer) return;
     var b = bg && bg.kind ? bg : null;
-    var sig = b ? b.kind + "|" + b.value : "none";
+    var sig = b ? b.kind + "|" + b.value + "|" + (b.params ? JSON.stringify(b.params) : "") : "none";
     if (sig === _lastBg) return;
     _lastBg = sig;
     layer.className = "dispBg";
@@ -1639,7 +1691,50 @@
       vid.classList.remove("on");
       try { vid.removeAttribute("src"); vid.load(); } catch (e) {}
     }
+    if (!b || b.kind !== "studio") yvStopMotion();
+    if (!b || b.kind !== "lottie") yvStopLottie();
     if (!b) return;
+    if (b.kind === "studio") {
+      var mo = yvMotionInst();
+      var cvm = document.getElementById("dispMotion");
+      if (mo && cvm) {
+        layer.classList.add("on");
+        layer.setAttribute("data-bg", "studio");
+        cvm.classList.add("on");
+        var base = window.PNWMotion ? window.PNWMotion.preset(b.value) : {};
+        mo.start(Object.assign({}, base, b.params || {}));
+      }
+      return;
+    }
+    if (b.kind === "lottie") {
+      layer.classList.add("on");
+      layer.setAttribute("data-bg", "lottie");
+      yvPlayLottie(b.value);
+      return;
+    }
+    if (b.kind === "upload") {
+      layer.classList.add("on");
+      layer.setAttribute("data-bg", "custom");
+      if (window.PNWMedia) {
+        window.PNWMedia.resolve(b.value)
+          .then(function (url) {
+            var isVid = /video/i.test(b.mime || "") || /\.(mp4|webm|mov)(\?|$)/i.test(url);
+            if (isVid && vid) {
+              layer.setAttribute("data-bg", "video");
+              vid.src = url;
+              vid.classList.add("on");
+              var pv = vid.play();
+              if (pv && pv.catch) pv.catch(function () {});
+            } else {
+              layer.style.backgroundImage = 'url("' + url + '")';
+            }
+          })
+          .catch(function (e) {
+            window.PNWDiag.push({ feature: "youthviews.media", error: String((e && e.message) || e), at: Date.now() });
+          });
+      }
+      return;
+    }
     if (b.kind === "video" && vid) {
       layer.classList.add("on");
       layer.setAttribute("data-bg", "video");
@@ -1703,6 +1798,10 @@
     });
     container.appendChild(wrap);
     yvAutoFit(container, (slide && slide.lines) || []);
+    yvMotionCue(slide && slide.label, 1);
+    ((slide && slide.lines) || []).forEach(function (l, i) {
+      setTimeout(function () { yvMotionCue(null, 0.3); }, 140 + i * 110);
+    });
   }
   // === MODE PROYEKTOR / LIVE (Fitur 3) ===
   function renderDisplay(v) {
@@ -9513,7 +9612,7 @@
 
   // === Mesin youTh Views yang dipakai js/projector.js ===
   window.PNWYouthViews = {
-    version: "v76",
+    version: "v77",
     getSongs: function () {
       return Array.isArray(songs) ? songs : [];
     },
@@ -9555,6 +9654,8 @@
       return selectedKey;
     },
     ensureFont: yvEnsureFont,
+    motion: function () { return _yvMotion; },
+    cue: yvMotionCue,
     diagnostics: function () {
       return window.PNWDiag.slice(-50);
     },

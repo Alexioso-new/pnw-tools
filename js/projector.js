@@ -632,6 +632,8 @@
 
   function renderBgControls() {
     safe("bgControls", function () {
+      ensureBgTabs();
+      ensureApiExtras();
       var s = settings();
       var solids = el("projSolids"), presets = el("projPresets"), api = el("projBgApi"), urlEl = el("projBgUrl");
       document.querySelectorAll("#projBgTabs [data-bgtab]").forEach(function (b) {
@@ -640,6 +642,12 @@
       if (solids) solids.hidden = _bgTab !== "warna";
       if (presets) presets.hidden = !(_bgTab === "animasi" || _bgTab === "preset");
       if (api) api.hidden = _bgTab !== "api";
+      var studioHost = ensureStudioHost();
+      if (studioHost) studioHost.hidden = _bgTab !== "studio";
+      var mediaHost = ensureMediaHost();
+      if (mediaHost) mediaHost.hidden = _bgTab !== "media";
+      if (_bgTab === "studio") renderStudio();
+      if (_bgTab === "media") renderMediaLib();
 
       if (solids && _bgTab === "warna") {
         solids.innerHTML = SOLIDS.map(function (c) {
@@ -698,6 +706,283 @@
     });
   }
 
+  /* ---------------- Studio animasi + Pustaka media ---------------- */
+  var LOCAL_STUDIO = "pnwYouthViewsStudio.v1";
+  var _studioInst = null;
+  var _studioP = null;
+
+  function ensureBgTabs() {
+    var tabs = el("projBgTabs");
+    if (!tabs || tabs.querySelector('[data-bgtab="studio"]')) return;
+    [["studio", "Studio"], ["media", "Media"]].forEach(function (pair) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "projBgTab";
+      b.setAttribute("data-bgtab", pair[0]);
+      b.textContent = pair[1];
+      b.onclick = function () { _bgTab = pair[0]; renderBgControls(); };
+      tabs.appendChild(b);
+    });
+  }
+
+  function ensureApiExtras() {
+    var api = el("projBgApi");
+    if (!api || el("projBgMedia")) return;
+    var row = document.createElement("div");
+    row.className = "projBgApiRow";
+    row.innerHTML =
+      '<select id="projBgMedia" class="projSel"><option value="photo">Foto</option><option value="video">Video</option></select>' +
+      '<span class="projSub">Pexels &amp; Pixabay punya bank video gratis</span>';
+    api.insertBefore(row, api.firstChild ? api.firstChild.nextSibling : null);
+    var sel = row.querySelector("#projBgMedia");
+    if (sel) sel.onchange = function () { searchBg(); };
+  }
+
+  function hostAfter(anchorId, id, cls) {
+    var found = el(id);
+    if (found) return found;
+    var anchor = el(anchorId);
+    if (!anchor || !anchor.parentNode) return null;
+    var d = document.createElement("div");
+    d.id = id;
+    d.className = cls;
+    d.hidden = true;
+    anchor.parentNode.insertBefore(d, anchor.nextSibling);
+    return d;
+  }
+  function ensureStudioHost() { return hostAfter("projBgApi", "projBgStudio", "projStudio"); }
+  function ensureMediaHost() { return hostAfter("projBgStudio", "projBgMediaLib", "projMediaLib"); }
+
+  function studioSaved() {
+    try { return JSON.parse(localStorage.getItem(LOCAL_STUDIO) || "[]") || []; } catch (e) { return []; }
+  }
+  function studioSaveList(list) {
+    try { localStorage.setItem(LOCAL_STUDIO, JSON.stringify(list)); } catch (e) {}
+  }
+  function studioParams() {
+    if (_studioP) return _studioP;
+    var s = settings();
+    if (s.bg && s.bg.kind === "studio" && s.bg.params) _studioP = Object.assign({}, s.bg.params);
+    else _studioP = window.PNWMotion ? window.PNWMotion.preset("aurora") : {};
+    return _studioP;
+  }
+
+  var SLIDERS = [
+    ["speed", "Kecepatan", 0.1, 3, 0.05],
+    ["density", "Kepadatan", 0.2, 2.5, 0.05],
+    ["size", "Ukuran", 0.3, 2.5, 0.05],
+    ["glow", "Cahaya", 0, 1.5, 0.05],
+    ["vignette", "Vignette", 0, 0.95, 0.05],
+    ["grain", "Grain", 0, 0.25, 0.01],
+    ["reactivity", "Reaksi ke lirik", 0, 2, 0.05],
+    ["angle", "Sudut gradasi", 0, 360, 5],
+  ];
+
+  function renderStudio() {
+    safe("studio", function () {
+      var host = ensureStudioHost();
+      if (!host) return;
+      if (!window.PNWMotion) {
+        host.innerHTML = '<p class="projEmpty">Mesin animasi belum termuat (js/yv-motion.js).</p>';
+        return;
+      }
+      var P = studioParams();
+      if (host.getAttribute("data-built") !== "1") {
+        var presets = window.PNWMotion.presetList().map(function (p) {
+          return '<button class="projChip" type="button" data-preset="' + p.id + '">' + esc(p.name) + "</button>";
+        }).join("");
+        var engines = window.PNWMotion.engines.map(function (e) {
+          return '<option value="' + e.id + '">' + esc(e.name) + "</option>";
+        }).join("");
+        var sliders = SLIDERS.map(function (f) {
+          return '<label class="projField"><span>' + esc(f[1]) + ' <b id="sv_' + f[0] + '"></b></span>' +
+            '<input type="range" id="sp_' + f[0] + '" min="' + f[2] + '" max="' + f[3] + '" step="' + f[4] + '" /></label>';
+        }).join("");
+        host.innerHTML =
+          '<canvas class="projStudioCv" id="projStudioCv"></canvas>' +
+          '<div class="projChips">' + presets + "</div>" +
+          '<label class="projField"><span>Jenis animasi</span><select class="projSel" id="projStudioEngine">' + engines + "</select></label>" +
+          '<div class="projColors">' +
+            '<label class="projField"><span>Warna 1</span><input type="color" id="sp_color1" /></label>' +
+            '<label class="projField"><span>Warna 2</span><input type="color" id="sp_color2" /></label>' +
+            '<label class="projField"><span>Aksen</span><input type="color" id="sp_accent" /></label>' +
+          "</div>" +
+          sliders +
+          '<div class="projStudioOps">' +
+            '<button class="projBtn primary" type="button" id="projStudioUse">Pakai di Output</button>' +
+            '<button class="projBtn" type="button" id="projStudioSave">Simpan preset</button>' +
+          "</div>" +
+          '<div class="projChips" id="projStudioSaved"></div>' +
+          '<label class="projField"><span>Animasi Lottie (JSON dari LottieFiles)</span>' +
+          '<input class="projBgUrl" id="projLottieUrl" placeholder="https://.../animation.json" /></label>' +
+          '<button class="projBtn" type="button" id="projLottieUse">Pakai Lottie</button>';
+        host.setAttribute("data-built", "1");
+
+        _studioInst = window.PNWMotion.create(el("projStudioCv"));
+        if (_studioInst) _studioInst.start(P);
+
+        host.querySelectorAll("[data-preset]").forEach(function (b) {
+          b.onclick = function () {
+            _studioP = window.PNWMotion.preset(b.getAttribute("data-preset"));
+            _studioP.presetId = b.getAttribute("data-preset");
+            renderStudio();
+            pushStudio();
+          };
+        });
+        var eng = el("projStudioEngine");
+        if (eng) eng.onchange = function () { studioParams().engine = eng.value; syncStudio(true); };
+        ["color1", "color2", "accent"].forEach(function (k) {
+          var c = el("sp_" + k);
+          if (!c) return;
+          c.oninput = function () { studioParams()[k] = c.value; syncStudio(false); };
+          c.onchange = function () { pushStudio(); };
+        });
+        SLIDERS.forEach(function (f) {
+          var r = el("sp_" + f[0]);
+          if (!r) return;
+          r.oninput = function () { studioParams()[f[0]] = parseFloat(r.value); syncStudio(false); };
+          r.onchange = function () { pushStudio(); };
+        });
+        var use = el("projStudioUse");
+        if (use) use.onclick = function () { pushStudio(true); };
+        var sv = el("projStudioSave");
+        if (sv) sv.onclick = function () {
+          var name = window.prompt("Nama preset:", "Preset saya");
+          if (!name) return;
+          var list = studioSaved();
+          list.unshift({ id: "u" + Date.now().toString(36), name: name, params: Object.assign({}, studioParams()) });
+          studioSaveList(list.slice(0, 24));
+          paintSavedPresets();
+          notify("Preset tersimpan");
+        };
+        var lu = el("projLottieUse");
+        if (lu) lu.onclick = function () {
+          var v = ((el("projLottieUrl") || {}).value || "").trim();
+          if (!v) return notify("Tempel URL file .json Lottie dulu");
+          setBg({ kind: "lottie", value: v });
+        };
+      }
+      syncStudio(true);
+      paintSavedPresets();
+    });
+  }
+
+  function paintSavedPresets() {
+    var box = el("projStudioSaved");
+    if (!box) return;
+    var list = studioSaved();
+    if (!list.length) {
+      box.innerHTML = '<span class="projSub">Belum ada preset simpanan.</span>';
+      return;
+    }
+    box.innerHTML = list.map(function (p) {
+      return '<span class="projChipWrap"><button class="projChip" type="button" data-use="' + p.id + '">' + esc(p.name) +
+        '</button><button class="projChipX" type="button" data-del="' + p.id + '">&times;</button></span>';
+    }).join("");
+    box.querySelectorAll("[data-use]").forEach(function (b) {
+      b.onclick = function () {
+        var f = studioSaved().filter(function (x) { return x.id === b.getAttribute("data-use"); })[0];
+        if (!f) return;
+        _studioP = Object.assign({}, f.params);
+        renderStudio();
+        pushStudio();
+      };
+    });
+    box.querySelectorAll("[data-del]").forEach(function (b) {
+      b.onclick = function () {
+        studioSaveList(studioSaved().filter(function (x) { return x.id !== b.getAttribute("data-del"); }));
+        paintSavedPresets();
+      };
+    });
+  }
+
+  function syncStudio(fillInputs) {
+    var P = studioParams();
+    if (fillInputs) {
+      var eng = el("projStudioEngine");
+      if (eng && P.engine) eng.value = P.engine;
+      ["color1", "color2", "accent"].forEach(function (k) {
+        var c = el("sp_" + k);
+        if (c && P[k]) c.value = P[k];
+      });
+      SLIDERS.forEach(function (f) {
+        var r = el("sp_" + f[0]);
+        if (r && P[f[0]] != null) r.value = P[f[0]];
+      });
+    }
+    SLIDERS.forEach(function (f) {
+      var lab = el("sv_" + f[0]);
+      if (lab) lab.textContent = String(Math.round((P[f[0]] || 0) * 100) / 100);
+    });
+    if (_studioInst) _studioInst.apply(P);
+  }
+
+  function pushStudio(force) {
+    var s = settings();
+    var live = s.bg && s.bg.kind === "studio";
+    if (!live && !force) return;
+    var P = studioParams();
+    setBg({ kind: "studio", value: P.presetId || "custom", params: Object.assign({}, P) });
+  }
+
+  function fmtSize(n) {
+    var k = (n || 0) / 1024;
+    return k > 1024 ? (k / 1024).toFixed(1) + " MB" : Math.round(k) + " KB";
+  }
+
+  function renderMediaLib() {
+    safe("mediaLib", function () {
+      var host = ensureMediaHost();
+      if (!host) return;
+      if (host.getAttribute("data-built") !== "1") {
+        host.innerHTML =
+          '<p class="projSub">Unggah video / GIF / gambar dari perangkat (mis. hasil ekspor Canva atau After Effects). File disimpan di browser, jadi tetap jalan tanpa internet.</p>' +
+          '<input type="file" id="projMediaFile" accept="video/*,image/*,.json" />' +
+          '<div class="projMediaGrid" id="projMediaGrid"></div>';
+        host.setAttribute("data-built", "1");
+        var f = el("projMediaFile");
+        if (f) f.onchange = function () {
+          var file = f.files && f.files[0];
+          if (!file || !window.PNWMedia) return;
+          notify("Menyimpan " + file.name + "...");
+          window.PNWMedia.put(file)
+            .then(function () { f.value = ""; paintMedia(); notify("File tersimpan"); })
+            .catch(function (e) { notify("Gagal simpan: " + (e.message || e)); });
+        };
+      }
+      paintMedia();
+    });
+  }
+
+  function paintMedia() {
+    var grid = el("projMediaGrid");
+    if (!grid || !window.PNWMedia) return;
+    window.PNWMedia.list().then(function (list) {
+      if (!list.length) {
+        grid.innerHTML = '<p class="projEmpty">Belum ada file. Ekspor animasi dari Canva sebagai MP4 lalu unggah di sini.</p>';
+        return;
+      }
+      grid.innerHTML = list.map(function (m) {
+        var isJson = /json/i.test(m.type) || /\.json$/i.test(m.name);
+        return '<div class="projMediaItem"><b>' + esc(m.name) + "</b><span>" + fmtSize(m.size) + " · " + (isJson ? "Lottie" : /video/i.test(m.type) ? "Video" : "Gambar") + "</span>" +
+          '<div class="projMediaOps"><button class="projBtn primary" type="button" data-use="' + m.id + '" data-kind="' + (isJson ? "lottie" : "upload") + '" data-mime="' + esc(m.type) + '">Pakai</button>' +
+          '<button class="projBtn" type="button" data-del="' + m.id + '">Hapus</button></div></div>';
+      }).join("");
+      grid.querySelectorAll("[data-use]").forEach(function (b) {
+        b.onclick = function () {
+          setBg({ kind: b.getAttribute("data-kind"), value: "idb:" + b.getAttribute("data-use"), mime: b.getAttribute("data-mime") });
+        };
+      });
+      grid.querySelectorAll("[data-del]").forEach(function (b) {
+        b.onclick = function () {
+          window.PNWMedia.del(b.getAttribute("data-del")).then(paintMedia);
+        };
+      });
+    }).catch(function (e) {
+      grid.innerHTML = '<p class="projEmpty">Penyimpanan lokal tidak tersedia: ' + esc(String(e.message || e)) + "</p>";
+    });
+  }
+
   function setBg(bg) {
     _set = settings();
     _set.bg = bg;
@@ -731,12 +1016,17 @@
         return;
       }
 
+      var media = ((el("projBgMedia") || {}).value) || "photo";
       var url, opts = {};
       if (prov === "pexels") {
-        url = "https://api.pexels.com/v1/search?per_page=12&query=" + encodeURIComponent(q);
+        url = media === "video"
+          ? "https://api.pexels.com/videos/search?per_page=12&query=" + encodeURIComponent(q)
+          : "https://api.pexels.com/v1/search?per_page=12&query=" + encodeURIComponent(q);
         opts.headers = { Authorization: key };
       } else {
-        url = "https://pixabay.com/api/?per_page=12&image_type=photo&key=" + encodeURIComponent(key) + "&q=" + encodeURIComponent(q);
+        url = media === "video"
+          ? "https://pixabay.com/api/videos/?per_page=12&key=" + encodeURIComponent(key) + "&q=" + encodeURIComponent(q)
+          : "https://pixabay.com/api/?per_page=12&image_type=photo&key=" + encodeURIComponent(key) + "&q=" + encodeURIComponent(q);
       }
       fetch(url, opts)
         .then(function (r) {
@@ -745,14 +1035,28 @@
         })
         .then(function (data) {
           var items = [];
-          if (prov === "pexels" && data && data.photos) {
+          if (data && data.videos) {
+            items = data.videos.map(function (v) {
+              var files = (v.video_files || []).slice().sort(function (a, b) { return (a.width || 0) - (b.width || 0); });
+              var pick = files.filter(function (f) { return (f.width || 0) >= 1280; })[0] || files[files.length - 1];
+              return { thumb: v.image, url: (pick && pick.link) || "", kind: "video" };
+            }).filter(function (it) { return !!it.url; });
+          } else if (prov === "pexels" && data && data.photos) {
             items = data.photos.map(function (p) {
               return { thumb: p.src && p.src.tiny, url: (p.src && (p.src.large2x || p.src.large)) || "", kind: "image" };
             });
           } else if (data && data.hits) {
             items = data.hits.map(function (p) {
+              if (p.videos) {
+                var vv = p.videos.large && p.videos.large.url ? p.videos.large : p.videos.medium || p.videos.small || {};
+                return {
+                  thumb: "https://i.vimeocdn.com/video/" + (p.picture_id || "") + "_295x166.jpg",
+                  url: vv.url || "",
+                  kind: "video",
+                };
+              }
               return { thumb: p.previewURL, url: p.largeImageURL || p.webformatURL, kind: "image" };
-            });
+            }).filter(function (it) { return !!it.url; });
           }
           if (!items.length) {
             out.innerHTML = '<p class="projEmpty">Tidak ada hasil.</p>';
