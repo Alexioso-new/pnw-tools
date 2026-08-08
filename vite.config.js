@@ -1,16 +1,9 @@
-// Konfigurasi Vite untuk build produksi HOSANA YOUTH TOOLS.
-// Jalankan di komputer lokal (butuh internet untuk npm install):
-//   npm install
-//   npm run build    -> menghasilkan folder dist/ yang siap deploy
-//
-// CATATAN: proyek ini memakai script biasa (bukan ES module) yang saling
-// bergantung lewat urutan <script defer> di index.html. Karena itu build
-// memakai pendekatan "minify + salin", BUKAN bundling jadi satu file,
-// supaya urutan eksekusi dan variabel global (firebase, lottie, gsap,
-// window.PNWRec, window.PNWGuide, window.PNWProjector) tetap utuh.
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  // wrangler butuh array plugins ini ada (walau kosong) supaya bisa
+  // otomatis suntik plugin @cloudflare/vite-plugin saat deploy
+  plugins: [],
   // akar proyek = folder ini
   root: ".",
   build: {
