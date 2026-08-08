@@ -1394,6 +1394,10 @@
     _wakeLock = null,
     DISPLAY_MODE = /[?&]mode=(display|stage|youthviews|youth-views|views)/.test(location.search);
   var STAGE_MODE = /[?&]mode=stage/.test(location.search);
+  // v81: pemisahan kanal TEGAS. mode=stage mengikuti Spectate (pemusik, butuh
+  // chord). mode=display/youthviews/views HANYA mengikuti kanal youTh Views.
+  // Tidak ada lagi percampuran antar kanal.
+  var YV_OUTPUT_MODE = DISPLAY_MODE && !STAGE_MODE;
   function initSpectate() {
     try {
       liveRef = firebase.database().ref("pujianYouth/live");
@@ -1401,7 +1405,8 @@
         var v = s.val();
         _lastLive = v;
         applyLive(v);
-        if (DISPLAY_MODE && !_yvLiveActive) renderDisplay(v);
+        // v81: HANYA mode=stage yang menayangkan siaran Spectate.
+        if (STAGE_MODE) renderDisplay(v);
       });
     } catch (e) {}
     // Kanal youTh Views: isinya TIDAK PERNAH dikirim ke applyLive(), jadi
@@ -1413,7 +1418,10 @@
         var v = s.val();
         _yvLive = v;
         _yvLiveActive = !!(v && v.active);
-        if (DISPLAY_MODE) renderDisplay(_yvLiveActive ? v : _lastLive);
+        // v81: TIDAK ADA fallback ke _lastLive. Dulu output jatuh ke payload
+        // Spectate saat kanal ini kosong -> latar muncul sesaat lalu hilang
+        // begitu Spectate berubah jadi {active:false}.
+        if (YV_OUTPUT_MODE) renderDisplay(v);
       });
     } catch (e) {}
   }
@@ -1866,11 +1874,30 @@
     var keyEl = document.getElementById("dispKey");
     var body = document.getElementById("dispContent");
     var wait = document.getElementById("dispWait");
+    // v81: satu jalur keluar yang benar-benar membersihkan layar. Dulu class
+    // yvSlideMode dan isi #dispContent dibiarkan basi, jadi lirik lama tetap
+    // menempel di belakang overlay idle.
+    function yvGoIdle(msg) {
+      _dispSig = "";
+      applyDispBackground(null);
+      applyViewStyle({});
+      screen.classList.remove("yvSlideMode");
+      screen.classList.remove("dispTextMode");
+      screen.classList.remove("hideChords");
+      if (body) body.innerHTML = "";
+      if (titleEl) titleEl.textContent = "";
+      if (keyEl) keyEl.textContent = "";
+      _yvLastLines = null;
+      if (stage) stage.hidden = true;
+      if (idle) idle.hidden = false;
+      if (wait) wait.textContent = msg;
+    }
     if (v && v.active) applyViewStyle(v.style || {});
     if (v && v.active && v.kind === "text") {
       if (idle) idle.hidden = true;
       if (stage) stage.hidden = false;
       applyDispBackground(yvBgFromLive(v, null));
+      screen.classList.remove("yvSlideMode");
       screen.classList.add("dispTextMode");
       screen.classList.add("hideChords");
       var _tsig = "text|" + (v.text || "");
@@ -1887,6 +1914,7 @@
       if (idle) idle.hidden = true;
       if (stage) stage.hidden = false;
       applyDispBackground(yvBgFromLive(v, null));
+      screen.classList.remove("yvSlideMode");
       screen.classList.add("dispTextMode");
       screen.classList.add("hideChords");
       var _vsig = "verse|" + (v.ref || "") + "|" + (v.text || "");
@@ -1900,28 +1928,40 @@
       return;
     }
     screen.classList.remove("dispTextMode");
-    if (!v || !v.active || !v.songId) {
-      _dispSig = "";
-      applyDispBackground(null);
-      applyViewStyle({});
-      if (idle) idle.hidden = false;
-      if (wait) wait.textContent = "Menunggu live dimulai\u2026";
-      if (stage) stage.hidden = true;
+    if (!v || !v.active || (!v.songId && !(v.lines && v.lines.length))) {
+      yvGoIdle("Menunggu live dimulai\u2026");
+      return;
+    }
+    // v81: PAYLOAD MANDIRI. Kalau siaran sudah membawa lirik jadi, output tidak
+    // perlu membaca pujianYouth/songs -> perangkat proyektor TIDAK wajib login.
+    if (v.lines && v.lines.length) {
+      if (idle) idle.hidden = true;
+      if (stage) stage.hidden = false;
+      applyDispBackground(yvBgFromLive(v, null));
+      var pUse = typeof v.slideIndex === "number";
+      screen.classList.toggle("yvSlideMode", pUse);
+      screen.classList.add("hideChords");
+      var pIdx = Math.max(0, parseInt(v.slideIndex, 10) || 0);
+      var pSig = "mandiri|" + (v.songId || "") + "|" + pIdx + "|" + v.lines.join("\n") + "|" + JSON.stringify(v.style || {});
+      if (pSig !== _dispSig) {
+        _dispSig = pSig;
+        if (titleEl) titleEl.textContent = v.showTitle === false ? "" : v.songTitle || "";
+        if (keyEl)
+          keyEl.textContent =
+            v.showMeta === false
+              ? ""
+              : pUse
+                ? "Slide " + (pIdx + 1) + " / " + (v.slideTotal || pIdx + 1) + (v.label ? " \u00b7 " + v.label : "")
+                : v.label || "";
+        renderYvSlide(body, { lines: v.lines, label: v.label || "" }, { showLabel: false });
+      }
       return;
     }
     var song = (songs || []).find(function (x) {
       return x.id === v.songId;
     });
     if (!song) {
-      _dispSig = "";
-      applyDispBackground(null);
-      applyViewStyle({});
-      if (idle) idle.hidden = false;
-      if (wait)
-        wait.textContent = v.songTitle
-          ? "Memuat: " + v.songTitle
-          : "Memuat lagu\u2026";
-      if (stage) stage.hidden = true;
+      yvGoIdle(v.songTitle ? "Memuat: " + v.songTitle : "Memuat lagu\u2026");
       return;
     }
     if (idle) idle.hidden = true;
@@ -1933,9 +1973,11 @@
     var showCh = STAGE_MODE ? true : !!v.showChords;
     var useSlide = typeof v.slideIndex === "number";
     var sig = song.id + "|" + target + "|" + (showCh ? "1" : "0") + "|" + (useSlide ? "s" + v.slideIndex + "/" + (v.slideMax || 4) : "scroll") + "|" + JSON.stringify(v.style || {});
+    // v81: toggle di LUAR penjaga tanda tangan, supaya class tidak pernah
+    // tertinggal basi ketika payload tidak berubah.
+    screen.classList.toggle("yvSlideMode", useSlide);
     if (sig !== _dispSig) {
       _dispSig = sig;
-      screen.classList.toggle("yvSlideMode", useSlide);
       if (useSlide) {
         // Output presenter: satu halaman, lirik saja, keluar bertahap
         var deck = yvBuildSlides(song, v.slideMax || 4);
@@ -9673,7 +9715,7 @@
 
   // === Mesin youTh Views yang dipakai js/projector.js ===
   window.PNWYouthViews = {
-    version: "v80",
+    version: "v81",
     getSongs: function () {
       return Array.isArray(songs) ? songs : [];
     },
@@ -9697,7 +9739,24 @@
       if (!isAdmin || !ref) return false;
       try {
         // src "youthviews" -> aplikasi utama TIDAK ikut spectate.
-        ref.set(Object.assign({ t: Date.now(), src: "youthviews" }, payload || {}));
+        var p = Object.assign({ t: Date.now(), src: "youthviews" }, payload || {});
+        // v81: sertakan lirik yang sudah dirender supaya perangkat output tidak
+        // perlu membaca pujianYouth/songs (tidak wajib login).
+        if (p.active && p.songId && !p.lines) {
+          var sg = (Array.isArray(songs) ? songs : []).find(function (s) {
+            return s && String(s.id) === String(p.songId);
+          });
+          if (sg) {
+            var dk = yvBuildSlides(sg, p.slideMax || 4);
+            var ix = Math.max(0, Math.min(dk.length - 1, parseInt(p.slideIndex, 10) || 0));
+            var sl = dk[ix] || dk[0] || { lines: [], label: "" };
+            p.lines = (sl.lines || []).slice(0, 24);
+            p.label = sl.label || "";
+            p.slideTotal = dk.length;
+            if (!p.songTitle) p.songTitle = sg.title || "";
+          }
+        }
+        ref.set(p);
         return true;
       } catch (e) {
         window.PNWDiag.push({ feature: "youthviews.broadcast", error: String((e && e.message) || e), at: Date.now() });

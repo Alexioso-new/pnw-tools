@@ -4614,6 +4614,25 @@ body.stage-mode .dispContent .ic-ch{color:#7fe0ff !important;font-weight:700;}
 /* Hormati atribut hidden pada #dispIdle: sebelumnya .dispIdle{display:flex} menimpa [hidden],
    sehingga logo standby tetap tampil saat lagu/teks aktif. Ini memperbaikinya. */
 .dispIdle[hidden]{display:none !important;}
+/* v81: atribut hidden WAJIB menang di layar output.
+   Sebelumnya #displayScreen.yvSlideMode .dispStage{position:absolute;inset:0;
+   display:flex} menimpa [hidden] bawaan browser, sehingga slide lama tetap
+   menutupi seluruh layar saat output kembali idle. */
+#displayScreen [hidden],
+.dispStage[hidden]{display:none !important;}
+/* v81: penangkal untuk KELAS bug yang sama di luar layar output.
+   Aturan display dari stylesheet selalu mengalahkan [hidden] bawaan browser,
+   jadi tiap elemen yang disembunyikan lewat JS wajib punya penangkal sendiri.
+   Ditemukan lewat audit menyeluruh: panel ini tampil serentak padahal JS
+   sudah menyuruhnya sembunyi (tab latar proyektor, katalog, bar rapikan). */
+#afBar[hidden],
+#projSolids[hidden],
+#projPresets[hidden],
+#projBgApi[hidden],
+#projSlideGrid[hidden],
+#projCatalogList[hidden],
+#projBgStudio[hidden],
+#projBgMediaLib[hidden]{display:none !important;}
 #displayScreen.dispTextMode #dispStage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;height:100%;}
 #displayScreen.dispTextMode #dispTitle,
 #displayScreen.dispTextMode #dispKey{display:none;}

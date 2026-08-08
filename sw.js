@@ -8,7 +8,7 @@
 /* HOSANA YOUTH TOOLS - service worker
    PENTING: naikkan angka versi CACHE setiap deploy index.html baru
    supaya cache lama dibuang dan file terbaru dipakai. */
-const CACHE = "pnw-tools-v80";
+const CACHE = "pnw-tools-v81";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -75,20 +75,30 @@ self.addEventListener("fetch", (event) => {
     url.pathname.endsWith("/") ||
     url.pathname.endsWith("index.html");
 
-  // index.html / navigasi -> NETWORK-FIRST supaya update langsung terpakai
+  // navigasi HTML -> NETWORK-FIRST supaya update langsung terpakai.
+  // v81 PERBAIKAN: dulu SEMUA navigasi disimpan dengan kunci "./index.html",
+  // apa pun URL aslinya. Akibatnya membuka youthviews.html menimpa cache
+  // index.html (dan sebaliknya), sehingga saat offline halaman bisa tertukar.
+  // Sekarang kunci cache mengikuti URL request yang sebenarnya.
   if (isHTML) {
+    const shellKey = url.pathname.endsWith("/") ? "./index.html" : req.url;
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches
-            .open(CACHE)
-            .then((c) => c.put("./index.html", copy))
-            .catch(() => {});
+          if (res && res.status === 200 && url.origin === self.location.origin) {
+            const copy = res.clone();
+            caches
+              .open(CACHE)
+              .then((c) => c.put(shellKey, copy))
+              .catch(() => {});
+          }
           return res;
         })
         .catch(() =>
-          caches.match("./index.html").then((r) => r || caches.match("./")),
+          caches
+            .match(shellKey)
+            .then((r) => r || caches.match("./index.html"))
+            .then((r) => r || caches.match("./")),
         ),
     );
     return;

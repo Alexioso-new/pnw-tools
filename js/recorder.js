@@ -76,7 +76,11 @@
   var _timerId = 0;
   var _stream = null;
   var _onHide = null;
+  var _onGone = null;
   var _wake = null;
+  var _draftId = "";      // v81: kunci jurnal anti-hilang di IndexedDB
+  var _journalAt = 0;     // v81: waktu jurnal terakhir ditulis
+  var _truncated = false; // v81: rekaman terpotong paksa?
   var _playingUrl = null;
   var _playingAudio = null;
   var _playingId = null;
@@ -203,6 +207,11 @@
           var c = e.target.result;
           if (!c) return resolve(out);
           var v = c.value;
+          // v81: draft jurnal bukan rekaman jadi, jangan ikut ditampilkan.
+          if (v && v.draft) {
+            c.continue();
+            return;
+          }
           out.push({
             id: v.id,
             songId: v.songId,
@@ -890,6 +899,125 @@
     return _openFor || _dockFor || { id: "lepas", title: "Tanpa lagu" };
   }
 
+  /* v81 -- Ukur durasi NYATA dari audionya, bukan dari jam dinding.
+     Blob WebM/Opus hasil MediaRecorder.start(timeslice) tidak menyimpan durasi
+     di header container, sehingga <audio>.duration = Infinity. Triknya: lompat
+     ke posisi sangat jauh, browser lalu menghitung durasi sebenarnya. */
+  function measureDur(blob, fallback) {
+    return new Promise(function (resolve) {
+      var done = false;
+      var url = "";
+      function fin(ms) {
+        if (done) return;
+        done = true;
+        try { if (url) URL.revokeObjectURL(url); } catch (e) {}
+        resolve(ms);
+      }
+      try {
+        url = URL.createObjectURL(blob);
+        var a = document.createElement("audio");
+        a.preload = "metadata";
+        var guard = setTimeout(function () { fin(fallback); }, 5000);
+        a.onloadedmetadata = function () {
+          if (a.duration && isFinite(a.duration) && a.duration > 0) {
+            clearTimeout(guard);
+            fin(Math.round(a.duration * 1000));
+            return;
+          }
+          a.ontimeupdate = function () {
+            if (a.duration && isFinite(a.duration) && a.duration > 0) {
+              a.ontimeupdate = null;
+              clearTimeout(guard);
+              fin(Math.round(a.duration * 1000));
+            }
+          };
+          try { a.currentTime = 1e101; } catch (e) { clearTimeout(guard); fin(fallback); }
+        };
+        a.onerror = function () { clearTimeout(guard); fin(fallback); };
+        a.src = url;
+      } catch (e) {
+        fin(fallback);
+      }
+    });
+  }
+
+  /* v81 -- JURNAL ANTI-HILANG.
+     Dulu potongan rekaman hanya hidup di array _chunks (RAM). Kalau halaman
+     mati (pagehide, crash, dibunuh sistem), onstop -> putRecord tidak pernah
+     selesai dan SELURUH rekaman hilang. Sekarang isinya ditulis berkala ke
+     IndexedDB sebagai draft, lalu dipulihkan saat aplikasi dibuka lagi. */
+  function writeJournal(force) {
+    if (!_draftId || !_chunks.length) return;
+    var now = Date.now();
+    if (!force && now - _journalAt < 5000) return;
+    _journalAt = now;
+    var type = (_mr && _mr.mimeType) || "audio/webm";
+    var song = targetSong();
+    try {
+      putRecord({
+        id: _draftId,
+        songId: String(song.id),
+        songTitle: song.title,
+        name: "Rekaman belum selesai",
+        ts: _startAt || now,
+        dur: now - (_startAt || now),
+        type: type,
+        blob: new Blob(_chunks, { type: type }),
+        url: "",
+        path: "",
+        draft: true,
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
+  function dropJournal() {
+    if (!_draftId) return;
+    var id = _draftId;
+    _draftId = "";
+    try { delRecord(id).catch(function () {}); } catch (e) {}
+  }
+
+  /* Pulihkan draft yang tertinggal dari sesi yang terputus. */
+  function recoverDrafts() {
+    return tx("readonly")
+      .then(function (os) {
+        return new Promise(function (resolve) {
+          var out = [];
+          var req = os.openCursor();
+          req.onsuccess = function (e) {
+            var c = e.target.result;
+            if (!c) return resolve(out);
+            if (c.value && c.value.draft) out.push(c.value);
+            c.continue();
+          };
+          req.onerror = function () { resolve(out); };
+        });
+      })
+      .then(function (list) {
+        if (!list.length) return;
+        var saved = 0;
+        return Promise.all(
+          list.map(function (d) {
+            if (!d.blob || !d.blob.size) return delRecord(d.id).catch(function () {});
+            saved++;
+            return measureDur(d.blob, d.dur || 0).then(function (ms) {
+              d.draft = false;
+              d.dur = ms || d.dur || 0;
+              d.name = "Rekaman terselamatkan " + fmtDate(d.ts || Date.now());
+              return putRecord(d);
+            });
+          }),
+        ).then(function () {
+          if (saved) {
+            toast(saved + " rekaman yang sempat terputus berhasil diselamatkan.", "success");
+            refreshCounts();
+            renderAll();
+          }
+        });
+      })
+      .catch(function () {});
+  }
+
   function startRec() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       toast("Browser ini tidak mendukung perekaman suara.", "error");
@@ -934,15 +1062,21 @@
           _mr = new MediaRecorder(stream);
         }
         _mr.ondataavailable = function (e) {
-          if (e.data && e.data.size) _chunks.push(e.data);
+          if (e.data && e.data.size) {
+            _chunks.push(e.data);
+            writeJournal(false); // v81: titipkan ke IndexedDB berkala
+          }
         };
         _mr.onstop = function () {
           var dur = Date.now() - _startAt;
           try {
             if (_onHide) {
               document.removeEventListener("visibilitychange", _onHide);
-              window.removeEventListener("pagehide", _onHide);
               _onHide = null;
+            }
+            if (_onGone) {
+              window.removeEventListener("pagehide", _onGone);
+              _onGone = null;
             }
             if (_wake && _wake.release) { _wake.release(); _wake = null; }
           } catch (e) {}
@@ -964,17 +1098,27 @@
           } catch (e) {}
           _stream = null;
           if (!blob.size || dur < 700) {
+            dropJournal();
             toast("Rekaman terlalu pendek, tidak disimpan.", "info");
             return;
           }
           var song = targetSong();
+          var wasCut = _truncated;
+          _truncated = false;
+          // v81: durasi diambil dari audionya sendiri. Jam dinding sering lebih
+          // panjang daripada isi rekaman (tab di-throttle, mikrofon stall), itu
+          // sebabnya label bisa "3 menit" padahal isinya tidak penuh.
+          measureDur(blob, dur).then(function (realDur) {
+          var useDur = realDur && realDur > 500 ? realDur : dur;
+          var gap = dur > 0 ? Math.abs(dur - useDur) / dur : 0;
           var rec = {
             id: "r" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
             songId: String(song.id),
             songTitle: song.title,
-            name: "Latihan " + fmtDate(Date.now()),
+            name: (wasCut ? "Latihan (terpotong) " : "Latihan ") + fmtDate(Date.now()),
             ts: Date.now(),
-            dur: dur,
+            dur: useDur,
+            wall: dur,
             type: type,
             blob: blob,
             url: "",
@@ -982,7 +1126,17 @@
           };
           putRecord(rec)
             .then(function () {
-              toast("Rekaman disimpan (" + fmtDur(dur) + ").", "success");
+              dropJournal();
+              toast("Rekaman disimpan (" + fmtDur(useDur) + ").", "success");
+              if (gap > 0.1)
+                toast(
+                  "Catatan: durasi audio " +
+                    fmtDur(useDur) +
+                    ", padahal tombol menyala " +
+                    fmtDur(dur) +
+                    ". Mikrofon sempat terputus.",
+                  "info",
+                );
               renderAll();
               return uploadRec(rec);
             })
@@ -1017,29 +1171,53 @@
                 "error",
               );
             });
+          });
         };
         _mr.onerror = function (ev) {
           var msg = (ev && ev.error && ev.error.name) || "tidak diketahui";
-          toast("Perekaman bermasalah (" + msg + "). Rekaman dihentikan & disimpan.", "error");
+          // v81: tandai supaya rekaman TIDAK dilaporkan utuh padahal terpotong.
+          _truncated = true;
+          writeJournal(true);
+          toast("Perekaman bermasalah (" + msg + "). Rekaman disimpan sebagai TERPOTONG.", "error");
           try { if (_mr && _mr.state === "recording") _mr.stop(); } catch (e) {}
         };
         // timeslice: potongan tiap 1 detik. Di iOS, tanpa ini seluruh rekaman
         // hanya dibuat saat stop -> kalau ada gangguan (telepon masuk, layar
         // terkunci, pindah aplikasi) hasilnya patah atau kosong.
+        _draftId = "d" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+        _journalAt = 0;
+        _truncated = false;
         try {
           _mr.start(1000);
         } catch (e) {
           _mr.start();
         }
-        // iOS menghentikan mikrofon saat halaman disembunyikan: simpan yang sudah ada
+        /* v81 -- PERBAIKAN BUG "berhenti di detik 36".
+           Dulu listener ini menghentikan rekaman pada SETIAP visibilitychange di
+           SEMUA platform, padahal hanya iOS/Safari yang benar-benar memutus sesi
+           mikrofon. Di Android/PC rekaman ikut mati hanya karena layar terkunci,
+           pindah aplikasi, ganti tab, bahkan menarik panel notifikasi.
+           Sekarang: Android/PC LANJUT merekam, iOS berhenti dengan aman. */
         _onHide = function () {
-          if (document.visibilityState === "hidden" && _mr && _mr.state === "recording") {
+          if (document.visibilityState !== "hidden") return;
+          if (!_mr || _mr.state !== "recording") return;
+          try { if (_mr.requestData) _mr.requestData(); } catch (e) {}
+          writeJournal(true);
+          if (IS_APPLE) {
             try { _mr.stop(); } catch (e) {}
-            toast("Layar berpindah/terkunci - rekaman disimpan sampai detik itu.", "info");
+            toast("iOS memutus mikrofon saat layar disembunyikan - rekaman disimpan sampai detik itu.", "info");
           }
         };
+        /* pagehide: halaman benar-benar akan mati. Paksa jurnal supaya isi
+           rekaman tetap ada di IndexedDB walau onstop tidak kesampaian. */
+        _onGone = function () {
+          if (!_mr || _mr.state !== "recording") return;
+          try { if (_mr.requestData) _mr.requestData(); } catch (e) {}
+          writeJournal(true);
+          try { _mr.stop(); } catch (e) {}
+        };
         document.addEventListener("visibilitychange", _onHide);
-        window.addEventListener("pagehide", _onHide);
+        window.addEventListener("pagehide", _onGone);
         // jaga layar tetap menyala supaya sesi mikrofon tidak diputus iOS
         try {
           if (navigator.wakeLock && navigator.wakeLock.request) {
@@ -1228,11 +1406,14 @@
     },
   };
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () {
-      refreshCounts();
-    });
-  } else {
+  function bootRec() {
     refreshCounts();
+    // v81: selamatkan rekaman yang sesinya terputus mendadak.
+    setTimeout(recoverDrafts, 1200);
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootRec);
+  } else {
+    bootRec();
   }
 })();

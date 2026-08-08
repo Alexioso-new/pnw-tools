@@ -1,5 +1,5 @@
 /* PNW-FILE-GUIDE
-   js/yv-standalone.js — mesin youTh Views MANDIRI (v5.8).
+   js/yv-standalone.js — mesin youTh Views MANDIRI (v5.9).
    Dipakai HANYA oleh youthviews.html. TIDAK memuat js/app.js.
 
    Prinsip:
@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v5.8-standalone";
+  var VERSION = "v5.9-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";
@@ -459,9 +459,17 @@
         _dispSig = "";
         applyBackground(null);
         applyViewStyle({});
+        // v81: buang class + konten basi. Tanpa ini slide lama tetap menutupi
+        // layar karena .yvSlideMode .dispStage{position:absolute;inset:0}.
+        screen.classList.remove("yvSlideMode");
+        screen.classList.remove("dispTextMode");
+        screen.classList.remove("hideChords");
+        if (body) body.innerHTML = "";
+        if (titleEl) titleEl.textContent = "";
+        if (keyEl) keyEl.textContent = "";
+        if (stage) stage.hidden = true;
         if (idle) idle.hidden = false;
         if (wait) wait.textContent = "Menunggu live dimulai\u2026";
-        if (stage) stage.hidden = true;
         return;
       }
 
@@ -471,6 +479,7 @@
 
       if (v.kind === "text" || v.kind === "verse") {
         applyBackground(bgFromLive(v, null));
+        screen.classList.remove("yvSlideMode");
         screen.classList.add("dispTextMode");
         var sigT = v.kind + "|" + (v.ref || "") + "|" + (v.text || "");
         if (sigT === _dispSig) return;
@@ -483,10 +492,33 @@
       }
 
       screen.classList.remove("dispTextMode");
+      // v81: PAYLOAD MANDIRI -> render langsung dari lirik di siaran, tanpa
+      // perlu daftar lagu (perangkat output tidak wajib login).
+      if (v.lines && v.lines.length) {
+        applyBackground(bgFromLive(v, null));
+        var pIdx = Math.max(0, parseInt(v.slideIndex, 10) || 0);
+        var pSig = "mandiri|" + (v.songId || "") + "|" + pIdx + "|" + v.lines.join("\n") + "|" + JSON.stringify(v.style || {});
+        if (pSig === _dispSig) return;
+        _dispSig = pSig;
+        screen.classList.add("yvSlideMode");
+        if (titleEl) titleEl.textContent = v.showTitle === false ? "" : v.songTitle || "";
+        if (keyEl)
+          keyEl.textContent =
+            v.showMeta === false
+              ? ""
+              : "Slide " + (pIdx + 1) + " / " + (v.slideTotal || pIdx + 1) + (v.label ? " \u00b7 " + v.label : "");
+        paintLines(body, v.lines);
+        cue(v.label || "", 1);
+        return;
+      }
       var song = getSong(v.songId);
       if (!song) {
         _dispSig = "";
         applyBackground(null);
+        screen.classList.remove("yvSlideMode");
+        if (body) body.innerHTML = "";
+        if (titleEl) titleEl.textContent = "";
+        if (keyEl) keyEl.textContent = "";
         if (idle) idle.hidden = false;
         if (stage) stage.hidden = true;
         if (wait)
@@ -559,12 +591,21 @@
         safe(
           "broadcast",
           function () {
-            liveRef.set(
-              Object.assign(
-                { t: Date.now(), src: "youthviews" },
-                payload || {},
-              ),
-            );
+            var p = Object.assign({ t: Date.now(), src: "youthviews" }, payload || {});
+            // v81: sertakan lirik jadi supaya output tidak wajib login.
+            if (p.active && p.songId && !p.lines) {
+              var sg = getSong(p.songId);
+              if (sg) {
+                var dk = buildSlides(sg, p.slideMax || 4);
+                var ix = Math.max(0, Math.min(dk.length - 1, parseInt(p.slideIndex, 10) || 0));
+                var sl = dk[ix] || dk[0] || { lines: [], label: "" };
+                p.lines = (sl.lines || []).slice(0, 24);
+                p.label = sl.label || "";
+                p.slideTotal = dk.length;
+                if (!p.songTitle) p.songTitle = sg.title || "";
+              }
+            }
+            liveRef.set(p);
             return true;
           },
           false,
