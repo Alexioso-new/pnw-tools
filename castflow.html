@@ -153,7 +153,15 @@
             <option value="4:3">4:3 · 1024×768</option>
             <option value="1:1">1:1 · 1080×1080</option>
             <option value="9:16">9:16 · 1080×1920</option>
+            <option value="custom">Kustom…</option>
           </select>
+          <span class="cfCustomRes" id="cfCustomRes" hidden>
+            <input type="number" id="cfResW" min="16" max="7680" value="1920" title="Lebar" />
+            ×
+            <input type="number" id="cfResH" min="16" max="7680" value="1080" title="Tinggi" />
+            <button type="button" id="cfResApply">Terapkan</button>
+          </span>
+          <button class="cfPopBtn" id="cfPopBtn" type="button" title="Lepas / sematkan pratinjau">⧉</button>
         </div>
         <div class="cfPrevStage" id="cfPrevStage">
           <div class="projPreview" id="projPreview">
@@ -214,7 +222,7 @@
         </section>
         <aside class="projPane projPaneR">
           <div class="projPaneHead">
-            <h3>Active Item</h3>
+            <h3>Kontrol Panel</h3>
             <span class="projLive" id="projLiveDot">LIVE</span>
           </div>
           <div class="projActiveBody" id="projActiveBody"></div>

@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var CF_VERSION = "v7.3";
+  var CF_VERSION = "v7.4";
   var LANG_KEY = "pnwCastflowLang";
   var PREV_H_KEY = "pnwCastflowPrevH";
   var FONTS_KEY = "pnwCastflowFonts.v1";
@@ -297,12 +297,27 @@
       return "fit";
     }
   }
+  /* v7.4: resolusi kustom W×H */
+  function customRes() {
+    try {
+      var v = JSON.parse(localStorage.getItem("pnwCastflowCustomRes") || "null");
+      if (v && v.w > 0 && v.h > 0) return v;
+    } catch (e) {}
+    return { w: 1920, h: 1080 };
+  }
+  function ratioVal() {
+    if (curRatio() === "custom") {
+      var r2 = customRes();
+      return r2.w / r2.h;
+    }
+    return RATIOS[curRatio()] || 0;
+  }
   /* pasang rasio pratinjau: letterbox di tengah stage (fit = penuh) */
   function fitPreview() {
     var st = stage();
     var pv = document.getElementById("projPreview");
     if (!st || !pv) return;
-    var r = RATIOS[curRatio()] || 0;
+    var r = ratioVal();
     if (!r) {
       pv.style.position = "";
       pv.style.inset = "";
@@ -338,8 +353,25 @@
       try {
         localStorage.setItem(RATIO_KEY, sel.value);
       } catch (e) {}
+      var cr = document.getElementById("cfCustomRes");
+      if (cr) cr.hidden = sel.value !== "custom";
       fitPreview();
     });
+    /* v7.4: resolusi kustom */
+    var cr0 = document.getElementById("cfCustomRes");
+    if (cr0) cr0.hidden = sel.value !== "custom";
+    var ap = document.getElementById("cfResApply");
+    if (ap)
+      ap.addEventListener("click", function () {
+        var w = parseInt((document.getElementById("cfResW") || {}).value, 10) || 1920;
+        var h = parseInt((document.getElementById("cfResH") || {}).value, 10) || 1080;
+        w = Math.max(16, Math.min(7680, w));
+        h = Math.max(16, Math.min(7680, h));
+        try {
+          localStorage.setItem("pnwCastflowCustomRes", JSON.stringify({ w: w, h: h }));
+        } catch (e) {}
+        fitPreview();
+      });
     fitPreview();
     if (window.ResizeObserver) {
       var st = stage();
@@ -440,6 +472,155 @@
         e.preventDefault();
       });
     });
+  }
+
+  /* ================= 3b. pratinjau melayang (pop-out bebas) ================= */
+  var FLOAT_KEY = "pnwCastflowFloat.v1";
+  function floatState() {
+    try {
+      return JSON.parse(localStorage.getItem(FLOAT_KEY) || "null") || {};
+    } catch (e) {
+      return {};
+    }
+  }
+  function saveFloat(s2) {
+    try {
+      localStorage.setItem(FLOAT_KEY, JSON.stringify(s2));
+    } catch (e) {}
+  }
+  function isPopped() {
+    var w = document.getElementById("cfFloatWin");
+    return !!(w && !w.hidden);
+  }
+  function buildFloat() {
+    if (document.getElementById("cfFloatWin")) return;
+    var w = document.createElement("div");
+    w.className = "cfFloatWin";
+    w.id = "cfFloatWin";
+    w.hidden = true;
+    w.innerHTML =
+      '<div class="cfFloatBar" id="cfFloatBar">' +
+      '<span class="t">Preview</span>' +
+      '<span class="sp"></span>' +
+      '<button type="button" id="cfDockBtn">⤓ Dock</button>' +
+      "</div>" +
+      '<div class="cfFloatBody" id="cfFloatBody"></div>' +
+      '<div class="cfFloatResize" id="cfFloatResize"></div>';
+    document.body.appendChild(w);
+    /* geser jendela dari bar judul */
+    var bar = document.getElementById("cfFloatBar");
+    bar.addEventListener("pointerdown", function (ev) {
+      if (ev.target && ev.target.tagName === "BUTTON") return;
+      ev.preventDefault();
+      var x0 = ev.clientX;
+      var y0 = ev.clientY;
+      var l0 = w.offsetLeft;
+      var t0 = w.offsetTop;
+      function mv(e2) {
+        var nl = Math.max(0, Math.min(window.innerWidth - 120, l0 + (e2.clientX - x0)));
+        var nt = Math.max(0, Math.min(window.innerHeight - 90, t0 + (e2.clientY - y0)));
+        w.style.left = nl + "px";
+        w.style.top = nt + "px";
+      }
+      function up() {
+        document.removeEventListener("pointermove", mv);
+        document.removeEventListener("pointerup", up);
+        var s2 = floatState();
+        s2.x = w.offsetLeft;
+        s2.y = w.offsetTop;
+        saveFloat(s2);
+      }
+      document.addEventListener("pointermove", mv);
+      document.addEventListener("pointerup", up);
+    });
+    /* resize bebas dari pojok kanan bawah */
+    var rz = document.getElementById("cfFloatResize");
+    rz.addEventListener("pointerdown", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      var x0 = ev.clientX;
+      var y0 = ev.clientY;
+      var w0 = w.offsetWidth;
+      var h0 = w.offsetHeight;
+      function mv(e2) {
+        w.style.width =
+          Math.max(240, Math.min(window.innerWidth - 8, w0 + (e2.clientX - x0))) + "px";
+        w.style.height =
+          Math.max(150, Math.min(window.innerHeight - 8, h0 + (e2.clientY - y0))) + "px";
+        fitPreview();
+      }
+      function up() {
+        document.removeEventListener("pointermove", mv);
+        document.removeEventListener("pointerup", up);
+        var s2 = floatState();
+        s2.w = w.offsetWidth;
+        s2.h = w.offsetHeight;
+        saveFloat(s2);
+      }
+      document.addEventListener("pointermove", mv);
+      document.addEventListener("pointerup", up);
+    });
+    document.getElementById("cfDockBtn").onclick = function () {
+      dockPreview();
+    };
+  }
+  function popPreview() {
+    safe("pop", function () {
+      buildFloat();
+      var w = document.getElementById("cfFloatWin");
+      var st = stage();
+      var wrap = document.getElementById("cfPrevWrap");
+      if (!w || !st || !wrap) return;
+      document.getElementById("cfFloatBody").appendChild(st);
+      st.style.height = "100%";
+      var s2 = floatState();
+      var defW = Math.min(720, window.innerWidth - 80);
+      var defH = Math.round((defW * 9) / 16) + 30;
+      w.style.left = (s2.x != null ? s2.x : Math.round((window.innerWidth - defW) / 2)) + "px";
+      w.style.top = (s2.y != null ? s2.y : 70) + "px";
+      w.style.width = (s2.w || defW) + "px";
+      w.style.height = (s2.h || defH) + "px";
+      wrap.classList.add("popped");
+      w.hidden = false;
+      s2.popped = true;
+      saveFloat(s2);
+      fitPreview();
+    });
+  }
+  function dockPreview() {
+    safe("dock", function () {
+      var w = document.getElementById("cfFloatWin");
+      var st = stage();
+      var wrap = document.getElementById("cfPrevWrap");
+      var rz = document.getElementById("cfPrevResizer");
+      if (!w || !st || !wrap) return;
+      if (rz) wrap.insertBefore(st, rz);
+      else wrap.appendChild(st);
+      st.style.height = "";
+      var saved = 0;
+      try {
+        saved = parseInt(localStorage.getItem(PREV_H_KEY) || "0", 10) || 0;
+      } catch (e) {}
+      setPrevH(saved || SIZES.m, false);
+      w.hidden = true;
+      wrap.classList.remove("popped");
+      var s2 = floatState();
+      s2.popped = false;
+      saveFloat(s2);
+      fitPreview();
+    });
+  }
+  function initFloat() {
+    buildFloat();
+    var pb = document.getElementById("cfPopBtn");
+    if (pb && !pb.__cfPop) {
+      pb.__cfPop = true;
+      pb.onclick = function () {
+        if (isPopped()) dockPreview();
+        else popPreview();
+      };
+    }
+    if (floatState().popped) popPreview();
   }
 
   /* ================= 4. library font besar ================= */
@@ -746,6 +927,7 @@
     safe("customFont", initCustomFont);
     safe("splitPanes", initSplitPanes);
     safe("tlResizer", initTlResizer);
+    safe("float", initFloat);
   }
   window.CastFlow = {
     version: CF_VERSION,
@@ -760,6 +942,9 @@
     translate: translateOne,
     addCustomFont: addCustomFont,
     setPreviewHeight: setPrevH,
+    popPreview: popPreview,
+    dockPreview: dockPreview,
+    isPopped: isPopped,
     setRatio: function (r) {
       try {
         localStorage.setItem(RATIO_KEY, r);

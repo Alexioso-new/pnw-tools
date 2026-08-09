@@ -1,7 +1,7 @@
 /* PNW-FILE-GUIDE
-   css/castflow.css — tema CastFlow (v7.3): abu netral #262626 ala CapCut,
-   panel melayang dengan celah + sudut membulat, splitter TAK TERLIHAT,
-   pratinjau terpusat (max-width), TikTok Sans diskalakan −20%.
+   css/castflow.css — tema CastFlow (v7.4): abu netral #262626, panel melayang
+   dengan celah + sudut membulat, splitter tak terlihat, pratinjau terpusat /
+   MELAYANG, TikTok Sans −20%, sisa latar putih -> #141414.
    HANYA dimuat di castflow.html, PALING AKHIR (menang cascade).
 */
 
@@ -26,7 +26,7 @@ body.yvStandalone {
   color: #eceef2;
   color-scheme: dark;
   font-family: "TikTok Sans", "Plus Jakarta Sans", Inter, system-ui, sans-serif;
-  font-size: 10.5px; /* v7.3: −20% dari 13px */
+  font-size: 10.5px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -37,7 +37,6 @@ body.yvStandalone select,
 body.yvStandalone textarea {
   font-family: inherit;
 }
-/* tangkap semua teks warisan di dalam panel & drawer agar ikut skala kecil */
 body.yvStandalone .projPage,
 body.yvStandalone .tlDrawer,
 body.yvStandalone .yvBar {
@@ -49,13 +48,18 @@ body.yvStandalone .yvBar {
   background: #232326;
   border-bottom: 1px solid #3a3a40;
   color: #eceef2;
+  position: relative; /* v7.4: untuk logo terpusat */
 }
-/* v7.3: wordmark SVG menggantikan teks "CastFlow" di bar */
+/* wordmark SVG — v7.4: di TENGAH bar, selaras dengan baris tombol */
 body.yvStandalone .yvBarBrand {
   height: 20px;
   width: auto;
   object-fit: contain;
   display: block;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 body.yvStandalone .yvBarBtn {
   background: #1e1e21;
@@ -70,8 +74,7 @@ body.yvStandalone .yvBarBtn:hover {
 }
 body.yvStandalone .yvBarNote { color: #a8adb8; font-size: 9.5px; }
 
-/* v7.3: header panel lama (CastFlow / PRESENTER BETA / EasyWorship… + tombol ✕)
-   disembunyikan — bar atas yvBar sudah jadi chrome utama halaman ini. */
+/* header panel lama (CastFlow / PRESENTER BETA / EasyWorship… + ✕) disembunyikan */
 body.yvStandalone .projTop { display: none !important; }
 
 /* segmented EN/ID */
@@ -96,7 +99,7 @@ body.yvStandalone .projTop { display: none !important; }
   color: #eaf7fb;
 }
 
-/* ---------- kerangka panel: celah + sudut membulat (ala CapCut) ---------- */
+/* ---------- kerangka panel: celah + sudut membulat ---------- */
 body.yvStandalone .projPage.open {
   display: flex;
   flex-direction: column;
@@ -105,7 +108,7 @@ body.yvStandalone .projPage.open {
 body.yvStandalone .projGrid {
   flex: 1 1 auto;
   min-height: 0;
-  padding: 0 8px 8px; /* celah luar; celah antar kolom = track splitter 7px */
+  padding: 0 8px 8px;
 }
 body.yvStandalone .projGrid.cfSmooth {
   transition: grid-template-columns 0.18s ease;
@@ -126,7 +129,7 @@ body.yvStandalone .projGrid.cfSmooth {
   bottom: 12%;
   left: 3px;
   width: 1px;
-  background: transparent; /* default: tanpa garis sama sekali */
+  background: transparent;
   transition: background 0.15s ease;
 }
 .cfSplitter:hover::after,
@@ -138,7 +141,7 @@ body.yvStandalone .projGrid.cfSmooth {
 body.cfColResize, body.cfColResize * { cursor: col-resize !important; }
 body.cfColResize { user-select: none; }
 
-/* ---------- strip PRATINJAU: terpusat, tidak makan seluruh lebar ---------- */
+/* ---------- strip PRATINJAU: terpusat ---------- */
 body.yvStandalone .cfPrevWrap {
   flex: 0 0 auto;
   background: transparent;
@@ -150,7 +153,8 @@ body.yvStandalone .cfPrevWrap {
   align-items: center;
   gap: 8px;
   margin: 0 auto 6px;
-  max-width: 880px; /* sejajar dengan stage */
+  max-width: 880px;
+  flex-wrap: wrap;
 }
 .cfPrevTitle {
   font: 800 9px/1 inherit;
@@ -187,13 +191,13 @@ body.yvStandalone .cfPrevWrap {
 }
 .cfPrevStage {
   position: relative;
-  height: 170px; /* v7.3: default lebih kecil (bisa diubah S/M/L atau drag) */
-  max-width: 880px; /* v7.3: terpusat ala CapCut, tidak full width */
+  height: 170px;
+  max-width: 880px;
   margin: 0 auto;
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid #3a3a40;
-  background: #1a1a1c;
+  background: #141414; /* v7.4: letterbox hitam */
 }
 body.yvStandalone .cfPrevStage .projPreview {
   position: absolute;
@@ -208,7 +212,7 @@ body.yvStandalone .cfPrevStage .projPreview {
   display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(26, 26, 28, 0.85);
+  background: rgba(20, 20, 20, 0.85);
   border: 2px dashed #1282a2;
   border-radius: 10px;
   color: #7fd4e8;
@@ -258,7 +262,9 @@ body.yvStandalone .projPane {
   border: 1px solid #2e2e33;
   border-radius: 10px;
   color: #eceef2;
-  overflow: hidden;
+  /* v7.4: panel bisa di-scroll langsung. overflow:hidden di v7.3 membuat
+     isi panel (mis. Kontrol Panel) terpotong tanpa bisa di-scroll. */
+  overflow: auto;
 }
 body.yvStandalone .projPaneHead {
   border-bottom: 1px solid #3a3a40;
@@ -603,3 +609,160 @@ body.yvStandalone ::selection { background: rgba(18, 130, 162, 0.4); color: #eaf
   body.yvStandalone .cfPrevStage { height: 140px; }
   .cfPrevHint { display: none; }
 }
+
+/* ================= v7.4 ================= */
+/* sisa permukaan putih dari stylesheet lama -> #141414 */
+body.yvStandalone .yvPlanItem,
+body.yvStandalone .yvCatalogCard {
+  background: #141414 !important;
+  border: 1px solid #2e2e33 !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  color: #eceef2;
+}
+body.yvStandalone .yvSlideBtns button,
+body.yvStandalone .yvCardOps button,
+body.yvStandalone .yvComposerOps button,
+body.yvStandalone .projBgPreset {
+  background: #1e1e21 !important;
+  border: 1px solid #3a3a40 !important;
+  color: #eceef2 !important;
+}
+body.yvStandalone .yvComposer {
+  background: #141414 !important;
+  border: 1px solid #2e2e33 !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+body.yvStandalone .yvComposer textarea,
+body.yvStandalone .yvComposer input,
+body.yvStandalone .projBgUrl {
+  background: #1e1e21 !important;
+  border: 1px solid #3a3a40 !important;
+  color: #eceef2 !important;
+  border-radius: 8px !important;
+}
+/* pratinjau default gelap #141414 bila belum ada latar */
+body.yvStandalone .projPreview { background-color: #141414; }
+
+/* tombol pop-out + input resolusi kustom */
+.cfPopBtn {
+  appearance: none;
+  border: 1px solid #3a3a40;
+  background: #1e1e21;
+  color: #a8adb8;
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.cfPopBtn:hover { border-color: #1282a2; color: #7fd4e8; }
+.cfCustomRes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #7d8494;
+  font-size: 9.5px;
+}
+.cfCustomRes[hidden] { display: none !important; }
+.cfCustomRes input {
+  width: 58px;
+  background: #1e1e21;
+  border: 1px solid #3a3a40;
+  color: #eceef2;
+  border-radius: 6px;
+  padding: 3px 5px;
+  font-size: 9.5px;
+}
+.cfCustomRes button {
+  background: #1282a2;
+  border: 1px solid #1282a2;
+  color: #eaf7fb;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 9.5px;
+  cursor: pointer;
+}
+
+/* strip atas diringkas saat pratinjau melayang -> panel naik penuh */
+body.yvStandalone .cfPrevWrap.popped { display: none !important; }
+
+/* jendela pratinjau melayang (bebas posisi & ukuran) */
+.cfFloatWin {
+  position: fixed;
+  z-index: 60;
+  min-width: 240px;
+  min-height: 150px;
+  background: #232326;
+  border: 1px solid #3a3a40;
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.cfFloatWin[hidden] { display: none !important; }
+.cfFloatBar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  background: #1e1e21;
+  border-bottom: 1px solid #3a3a40;
+  cursor: move;
+  user-select: none;
+  touch-action: none;
+}
+.cfFloatBar .t {
+  font: 800 9px/1 inherit;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #a8adb8;
+}
+.cfFloatBar .sp { flex: 1 1 auto; }
+.cfFloatBar button {
+  appearance: none;
+  border: 1px solid #3a3a40;
+  background: #323236;
+  color: #e8eaef;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 9.5px;
+  cursor: pointer;
+}
+.cfFloatBar button:hover { border-color: #1282a2; }
+.cfFloatBody {
+  flex: 1 1 auto;
+  position: relative;
+  min-height: 0;
+  background: #141414;
+}
+.cfFloatBody .cfPrevStage {
+  max-width: none;
+  margin: 0;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+.cfFloatResize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+.cfFloatResize::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #4a4a52;
+  border-bottom: 2px solid #4a4a52;
+  border-radius: 0 0 3px 0;
+}
+.cfFloatResize:hover::after { border-color: #1282a2; }

@@ -1,0 +1,30 @@
+============================================================
+PNW TOOLS v91 (label v7.4) — CASTFLOW: PRATINJAU MELAYANG + POLESAN
+============================================================
+
+ISI RILIS
+1. SISA LATAR PUTIH DIHAPUS — kartu katalog/playlist, tombol-tombol kecil,
+   dan composer yang tadinya masih putih kini gelap **#141414**.
+2. PRATINJAU MELAYANG (PALING FLEKSIBEL) — tombol **⧉** di strip pratinjau
+   melepasnya jadi jendela melayang: **geser ke mana saja** (drag bar judul)
+   dan **resize bebas dua arah** (pojok kanan bawah). Saat melayang, strip
+   pratinjau atas menghilang sehingga **Playlist & Kontrol Panel naik penuh
+   ke atas** (lebih leluasa). Tombol ⤓ Dock mengembalikannya. Posisi & ukuran
+   tersimpan otomatis.
+3. RESOLUSI KUSTOM — selain Fit/16:9/4:3/1:1/9:16, kini ada **Kustom…**:
+   isi lebar × tinggi persis (mis. 1000×400) lalu Terapkan.
+4. "ACTIVE ITEM" -> **"KONTROL PANEL"** — dan panelnya kini **bisa di-scroll
+   langsung** (font, ukuran, perataan, bayangan, latar, dst. terlihat semua
+   dengan scroll atas/bawah — tidak perlu mengecilkan pratinjau dulu).
+5. LOGO CASTFLOW DI TENGAH BAR — selaras dengan Main app / EN·ID / Open
+   Output Window / Error Log / Sign out.
+6. Semua isi v85–v90 tetap termasuk.
+
+CARA PASANG (urutan WAJIB)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah (database.rules.json
+   dari pnw-firebase-rules-v83.zip). Ini memperbaiki PERMISSION_DENIED.
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v91" && git push
+4. Ctrl+Shift+R -> menu -> CastFlow. Cek: label v7.4, logo di tengah bar,
+   kartu tidak putih lagi, Kontrol Panel bisa di-scroll, tombol ⧉ melepas
+   pratinjau jadi jendela melayang.
