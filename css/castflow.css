@@ -26,7 +26,7 @@ body.yvStandalone {
      area pratinjau & celah panel yang masih tampak putih */
   --d-canvas: #141414;
   /* ═══ UBAH UKURAN LOGO CASTFLOW DI SINI (tinggi, px) ═══ */
-  --cf-logo-h: 38px;
+  --cf-logo-h: 200px;
   background-color: #262626 !important;
   background-image: linear-gradient(165deg, #232326 0%, #262626 45%, #2a2a2e 100%) !important;
   background-attachment: fixed;
