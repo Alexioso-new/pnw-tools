@@ -1,0 +1,26 @@
+============================================================
+PNW TOOLS v88 (label v7.1) — CASTFLOW TEMA HITAM → ABU-ABU
+============================================================
+
+ISI RILIS
+1. Tema latar CastFlow kini **hitam ke abu-abu berporos #101010**
+   (gradasi lembut #0a0a0c → #101010 → #1c1e24), menggantikan nuansa
+   navy — persis gaya netral ProPresenter. Panel/kartu memakai abu gelap
+   netral (#141519 / #1f222b / garis #2c2f39); aksen interaktif tetap
+   teal #1282A2 dari palet Anda.
+2. Semua isi v85–v87 tetap termasuk: Log Error, favicon, rebrand
+   CastFlow, pratinjau atas drag & drop + papan catur, i18n EN/ID,
+   library font 211, label 5 bagian, timeline pro.
+3. Versi: cache sw.js = pnw-tools-v88, label UI = v7.1.
+
+CATATAN: audit eksternal (React/Vite/PostgreSQL) sudah DIREVISI agar
+sesuai arsitektur kita — dokumen revisinya ada di Notion
+("CastFlow — Audit Revisi & Roadmap"). Stack kita tidak berubah.
+
+CARA PASANG (urutan WAJIB)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah (database.rules.json
+   dari pnw-firebase-rules-v83.zip). Ini memperbaiki PERMISSION_DENIED.
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v88" && git push
+4. Setelah deploy: Ctrl+Shift+R, buka menu -> CastFlow, cek latar
+   hitam→abu dan label v7.1.
