@@ -1,0 +1,34 @@
+============================================================
+PNW TOOLS v94 (label v7.7) — TATA LETAK WORKSPACE SESUAI MOCKUP ANDA
+============================================================
+
+ISI RILIS
+1. **TATA LETAK BARU mengikuti mockup LAYOUT CASTFLOW:**
+   - Kiri atas   : **MENU** (logo CastFlow besar + navigasi fitur)
+   - Kiri bawah  : **PLAYLIST** (rundown)
+   - Tengah atas : **PREVIEW** (kanvas pratinjau + kontrol rasio/pop-out)
+   - Tengah bawah: **LYRIC CONTROL / TIMELINE**
+   - Kanan penuh : **DESIGN PANEL** (pengaturan teks & latar)
+2. **SETIAP CELAH = SPLITTER (flexible workspace).** Seret garis pembatas
+   antar-panel untuk mengubah lebar kolom (kiri/kanan) maupun tinggi baris
+   (atas/bawah). Klik 2x pada pembatas untuk reset. Tata letak tersimpan.
+3. **TOMBOL LYRIC CONTROL <-> TIMELINE** di panel tengah-bawah: ganti
+   tampilan antara grid lirik dan editor timeline sesuka Anda.
+4. **LOGO CastFlow 200px** kini jadi hero besar di panel MENU (sesuai angka
+   optimal yang Anda sebut). Karena logonya lebar, ia tampil sebesar mungkin
+   mengisi lebar panel tanpa terpotong. Ukuran bisa diubah di
+   `css/castflow.css` -> variabel `--cf-logo-h`.
+5. Semua isi v85–v93 tetap termasuk (termasuk perbaikan bug pratinjau ⧉).
+
+CATATAN: pratinjau melayang (tombol ⧉) tetap berfungsi — saat dilepas,
+pratinjau jadi jendela melayang bebas dan sel PREVIEW menampilkan
+placeholder + tombol Dock untuk mengembalikannya.
+
+CARA PASANG (urutan WAJIB)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah (database.rules.json
+   dari pnw-firebase-rules-v83.zip).
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v94" && git push
+4. Ctrl+Shift+R -> menu -> CastFlow. Cek: label v7.7; susunan panel sesuai
+   mockup; seret garis pembatas untuk mengatur tata letak; tombol
+   Lyric/Timeline di panel tengah-bawah.

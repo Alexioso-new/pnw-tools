@@ -1,26 +1,28 @@
 /* PNW-FILE-GUIDE
-   js/castflow.js — lapisan CastFlow (v7.2). HANYA dimuat di castflow.html,
+   js/castflow.js — lapisan CastFlow (v7.7). HANYA dimuat di castflow.html,
    PALING AKHIR (setelah yv-timeline.js).
    Isi:
-   1. i18n dwibahasa — default ENGLISH, toggle EN/ID di bar atas.
-   2. Pratinjau ATAS: resizable tinggi + PILIHAN RASIO/RESOLUSI (fit, 16:9,
-      4:3, 1:1, 9:16) dengan letterbox, tersimpan di localStorage.
-   3. Drag & drop gambar/video ke pratinjau -> latar (IndexedDB -> setBg).
+   1. i18n dwibahasa (default English, toggle EN/ID).
+   2. Pratinjau: rasio/resolusi (fit/16:9/4:3/1:1/9:16/KUSTOM) dengan letterbox.
+   3. Drag & drop gambar/video ke pratinjau -> latar (IndexedDB).
    4. Library font besar + tambah font Google manual.
-   5. SPLIT PANES — semua kolom panel bisa di-resize (splitter drag,
-      double-click reset, transisi mulus, tersimpan) + drawer timeline
-      bisa diubah tingginya dari tepi atasnya.
+   5. WORKSPACE 2D (mockup): MENU | PREVIEW | DESIGN / PLAYLIST | LYRIC|TIMELINE
+      — semua celah = splitter resizable (kolom + baris), tersimpan.
+   6. Toggle Lyric Control <-> Timeline di sel tengah-bawah.
+   7. Pratinjau melayang (pop-out) drag + resize bebas + penyembuhan diri.
+   8. Drawer timeline bisa diubah tingginya (mode overlay).
 */
 (function () {
   "use strict";
 
-  var CF_VERSION = "v7.6";
+  var CF_VERSION = "v7.7";
   var LANG_KEY = "pnwCastflowLang";
-  var PREV_H_KEY = "pnwCastflowPrevH";
   var FONTS_KEY = "pnwCastflowFonts.v1";
-  var COLS_KEY = "pnwCastflowCols.v1";
+  var GRID_KEY = "pnwCastflowGrid.v1";
   var RATIO_KEY = "pnwCastflowPrevRatio";
   var TLH_KEY = "pnwCastflowTlH";
+  var FLOAT_KEY = "pnwCastflowFloat.v1";
+  var TL_VIEW_KEY = "pnwCastflowLyricView";
 
   function qa(s, r) {
     return Array.prototype.slice.call((r || document).querySelectorAll(s));
@@ -99,10 +101,17 @@
     "Contoh teks lirik": "Sample lyric text",
     "Seret gambar / video / animasi ke sini untuk latar": "Drag image / video / animation here for background",
     "Lepaskan media untuk latar": "Drop media for background",
-    "Tarik untuk mengubah tinggi pratinjau": "Drag to resize preview",
     "Resolusi pratinjau": "Preview resolution",
     "Pas ke layar": "Fit to screen",
-    "Seret untuk mengubah lebar · klik 2x untuk reset": "Drag to resize · double-click to reset",
+    "Kustom…": "Custom…",
+    "Lebar": "Width",
+    "Tinggi": "Height",
+    "Terapkan": "Apply",
+    "Lepas / sematkan pratinjau": "Pop out / dock preview",
+    "Pratinjau sedang melayang — tekan ⧉ atau ⤓ Dock untuk mengembalikan.":
+      "Preview is floating — press ⧉ or ⤓ Dock to bring it back.",
+    "Seret untuk mengubah tata letak · klik 2x untuk reset":
+      "Drag to resize layout · double-click to reset",
     "Seret untuk mengubah tinggi timeline": "Drag to resize timeline height",
 
     "Fitur": "Features",
@@ -269,26 +278,10 @@
     }, 1500);
   }
 
-  /* ================= 2. pratinjau atas: tinggi + rasio ================= */
-  var SIZES = { s: 120, m: 170, l: 260 }; /* v7.3: default lebih kecil */
+  /* ================= 2. pratinjau: rasio + resolusi kustom ================= */
   var RATIOS = { fit: 0, "16:9": 16 / 9, "4:3": 4 / 3, "1:1": 1, "9:16": 9 / 16 };
   function stage() {
     return document.getElementById("cfPrevStage");
-  }
-  function setPrevH(h, persist) {
-    var st = stage();
-    if (!st) return;
-    h = Math.max(110, Math.min(560, Math.round(h)));
-    st.style.height = h + "px";
-    qa(".cfPrevSize").forEach(function (b) {
-      var v = SIZES[b.getAttribute("data-cfsize")];
-      b.classList.toggle("on", Math.abs(v - h) < 5);
-    });
-    if (persist !== false)
-      try {
-        localStorage.setItem(PREV_H_KEY, String(h));
-      } catch (e) {}
-    fitPreview();
   }
   function curRatio() {
     try {
@@ -297,7 +290,6 @@
       return "fit";
     }
   }
-  /* v7.4: resolusi kustom W×H */
   function customRes() {
     try {
       var v = JSON.parse(localStorage.getItem("pnwCastflowCustomRes") || "null");
@@ -312,7 +304,7 @@
     }
     return RATIOS[curRatio()] || 0;
   }
-  /* pasang rasio pratinjau: letterbox di tengah stage (fit = penuh) */
+  /* letterbox rasio di tengah stage (fit = penuh) */
   function fitPreview() {
     var st = stage();
     var pv = document.getElementById("projPreview");
@@ -357,7 +349,6 @@
       if (cr) cr.hidden = sel.value !== "custom";
       fitPreview();
     });
-    /* v7.4: resolusi kustom */
     var cr0 = document.getElementById("cfCustomRes");
     if (cr0) cr0.hidden = sel.value !== "custom";
     var ap = document.getElementById("cfResApply");
@@ -377,38 +368,6 @@
       var st = stage();
       if (st) new ResizeObserver(function () { fitPreview(); }).observe(st);
     }
-  }
-  function initResize() {
-    var rz = document.getElementById("cfPrevResizer");
-    if (!rz || rz.__cfBound) return;
-    rz.__cfBound = true;
-    rz.addEventListener("pointerdown", function (ev) {
-      ev.preventDefault();
-      var st = stage();
-      if (!st) return;
-      var y0 = ev.clientY;
-      var h0 = st.getBoundingClientRect().height;
-      function mv(e2) {
-        setPrevH(h0 + (e2.clientY - y0), false);
-      }
-      function up(e2) {
-        setPrevH(h0 + (e2.clientY - y0), true);
-        document.removeEventListener("pointermove", mv);
-        document.removeEventListener("pointerup", up);
-      }
-      document.addEventListener("pointermove", mv);
-      document.addEventListener("pointerup", up);
-    });
-    qa(".cfPrevSize").forEach(function (b) {
-      b.addEventListener("click", function () {
-        setPrevH(SIZES[b.getAttribute("data-cfsize")] || 220, true);
-      });
-    });
-    var saved = 0;
-    try {
-      saved = parseInt(localStorage.getItem(PREV_H_KEY) || "0", 10) || 0;
-    } catch (e) {}
-    setPrevH(saved || SIZES.m, !saved);
   }
 
   /* ================= 3. drag & drop media -> latar ================= */
@@ -475,7 +434,6 @@
   }
 
   /* ================= 3b. pratinjau melayang (pop-out bebas) ================= */
-  var FLOAT_KEY = "pnwCastflowFloat.v1";
   function floatState() {
     try {
       return JSON.parse(localStorage.getItem(FLOAT_KEY) || "null") || {};
@@ -507,7 +465,6 @@
       '<div class="cfFloatBody" id="cfFloatBody"></div>' +
       '<div class="cfFloatResize" id="cfFloatResize"></div>';
     document.body.appendChild(w);
-    /* geser jendela dari bar judul */
     var bar = document.getElementById("cfFloatBar");
     bar.addEventListener("pointerdown", function (ev) {
       if (ev.target && ev.target.tagName === "BUTTON") return;
@@ -533,7 +490,6 @@
       document.addEventListener("pointermove", mv);
       document.addEventListener("pointerup", up);
     });
-    /* resize bebas dari pojok kanan bawah */
     var rz = document.getElementById("cfFloatResize");
     rz.addEventListener("pointerdown", function (ev) {
       ev.preventDefault();
@@ -569,8 +525,8 @@
       buildFloat();
       var w = document.getElementById("cfFloatWin");
       var st = stage();
-      var wrap = document.getElementById("cfPrevWrap");
-      if (!w || !st || !wrap) return;
+      var cell = document.querySelector(".cfC-preview");
+      if (!w || !st || !cell) return;
       document.getElementById("cfFloatBody").appendChild(st);
       st.style.height = "100%";
       var s2 = floatState();
@@ -580,14 +536,12 @@
       w.style.top = (s2.y != null ? s2.y : 70) + "px";
       w.style.width = (s2.w || defW) + "px";
       w.style.height = (s2.h || defH) + "px";
-      wrap.classList.add("popped");
+      cell.classList.add("popped");
       w.hidden = false;
       s2.popped = true;
       saveFloat(s2);
       fitPreview();
-      /* v7.5: penyembuhan diri — kalau jendela ternyata di luar layar atau
-         berukuran nol, langsung kembalikan ke strip (jangan biarkan pengguna
-         kehilangan pratinjau). */
+      /* penyembuhan diri: bila jendela di luar layar / nol, kembalikan */
       var r = w.getBoundingClientRect();
       var onScreen =
         r.width > 10 && r.height > 10 && r.left < window.innerWidth &&
@@ -599,19 +553,14 @@
     safe("dock", function () {
       var w = document.getElementById("cfFloatWin");
       var st = stage();
-      var wrap = document.getElementById("cfPrevWrap");
-      var rz = document.getElementById("cfPrevResizer");
-      if (!w || !st || !wrap) return;
-      if (rz) wrap.insertBefore(st, rz);
-      else wrap.appendChild(st);
+      var cell = document.querySelector(".cfC-preview");
+      if (!w || !st || !cell) return;
+      var empty = cell.querySelector(".cfPrevEmpty");
+      if (empty) cell.insertBefore(st, empty);
+      else cell.appendChild(st);
       st.style.height = "";
-      var saved = 0;
-      try {
-        saved = parseInt(localStorage.getItem(PREV_H_KEY) || "0", 10) || 0;
-      } catch (e) {}
-      setPrevH(saved || SIZES.m, false);
       w.hidden = true;
-      wrap.classList.remove("popped");
+      cell.classList.remove("popped");
       var s2 = floatState();
       s2.popped = false;
       saveFloat(s2);
@@ -628,7 +577,7 @@
         else popPreview();
       };
     }
-    if (floatState().popped) popPreview();
+    /* restore state melayang dilakukan dari buildWorkspace (setelah sel ada) */
   }
 
   /* ================= 4. library font besar ================= */
@@ -745,142 +694,283 @@
     field.appendChild(row);
   }
 
-  /* ================= 5. SPLIT PANES (kolom resizable) ================= */
-  /* Susunan grid: rail | L | CENTER(1fr) | R. Splitter di antara kolom;
-     lebar kolom tetap (px) kecuali CENTER yang selalu fleksibel. */
-  function gridPanes() {
-    var g = document.querySelector(".projGrid");
-    if (!g) return null;
-    var kids = qa(".projPane", g).filter(function (el2) {
-      return el2.parentNode === g;
-    });
-    return kids.length >= 3 ? { g: g, kids: kids } : null;
-  }
-  function defCols(n) {
-    return n >= 4 ? [148, 224, 336] : [224, 336];
-  }
-  function colClamp(n, i, v) {
-    var mins = n >= 4 ? [96, 170, 260] : [170, 260];
-    var maxs = n >= 4 ? [220, 340, 480] : [340, 480];
-    return Math.max(mins[i] || 120, Math.min(maxs[i] || 520, v));
-  }
-  function loadCols(n) {
+  /* ================= 5. WORKSPACE 2D (mockup) ================= */
+  function loadGrid() {
     try {
-      var v = JSON.parse(localStorage.getItem(COLS_KEY) || "null");
-      if (v && Array.isArray(v.w) && v.n === n) return v.w;
+      var v = JSON.parse(localStorage.getItem(GRID_KEY) || "null");
+      if (v && v.l > 0 && v.r > 0 && v.t > 0) return v;
     } catch (e) {}
-    return defCols(n);
+    return { l: 300, r: 330, t: 0.46 };
   }
-  function saveCols(n, w) {
+  function saveGrid(v) {
     try {
-      localStorage.setItem(COLS_KEY, JSON.stringify({ n: n, w: w }));
+      localStorage.setItem(GRID_KEY, JSON.stringify(v));
     } catch (e) {}
   }
-  /* indeks widths[] melewatkan kolom CENTER (kedua dari kanan) */
-  function wIdx(n, paneIdx) {
-    return paneIdx < n - 2 ? paneIdx : paneIdx - 1;
-  }
-  function applyCols(widths, smooth) {
-    var pk = gridPanes();
-    if (!pk) return;
-    var g = pk.g;
-    var n = pk.kids.length;
-    if (window.innerWidth <= 900) return; /* mobile: grid 1 kolom bawaan */
-    var parts = [];
-    for (var i = 0; i < n; i++) {
-      parts.push(i === n - 2 ? "minmax(0,1fr)" : colClamp(n, wIdx(n, i), widths[wIdx(n, i)]) + "px");
-      if (i < n - 1) parts.push("7px"); /* celah antar panel (splitter tak terlihat) */
-    }
+  function applyGrid(state, smooth) {
+    var g = document.querySelector(".projGrid.cfWork");
+    if (!g || window.innerWidth <= 900) return;
+    var avail = g.clientHeight || 600;
+    var tPx = Math.max(140, Math.min(avail - 140, Math.round(avail * state.t)));
+    var cols = Math.round(state.l) + "px 7px minmax(0,1fr) 7px " + Math.round(state.r) + "px";
+    var rows = tPx + "px 7px minmax(0,1fr)";
     if (smooth) {
       g.classList.add("cfSmooth");
       setTimeout(function () {
         g.classList.remove("cfSmooth");
       }, 240);
     }
-    /* inline + important mengalahkan grid-template-columns !important di design.css */
-    g.style.setProperty("grid-template-columns", parts.join(" "), "important");
-    g.style.setProperty("gap", "0", "important");
+    g.style.setProperty("grid-template-columns", cols, "important");
+    g.style.setProperty("grid-template-rows", rows, "important");
   }
-  function buildSplitters() {
-    var pk = gridPanes();
-    if (!pk || pk.g.__cfSplit) return;
-    var g = pk.g;
-    var kids = pk.kids;
-    var n = kids.length;
-    pk.g.__cfSplit = true;
-    for (var i = 0; i < n - 1; i++) {
-      var sp = document.createElement("div");
-      sp.className = "cfSplitter";
-      sp.setAttribute("data-sp", String(i));
-      sp.title = "Seret untuk mengubah lebar · klik 2x untuk reset";
-      g.insertBefore(sp, kids[i + 1]);
-    }
-    var widths = loadCols(n);
-    applyCols(widths, false);
-    qa(".cfSplitter", g).forEach(function (sp) {
-      sp.addEventListener("pointerdown", function (ev) {
+  function clampN(v, a, b) {
+    return Math.max(a, Math.min(b, v));
+  }
+  function wireSplitters(state) {
+    function bind(id, horizontal, onMove) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("pointerdown", function (ev) {
         ev.preventDefault();
-        var idx = parseInt(sp.getAttribute("data-sp"), 10);
+        el.classList.add("dragging");
+        document.body.classList.add(horizontal ? "cfRowResize" : "cfColResize");
         var x0 = ev.clientX;
-        var pk2 = gridPanes();
-        if (!pk2) return;
-        var n2 = pk2.kids.length;
-        var start = loadCols(n2);
-        sp.classList.add("dragging");
-        document.body.classList.add("cfColResize");
+        var y0 = ev.clientY;
+        var g = document.querySelector(".projGrid.cfWork");
+        var start = { l: state.l, r: state.r, t: state.t };
+        var avail = g ? g.clientHeight || 600 : 600;
         function mv(e2) {
-          var dx = e2.clientX - x0;
-          var w2 = start.slice();
-          if (idx === n2 - 2) {
-            /* splitter sebelum kolom terakhir: atur kolom KANAN (terbalik) */
-            var ri = n2 - 2; /* indeks widths untuk pane terakhir */
-            w2[ri] = colClamp(n2, ri, start[ri] - dx);
-          } else {
-            var fi = idx < n2 - 2 ? idx : idx - 1;
-            w2[fi] = colClamp(n2, fi, start[fi] + dx);
-          }
-          widths = w2;
-          applyCols(w2, false);
+          onMove(e2.clientX - x0, e2.clientY - y0, start, avail);
+          applyGrid(state, false);
         }
         function up() {
           document.removeEventListener("pointermove", mv);
           document.removeEventListener("pointerup", up);
-          sp.classList.remove("dragging");
+          el.classList.remove("dragging");
           document.body.classList.remove("cfColResize");
-          saveCols(n2, widths);
+          document.body.classList.remove("cfRowResize");
+          saveGrid(state);
         }
         document.addEventListener("pointermove", mv);
         document.addEventListener("pointerup", up);
       });
-      sp.addEventListener("dblclick", function () {
-        var pk3 = gridPanes();
-        if (!pk3) return;
-        widths = defCols(pk3.kids.length);
-        applyCols(widths, true);
-        saveCols(pk3.kids.length, widths);
+      el.addEventListener("dblclick", function () {
+        var def = loadGridDefault();
+        state.l = def.l;
+        state.r = def.r;
+        state.t = def.t;
+        applyGrid(state, true);
+        saveGrid(state);
       });
+    }
+    function loadGridDefault() {
+      return { l: 300, r: 330, t: 0.46 };
+    }
+    /* kolom kiri (vsp1): drag kanan -> kiri lebih lebar */
+    bind("cfSpV1", false, function (dx, dy, s) {
+      state.l = clampN(s.l + dx, 200, 480);
+    });
+    /* kolom kanan (vsp2): drag -> kanan (terbalik) */
+    bind("cfSpV2", false, function (dx, dy, s) {
+      state.r = clampN(s.r - dx, 240, 540);
+    });
+    /* baris atas (hsp kiri & tengah): ubah tinggi pratinjau/menu */
+    function rowMove(dy, s, avail) {
+      state.t = clampN((s.t * avail + dy) / avail, 0.18, 0.72);
+    }
+    bind("cfSpHL", true, function (dx, dy, s, avail) {
+      rowMove(dy, s, avail);
+    });
+    bind("cfSpHC", true, function (dx, dy, s, avail) {
+      rowMove(dy, s, avail);
     });
   }
-  function initSplitPanes() {
+
+  /* toggle Lyric Control <-> Timeline */
+  function currentLyricView() {
+    try {
+      return localStorage.getItem(TL_VIEW_KEY) === "timeline" ? "timeline" : "lyric";
+    } catch (e) {
+      return "lyric";
+    }
+  }
+  function dockTimelineInline(on) {
+    var d = document.getElementById("tlDrawer");
+    var cell = document.querySelector(".cfC-lyric");
+    if (on) {
+      if (!d && window.PNWTimeline && PNWTimeline.open) {
+        try { PNWTimeline.open(); } catch (e) {}
+        d = document.getElementById("tlDrawer");
+      }
+      if (!d || !cell) return;
+      d.classList.add("cfTlInline");
+      cell.appendChild(d);
+      if (window.PNWTimeline && PNWTimeline.open && !d.classList.contains("on")) {
+        try { PNWTimeline.open(); } catch (e) {}
+      }
+    } else if (d) {
+      d.classList.remove("cfTlInline");
+      var host = document.getElementById("projPage") || document.body;
+      host.appendChild(d);
+      if (window.PNWTimeline && PNWTimeline.close) {
+        try { PNWTimeline.close(); } catch (e) {}
+      }
+    }
+  }
+  function setLyricView(view) {
+    var cell = document.querySelector(".cfC-lyric");
+    if (!cell) return;
+    var isTl = view === "timeline";
+    cell.classList.toggle("showTl", isTl);
+    try {
+      localStorage.setItem(TL_VIEW_KEY, isTl ? "timeline" : "lyric");
+    } catch (e) {}
+    qa(".cfViewToggle [data-cfview]", cell).forEach(function (b) {
+      b.classList.toggle("on", b.getAttribute("data-cfview") === (isTl ? "timeline" : "lyric"));
+    });
+    dockTimelineInline(isTl);
+  }
+  function addLyricToggle(cLyr, paneC) {
+    var head = paneC.querySelector(".projPaneHead");
+    if (!head) {
+      /* pane katalog tidak punya .projPaneHead — buat toolbar toggle sendiri */
+      head = document.createElement("div");
+      head.className = "cfCellHead";
+      head.style.cssText = "display:flex;align-items:center;gap:8px;";
+      var lbl = document.createElement("span");
+      lbl.textContent = "Lyric Control / Timeline";
+      head.appendChild(lbl);
+      paneC.insertBefore(head, paneC.firstChild);
+    }
+    var t = document.createElement("span");
+    t.className = "cfViewToggle";
+    t.innerHTML =
+      '<button type="button" data-cfview="lyric">🎬 Lyric</button>' +
+      '<button type="button" data-cfview="timeline">⏱ Timeline</button>';
+    head.appendChild(t);
+    qa("[data-cfview]", t).forEach(function (b) {
+      b.onclick = function () {
+        setLyricView(b.getAttribute("data-cfview"));
+      };
+    });
+  }
+
+  function doBuildWorkspace() {
+    var g = document.querySelector(".projGrid");
+    var rail = document.getElementById("projRail");
+    var L = document.querySelector(".projPaneL");
+    var C = document.querySelector(".projPaneC");
+    var R = document.querySelector(".projPaneR");
+    var wrap = document.getElementById("cfPrevWrap");
+    if (!g || !rail || !L || !C || !R || !wrap) return false;
+    if (g.__cfWork) return true;
+    g.__cfWork = true;
+
+    var head = wrap.querySelector(".cfPrevHead");
+    var stage = document.getElementById("cfPrevStage");
+
+    g.classList.add("cfWork");
+
+    function cell(cls) {
+      var d = document.createElement("div");
+      d.className = "cfCell " + cls;
+      return d;
+    }
+    var cMenu = cell("cfC-menu");
+    var cPlay = cell("cfC-playlist");
+    var cPrev = cell("cfC-preview");
+    var cLyr = cell("cfC-lyric");
+    var cDes = cell("cfC-design");
+
+    function sp(cls, id, col, row) {
+      var d = document.createElement("div");
+      d.className = "cfSp " + cls;
+      d.id = id;
+      d.title = "Seret untuk mengubah tata letak · klik 2x untuk reset";
+      d.style.gridColumn = col;
+      d.style.gridRow = row;
+      return d;
+    }
+    var vsp1 = sp("cfSpV", "cfSpV1", "2", "1 / 4");
+    var vsp2 = sp("cfSpV", "cfSpV2", "4", "1 / 4");
+    var hspL = sp("cfSpH", "cfSpHL", "1", "2");
+    var hspC = sp("cfSpH", "cfSpHC", "3", "2");
+
+    /* kosongkan grid lalu susun ulang (kita pegang referensi pane) */
+    g.innerHTML = "";
+    [cMenu, vsp1, cPrev, vsp2, cDes, hspL, hspC, cPlay, cLyr].forEach(function (el) {
+      g.appendChild(el);
+    });
+
+    /* MENU: logo hero + rail nav */
+    var menuBody = document.createElement("div");
+    menuBody.className = "cfCellBody";
+    var hero = document.createElement("img");
+    hero.className = "cfHeroLogo";
+    hero.src = "./castflow-logo-light.svg";
+    hero.alt = "CastFlow";
+    menuBody.appendChild(hero);
+    menuBody.appendChild(rail);
+    cMenu.appendChild(menuBody);
+
+    /* PREVIEW: head kontrol + stage + placeholder melayang */
+    if (head) {
+      qa(".cfPrevSize", head).forEach(function (b) {
+        b.remove();
+      });
+      cPrev.appendChild(head);
+    }
+    if (stage) cPrev.appendChild(stage);
+    var empty = document.createElement("div");
+    empty.className = "cfPrevEmpty";
+    empty.textContent = "Preview is floating — press ⧉ or ⤓ Dock to bring it back.";
+    cPrev.appendChild(empty);
+
+    /* PLAYLIST / LYRIC / DESIGN: pindahkan pane, isi penuh sel */
+    var fill = ";flex:1 1 auto;min-height:0;border:0;border-radius:0;background:transparent;";
+    L.style.cssText += fill;
+    C.style.cssText += fill;
+    R.style.cssText += fill;
+    cPlay.appendChild(L);
+    cLyr.appendChild(C);
+    addLyricToggle(cLyr, C);
+    cDes.appendChild(R);
+
+    /* buang strip lama yang kini kosong */
+    if (wrap && wrap.parentNode) wrap.parentNode.removeChild(wrap);
+
+    /* splitter + state */
+    var state = loadGrid();
+    applyGrid(state, false);
+    wireSplitters(state);
+
+    /* pulihkan tampilan lyric/timeline + pratinjau melayang */
+    setLyricView(currentLyricView());
+    safe("restoreFloat", function () {
+      if (floatState().popped) popPreview();
+    });
+
+    return true;
+  }
+  function buildWorkspace() {
     var tries = 0;
     var iv = setInterval(function () {
       tries++;
-      /* tunggu rail disisipkan projector.js (biasanya <100ms setelah open) */
-      var pk = gridPanes();
-      if (pk && pk.kids.length >= 3 && !pk.g.__cfSplit) buildSplitters();
-      if ((pk && pk.g.__cfSplit) || tries > 60) clearInterval(iv);
+      var done = false;
+      safe("buildWorkspace", function () {
+        done = doBuildWorkspace();
+      });
+      if (done || tries > 80) clearInterval(iv);
     }, 250);
     window.addEventListener("resize", function () {
-      safe("splitResize", function () {
-        var g = document.querySelector(".projGrid");
-        if (!g || !g.__cfSplit) return;
-        if (window.innerWidth <= 900) g.style.removeProperty("grid-template-columns");
-        else applyCols(loadCols(gridPanes().kids.length), false);
+      safe("wsResize", function () {
+        var g = document.querySelector(".projGrid.cfWork");
+        if (g) applyGrid(loadGrid(), false);
       });
     });
   }
 
-  /* ================= 6. drawer timeline: tinggi resizable ================= */
+  /* ================= 6. drawer timeline: resizer (mode overlay) ================= */
   function initTlResizer() {
     var tries = 0;
     var iv = setInterval(function () {
@@ -910,10 +1000,7 @@
             document.removeEventListener("pointermove", mv);
             document.removeEventListener("pointerup", up);
             try {
-              localStorage.setItem(
-                TLH_KEY,
-                String(Math.round(d.getBoundingClientRect().height)),
-              );
+              localStorage.setItem(TLH_KEY, String(Math.round(d.getBoundingClientRect().height)));
             } catch (e) {}
           }
           document.addEventListener("pointermove", mv);
@@ -929,13 +1016,12 @@
   function boot() {
     safe("fonts", extendFonts);
     safe("lang", initLang);
-    safe("resize", initResize);
     safe("ratio", initRatio);
     safe("drop", initDrop);
     safe("customFont", initCustomFont);
-    safe("splitPanes", initSplitPanes);
-    safe("tlResizer", initTlResizer);
+    safe("workspace", buildWorkspace);
     safe("float", initFloat);
+    safe("tlResizer", initTlResizer);
   }
   window.CastFlow = {
     version: CF_VERSION,
@@ -949,10 +1035,6 @@
     applyLang: applyLang,
     translate: translateOne,
     addCustomFont: addCustomFont,
-    setPreviewHeight: setPrevH,
-    popPreview: popPreview,
-    dockPreview: dockPreview,
-    isPopped: isPopped,
     setRatio: function (r) {
       try {
         localStorage.setItem(RATIO_KEY, r);
@@ -961,11 +1043,14 @@
       if (sel) sel.value = r;
       fitPreview();
     },
-    resetColumns: function () {
-      var pk = gridPanes();
-      if (!pk) return;
-      applyCols(defCols(pk.kids.length), true);
-      saveCols(pk.kids.length, defCols(pk.kids.length));
+    setLyricView: setLyricView,
+    popPreview: popPreview,
+    dockPreview: dockPreview,
+    isPopped: isPopped,
+    resetLayout: function () {
+      var def = { l: 300, r: 330, t: 0.46 };
+      applyGrid(def, true);
+      saveGrid(def);
     },
   };
   if (document.readyState === "loading")

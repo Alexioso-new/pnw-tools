@@ -1,11 +1,13 @@
 /* PNW-FILE-GUIDE
-   css/castflow.css — tema CastFlow (v7.4): abu netral #262626, panel melayang
-   dengan celah + sudut membulat, splitter tak terlihat, pratinjau terpusat /
-   MELAYANG, TikTok Sans −20%, sisa latar putih -> #141414.
+   css/castflow.css — tema CastFlow (v7.7): WORKSPACE 2D ala mockup pengguna.
+   Susunan:  [MENU | PREVIEW | DESIGN]
+             [PLAYLIST | LYRIC/TIMELINE | (design penuh)]
+   Semua celah = splitter resizable (flexible workspace). Logo hero 200px di
+   panel MENU. Tema abu #262626 + hitam #141414, TikTok Sans, sudut membulat.
    HANYA dimuat di castflow.html, PALING AKHIR (menang cascade).
 */
 
-/* ---------- token + tipografi (semua teks −20% dari v7.2) ---------- */
+/* ---------- token + tipografi ---------- */
 body.yvStandalone {
   --cf-bg: #262626;
   --cf-panel: #232326;
@@ -20,12 +22,10 @@ body.yvStandalone {
   --cf-dim: #a8adb8;
   --cf-dim2: #7d8494;
   --cf-danger: #e05d5d;
-  /* v7.5: hilangkan garis terang warisan (#E2E8F0) — hanya di halaman ini */
+  /* var lama yang sempat bikin putih/terang — dioverride gelap */
   --d-line: #141414;
-  /* v7.6: var latar lama default #FEFCFB (nyaris putih) -> gelap; inilah sumber
-     area pratinjau & celah panel yang masih tampak putih */
   --d-canvas: #141414;
-  /* ═══ UBAH UKURAN LOGO CASTFLOW DI SINI (tinggi, px) ═══ */
+  /* ═══ UBAH UKURAN LOGO CASTFLOW DI SINI (px) ═══ */
   --cf-logo-h: 200px;
   background-color: #262626 !important;
   background-image: linear-gradient(165deg, #232326 0%, #262626 45%, #2a2a2e 100%) !important;
@@ -50,23 +50,12 @@ body.yvStandalone .yvBar {
   font-size: 10.5px;
 }
 
-/* ---------- bar atas ---------- */
+/* ---------- bar atas (kontrol ramping; logo pindah ke panel MENU) ---------- */
 body.yvStandalone .yvBar {
   background: #232326;
   border-bottom: 1px solid #3a3a40;
   color: #eceef2;
-  position: relative; /* v7.4: untuk logo terpusat */
-}
-/* wordmark SVG — v7.4: di TENGAH bar, selaras dengan baris tombol */
-body.yvStandalone .yvBarBrand {
-  height: var(--cf-logo-h, 38px); /* ukuran dikontrol --cf-logo-h di blok atas */
-  width: auto;
-  object-fit: contain;
-  display: block;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
 }
 body.yvStandalone .yvBarBtn {
   background: #1e1e21;
@@ -80,8 +69,6 @@ body.yvStandalone .yvBarBtn:hover {
   border-color: #1282a2;
 }
 body.yvStandalone .yvBarNote { color: #a8adb8; font-size: 9.5px; }
-
-/* header panel lama (CastFlow / PRESENTER BETA / EasyWorship… + ✕) disembunyikan */
 body.yvStandalone .projTop { display: none !important; }
 
 /* segmented EN/ID */
@@ -106,64 +93,196 @@ body.yvStandalone .projTop { display: none !important; }
   color: #eaf7fb;
 }
 
-/* ---------- kerangka panel: celah + sudut membulat ---------- */
+/* ---------- kerangka halaman ---------- */
 body.yvStandalone .projPage.open {
   display: flex;
   flex-direction: column;
-  /* v7.6: paksa dasar halaman gelap (var(--d-canvas) lama = #FEFCFB putih) */
   background: #262626 !important;
 }
-body.yvStandalone .projGrid {
+
+/* ============================================================
+   WORKSPACE 2D (mockup): grid 3 kolom × 2 baris + splitter
+   kolom: [kiri] 7px [tengah] 7px [kanan]
+   baris : [atas] 7px [bawah]
+   ============================================================ */
+body.yvStandalone .projGrid.cfWork {
   flex: 1 1 auto;
   min-height: 0;
-  padding: 0 8px 8px;
+  display: grid;
+  padding: 8px;
+  gap: 0;
+  /* kolom & baris diisi inline oleh JS (tersimpan) — nilai bawaan di bawah */
+  grid-template-columns: 300px 7px minmax(0, 1fr) 7px 330px;
+  grid-template-rows: minmax(150px, 46%) 7px minmax(0, 1fr);
 }
-body.yvStandalone .projGrid.cfSmooth {
-  transition: grid-template-columns 0.18s ease;
+body.yvStandalone .projGrid.cfWork.cfSmooth {
+  transition: grid-template-columns 0.18s ease, grid-template-rows 0.18s ease;
 }
 
-/* ---------- SPLITTER TAK TERLIHAT (hit-zone saja) ---------- */
-.cfSplitter {
+/* sel panel */
+.cfCell {
   position: relative;
-  cursor: col-resize;
+  min-width: 0;
+  min-height: 0;
+  background: #232326;
+  border: 1px solid #2e2e33;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.cfC-menu    { grid-column: 1; grid-row: 1; }
+.cfC-playlist{ grid-column: 1; grid-row: 3; }
+.cfC-preview { grid-column: 3; grid-row: 1; background: #141414; }
+.cfC-lyric   { grid-column: 3; grid-row: 3; }
+.cfC-design  { grid-column: 5; grid-row: 1 / 4; }
+
+/* label judul kecil tiap sel (ala mockup) */
+.cfCell > .cfCellHead {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid #3a3a40;
+  color: #a8adb8;
+  font: 800 9px/1 inherit;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.cfCell > .cfCellBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- sel MENU: logo hero + navigasi ---------- */
+.cfC-menu .cfCellBody { align-items: center; padding: 10px; gap: 10px; }
+.cfHeroLogo {
+  display: block;
+  height: var(--cf-logo-h, 200px);
+  max-height: 100%;
+  max-width: 100%;
+  width: auto;
+  object-fit: contain;
+}
+.cfC-menu .projRail {
+  border: 0;
+  background: transparent;
+  width: 100%;
+  overflow: auto;
+}
+
+/* ---------- sel PREVIEW ---------- */
+.cfC-preview .cfPrevHead {
+  flex: 0 0 auto;
+  margin: 0;
+  max-width: none;
+  flex-wrap: wrap;
+}
+.cfC-preview .cfPrevStage {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto !important; /* mengisi sel; tinggi diatur splitter baris */
+  max-width: none;
+  margin: 8px;
+  border-radius: 10px;
+}
+/* placeholder saat pratinjau melayang */
+.cfPrevEmpty {
+  flex: 1 1 auto;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: #7d8494;
+  font-size: 10px;
+  text-align: center;
+  padding: 12px;
+}
+.cfC-preview.popped .cfPrevStage { display: none; }
+.cfC-preview.popped .cfPrevEmpty { display: flex; }
+
+/* ---------- sel LYRIC / TIMELINE + toggle ---------- */
+.cfC-lyric .projPaneC { border: 0; border-radius: 0; background: transparent; flex: 1 1 auto; min-height: 0; }
+.cfC-lyric.showTl .projPaneC { display: none !important; }
+.cfViewToggle {
+  margin-left: auto;
+  display: inline-flex;
+  border: 1px solid #3a3a40;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.cfViewToggle button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #a8adb8;
+  font: 700 9px/1 inherit;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.cfViewToggle button.on {
+  background: #1282a2;
+  color: #eaf7fb;
+}
+
+/* timeline didock inline ke dalam sel lyric */
+.cfTlInline {
+  position: relative !important;
+  inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  height: 100% !important;
+  z-index: 1 !important;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+.cfTlInline.on { display: flex !important; }
+.cfTlInline .cfTlResizer { display: none !important; }
+
+/* ---------- sel DESIGN (kanan, penuh) ---------- */
+.cfC-design .projPaneR { border: 0; border-radius: 0; background: transparent; flex: 1 1 auto; min-height: 0; }
+
+/* ---------- SPLITTER (tak terlihat; celah = tanda bisa resize) ---------- */
+.cfSp {
   background: transparent;
   z-index: 15;
   touch-action: none;
+  position: relative;
 }
-.cfSplitter::after {
+.cfSpV { cursor: col-resize; }
+.cfSpH { cursor: row-resize; }
+.cfSp::after {
   content: "";
   position: absolute;
-  top: 12%;
-  bottom: 12%;
-  left: 3px;
-  width: 1px;
   background: transparent;
   transition: background 0.15s ease;
 }
-.cfSplitter:hover::after,
-.cfSplitter.dragging::after {
-  left: 2px;
-  width: 3px;
-  background: #1282a2;
-}
+.cfSpV::after { top: 12%; bottom: 12%; left: 3px; width: 1px; }
+.cfSpH::after { left: 12%; right: 12%; top: 3px; height: 1px; }
+.cfSp:hover::after, .cfSp.dragging::after { background: #1282a2; }
+.cfSpV:hover::after, .cfSpV.dragging::after { left: 2px; width: 3px; }
+.cfSpH:hover::after, .cfSpH.dragging::after { top: 2px; height: 3px; }
 body.cfColResize, body.cfColResize * { cursor: col-resize !important; }
-body.cfColResize { user-select: none; }
+body.cfRowResize, body.cfRowResize * { cursor: row-resize !important; }
+body.cfColResize, body.cfRowResize { user-select: none; }
 
-/* ---------- strip PRATINJAU: terpusat ---------- */
-body.yvStandalone .cfPrevWrap {
-  flex: 0 0 auto;
-  background: #141414; /* v7.6: zona pratinjau hitam */
-  border: 0;
-  border-bottom: 1px solid #2e2e33;
-  padding: 8px 8px 6px;
-}
+/* ---------- strip lama disembunyikan (kontennya dipindah ke sel) ---------- */
+#cfPrevWrap { display: none !important; }
+
+/* ---------- kontrol pratinjau (dipakai di sel preview) ---------- */
 .cfPrevHead {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 auto 6px;
-  max-width: 880px;
-  flex-wrap: wrap;
+  padding: 6px 10px;
 }
 .cfPrevTitle {
   font: 800 9px/1 inherit;
@@ -184,11 +303,7 @@ body.yvStandalone .cfPrevWrap {
   font: 700 9px/1 inherit;
   cursor: pointer;
 }
-.cfPrevSize.on {
-  background: #1282a2;
-  border-color: #1282a2;
-  color: #eaf7fb;
-}
+.cfPrevSize.on { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
 .cfPrevRatio {
   background: #1e1e21;
   border: 1px solid #3a3a40;
@@ -200,13 +315,10 @@ body.yvStandalone .cfPrevWrap {
 }
 .cfPrevStage {
   position: relative;
-  height: 170px;
-  max-width: 880px;
-  margin: 0 auto;
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid #3a3a40;
-  background: #141414; /* v7.4: letterbox hitam */
+  background: #141414;
 }
 body.yvStandalone .cfPrevStage .projPreview {
   position: absolute;
@@ -230,33 +342,12 @@ body.yvStandalone .cfPrevStage .projPreview {
   pointer-events: none;
 }
 .cfPrevStage.drag .cfPrevDrop { display: flex; }
-.cfPrevResizer {
-  height: 10px;
-  max-width: 880px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: ns-resize;
-  touch-action: none;
-}
-.cfPrevResizer span {
-  width: 40px;
-  height: 3px;
-  border-radius: 999px;
-  background: #3a3a40;
-}
-.cfPrevResizer:hover span { background: #1282a2; }
+.cfPrevResizer { display: none; } /* diganti splitter baris */
 
-/* papan catur saat latar kosong/transparan */
+/* papan catur */
 body.yvStandalone .projPreview[data-bg="none"] {
   background-color: #101010 !important;
-  background-image: conic-gradient(
-    #1c1c1e 0 25%,
-    #2a2a2c 0 50%,
-    #1c1c1e 0 75%,
-    #2a2a2c 0
-  ) !important;
+  background-image: conic-gradient(#1c1c1e 0 25%, #2a2a2c 0 50%, #1c1c1e 0 75%, #2a2a2c 0) !important;
   background-size: 26px 26px !important;
 }
 body.yvStandalone .cfSwatchNone {
@@ -265,109 +356,58 @@ body.yvStandalone .cfSwatchNone {
   position: relative;
 }
 
-/* ---------- panel & kartu (melayang, sudut membulat) ---------- */
+/* ---------- panel & kartu ---------- */
 body.yvStandalone .projPane {
   background: #232326;
   border: 1px solid #2e2e33;
   border-radius: 10px;
   color: #eceef2;
-  /* v7.4: panel bisa di-scroll langsung. overflow:hidden di v7.3 membuat
-     isi panel (mis. Kontrol Panel) terpotong tanpa bisa di-scroll. */
   overflow: auto;
 }
-body.yvStandalone .projPaneHead {
-  border-bottom: 1px solid #3a3a40;
-  color: #eceef2;
-}
+body.yvStandalone .projPaneHead { border-bottom: 1px solid #3a3a40; color: #eceef2; }
 body.yvStandalone .projPaneHead h3 { color: #eceef2; font-size: 10.5px; }
-body.yvStandalone .projRail { border-right: 0; border-radius: 10px; }
-body.yvStandalone .projRailTitle {
-  color: #7d8494;
-  letter-spacing: 1px;
-  font-size: 8.5px;
-}
+body.yvStandalone .projRailTitle { color: #7d8494; letter-spacing: 1px; font-size: 8.5px; }
 body.yvStandalone .projRailBtn {
-  color: #a8adb8;
-  background: transparent;
-  font-size: 9.5px;
-  border-radius: 7px;
+  color: #a8adb8; background: transparent; font-size: 9.5px; border-radius: 7px;
 }
 body.yvStandalone .projRailBtn:hover { background: #323236; color: #eceef2; }
 body.yvStandalone .projRailBtn.on {
-  background: #323236;
-  color: #7fd4e8;
-  box-shadow: inset 3px 0 0 #1282a2;
+  background: #323236; color: #7fd4e8; box-shadow: inset 3px 0 0 #1282a2;
 }
 
 /* ---------- tab & chip ---------- */
 body.yvStandalone .projTab {
-  background: transparent;
-  color: #a8adb8;
-  border-bottom: 2px solid transparent;
-  font-size: 9.5px;
+  background: transparent; color: #a8adb8; border-bottom: 2px solid transparent; font-size: 9.5px;
 }
-body.yvStandalone .projTab.on {
-  color: #7fd4e8;
-  border-bottom-color: #1282a2;
-}
+body.yvStandalone .projTab.on { color: #7fd4e8; border-bottom-color: #1282a2; }
 body.yvStandalone .projChip {
-  background: #1e1e21;
-  border: 1px solid #3a3a40;
-  color: #a8adb8;
-  font-size: 9px;
-  border-radius: 999px;
+  background: #1e1e21; border: 1px solid #3a3a40; color: #a8adb8; font-size: 9px; border-radius: 999px;
 }
-body.yvStandalone .projChip.on,
-body.yvStandalone .projChip:hover {
-  background: #323236;
-  color: #eceef2;
-  border-color: #1282a2;
+body.yvStandalone .projChip.on, body.yvStandalone .projChip:hover {
+  background: #323236; color: #eceef2; border-color: #1282a2;
 }
 body.yvStandalone .projBgTab {
-  background: #1e1e21;
-  border: 1px solid #3a3a40;
-  color: #a8adb8;
-  font-size: 9px;
+  background: #1e1e21; border: 1px solid #3a3a40; color: #a8adb8; font-size: 9px;
 }
-body.yvStandalone .projBgTab.on {
-  background: #1282a2;
-  border-color: #1282a2;
-  color: #eaf7fb;
-}
+body.yvStandalone .projBgTab.on { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
 
 /* ---------- tombol ---------- */
 body.yvStandalone .projMiniBtn {
-  background: #323236;
-  border: 1px solid #3a3a40;
-  color: #e8eaef;
-  font-size: 9.5px;
-  border-radius: 7px;
+  background: #323236; border: 1px solid #3a3a40; color: #e8eaef; font-size: 9.5px; border-radius: 7px;
 }
-body.yvStandalone .projMiniBtn:hover {
-  background: #3a3a40;
-  border-color: #1282a2;
+body.yvStandalone .projMiniBtn:hover { background: #3a3a40; border-color: #1282a2; }
+body.yvStandalone .projMiniBtn.primary, body.yvStandalone #projGoLive {
+  background: #1282a2; border-color: #1282a2; color: #eaf7fb;
 }
-body.yvStandalone .projMiniBtn.primary,
-body.yvStandalone #projGoLive {
-  background: #1282a2;
-  border-color: #1282a2;
-  color: #eaf7fb;
-}
-body.yvStandalone .projMiniBtn.primary:hover,
-body.yvStandalone #projGoLive:hover {
-  background: #1b9ec7;
-  border-color: #1b9ec7;
+body.yvStandalone .projMiniBtn.primary:hover, body.yvStandalone #projGoLive:hover {
+  background: #1b9ec7; border-color: #1b9ec7;
 }
 body.yvStandalone .projBtn {
-  background: #323236;
-  border: 1px solid #3a3a40;
-  color: #e8eaef;
-  font-size: 9.5px;
-  border-radius: 7px;
+  background: #323236; border: 1px solid #3a3a40; color: #e8eaef; font-size: 9.5px; border-radius: 7px;
 }
 body.yvStandalone .projBtn:hover { background: #3a3a40; }
 
-/* ---------- input, select, textarea, range ---------- */
+/* ---------- input ---------- */
 body.yvStandalone .projPage input[type="text"],
 body.yvStandalone .projPage input[type="search"],
 body.yvStandalone .projPage input[type="url"],
@@ -377,403 +417,182 @@ body.yvStandalone .projPage textarea,
 body.yvStandalone .projPage select,
 body.yvStandalone .yvBar input,
 body.yvStandalone .yvBar select {
-  background: #1e1e21;
-  border: 1px solid #3a3a40;
-  color: #eceef2;
-  border-radius: 7px;
-  font-size: 10px;
+  background: #1e1e21; border: 1px solid #3a3a40; color: #eceef2; border-radius: 7px; font-size: 10px;
 }
 body.yvStandalone .projPage input::placeholder,
-body.yvStandalone .projPage textarea::placeholder {
-  color: #6b7280;
-}
+body.yvStandalone .projPage textarea::placeholder { color: #6b7280; }
 body.yvStandalone .projPage input:focus,
 body.yvStandalone .projPage textarea:focus,
 body.yvStandalone .projPage select:focus {
-  border-color: #1282a2;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(18, 130, 162, 0.25);
+  border-color: #1282a2; outline: none; box-shadow: 0 0 0 2px rgba(18, 130, 162, 0.25);
 }
 body.yvStandalone .projPage select option,
-body.yvStandalone .projPage select optgroup {
-  background: #232326;
-  color: #eceef2;
-}
-body.yvStandalone .projPage input[type="range"] {
-  accent-color: #1282a2;
-  background: transparent;
-  border: 0;
-}
+body.yvStandalone .projPage select optgroup { background: #232326; color: #eceef2; }
+body.yvStandalone .projPage input[type="range"] { accent-color: #1282a2; background: transparent; border: 0; }
 
 /* ---------- label kecil ---------- */
-body.yvStandalone .projPage .label,
-body.yvStandalone .projPage label {
-  color: #a8adb8;
-  font-size: 9px;
-}
-body.yvStandalone .projPage .small,
-body.yvStandalone .projPage p.small {
-  color: #7d8494;
-  font-size: 9px;
-}
+body.yvStandalone .projPage .label, body.yvStandalone .projPage label { color: #a8adb8; font-size: 9px; }
+body.yvStandalone .projPage .small, body.yvStandalone .projPage p.small { color: #7d8494; font-size: 9px; }
 
 /* ---------- kartu lagu / slide ---------- */
-body.yvStandalone .projCard2,
-body.yvStandalone .projCard,
-body.yvStandalone .projPlanItem,
-body.yvStandalone .projSlideCard,
-body.yvStandalone .projMediaItem {
-  background: #1e1e21;
-  border: 1px solid #2e2e33;
-  border-radius: 8px;
-  color: #eceef2;
+body.yvStandalone .projCard2, body.yvStandalone .projCard, body.yvStandalone .projPlanItem,
+body.yvStandalone .projSlideCard, body.yvStandalone .projMediaItem {
+  background: #1e1e21; border: 1px solid #2e2e33; border-radius: 8px; color: #eceef2;
 }
-body.yvStandalone .projCard2:hover,
-body.yvStandalone .projPlanItem:hover,
-body.yvStandalone .projSlideCard:hover {
-  border-color: #1282a2;
-  background: #232326;
+body.yvStandalone .projCard2:hover, body.yvStandalone .projPlanItem:hover,
+body.yvStandalone .projSlideCard:hover { border-color: #1282a2; background: #232326; }
+body.yvStandalone .projCardTitle, body.yvStandalone .projPlanTitle, body.yvStandalone .projActiveTitle {
+  color: #f4f6fb; font-size: 10.5px;
 }
-body.yvStandalone .projCardTitle,
-body.yvStandalone .projPlanTitle,
-body.yvStandalone .projActiveTitle {
-  color: #f4f6fb;
-  font-size: 10.5px;
-}
-body.yvStandalone .projCardMeta,
-body.yvStandalone .projPlanKind,
-body.yvStandalone .projActiveKind,
-body.yvStandalone .projActiveLines {
-  color: #7d8494;
-  font-size: 9px;
-}
+body.yvStandalone .projCardMeta, body.yvStandalone .projPlanKind, body.yvStandalone .projActiveKind,
+body.yvStandalone .projActiveLines { color: #7d8494; font-size: 9px; }
 body.yvStandalone .projEmpty { color: #7d8494; }
 body.yvStandalone .projLive {
-  background: rgba(224, 93, 93, 0.16);
-  color: #ff9d9d;
-  border: 1px solid rgba(224, 93, 93, 0.4);
+  background: rgba(224, 93, 93, 0.16); color: #ff9d9d; border: 1px solid rgba(224, 93, 93, 0.4);
 }
-body.yvStandalone .projLive.on {
-  background: #1282a2;
-  border-color: #1282a2;
-  color: #eaf7fb;
-}
+body.yvStandalone .projLive.on { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
 
 /* ---------- area kosong / audit / composer ---------- */
-body.yvStandalone .projSoon,
-body.yvStandalone .projComposer,
-body.yvStandalone .projAuditLog {
-  background: #1e1e21;
-  border: 1px dashed #3a3a40;
-  border-radius: 8px;
-  color: #a8adb8;
+body.yvStandalone .projSoon, body.yvStandalone .projComposer, body.yvStandalone .projAuditLog {
+  background: #1e1e21; border: 1px dashed #3a3a40; border-radius: 8px; color: #a8adb8;
 }
 body.yvStandalone .projAuditOut {
-  background: #232326;
-  border: 1px solid #3a3a40;
-  border-radius: 8px;
-  color: #a8adb8;
+  background: #232326; border: 1px solid #3a3a40; border-radius: 8px; color: #a8adb8;
 }
 
-/* ---------- timeline drawer (dok melayang) ---------- */
+/* ---------- timeline drawer (mode overlay mengambang — bila tidak didock) ---------- */
 body.yvStandalone .tlDrawer {
-  background: #232326;
-  border: 1px solid #3a3a40;
-  border-radius: 12px;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
-  color: #eceef2;
-  overflow: hidden;
+  background: #232326; border: 1px solid #3a3a40; border-radius: 12px;
+  left: 8px; right: 8px; bottom: 8px; color: #eceef2; overflow: hidden;
 }
-body.yvStandalone .tlBar {
-  background: #232326;
-  border-bottom: 1px solid #3a3a40;
-}
+body.yvStandalone .tlBar { background: #232326; border-bottom: 1px solid #3a3a40; }
 body.yvStandalone .tlBtn {
-  background: #323236;
-  border: 1px solid #3a3a40;
-  color: #e8eaef;
-  font-size: 9.5px;
-  border-radius: 7px;
+  background: #323236; border: 1px solid #3a3a40; color: #e8eaef; font-size: 9.5px; border-radius: 7px;
 }
 body.yvStandalone .tlBtn:hover { background: #3a3a40; border-color: #1282a2; }
 body.yvStandalone .tlBtn.on { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
 body.yvStandalone .tlBtn.primary { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
 body.yvStandalone .tlBtn.danger { color: #ff9d9d; }
-body.yvStandalone .tlTime,
-body.yvStandalone .tlSelInfo { color: #a8adb8; font-size: 9px; }
-body.yvStandalone .tlLive {
-  background: rgba(224, 93, 93, 0.16);
-  color: #ff9d9d;
-}
+body.yvStandalone .tlTime, body.yvStandalone .tlSelInfo { color: #a8adb8; font-size: 9px; }
+body.yvStandalone .tlLive { background: rgba(224, 93, 93, 0.16); color: #ff9d9d; }
 body.yvStandalone .tlLive.on { background: #c0392b; color: #fff; }
 body.yvStandalone .tlTrackHead {
-  background: #26262a;
-  border-bottom: 1px solid #3a3a40;
-  color: #e8eaef;
-  font-size: 9.5px;
+  background: #26262a; border-bottom: 1px solid #3a3a40; color: #e8eaef; font-size: 9.5px;
 }
 body.yvStandalone .tlTrackHead span { color: #7d8494; }
-body.yvStandalone .tlTrack {
-  background: #1e1e21;
-  border-bottom: 1px solid #3a3a40;
-}
-body.yvStandalone .tlRuler {
-  background: #232326;
-  border-bottom: 1px solid #3a3a40;
-}
+body.yvStandalone .tlTrack { background: #1e1e21; border-bottom: 1px solid #3a3a40; }
+body.yvStandalone .tlRuler { background: #232326; border-bottom: 1px solid #3a3a40; }
 body.yvStandalone .tlTick { color: #7d8494; border-color: #3a3a40; }
 body.yvStandalone .tlPlayhead { background: #1282a2; }
 body.yvStandalone .tlClip {
-  background: #323236;
-  border: 1px solid #3a3a40;
-  border-radius: 6px;
-  color: #eceef2;
-  font-size: 9px;
+  background: #323236; border: 1px solid #3a3a40; border-radius: 6px; color: #eceef2; font-size: 9px;
 }
-body.yvStandalone .tlClip.sel {
-  border-color: #1282a2;
-  box-shadow: 0 0 0 1px #1282a2;
-}
+body.yvStandalone .tlClip.sel { border-color: #1282a2; box-shadow: 0 0 0 1px #1282a2; }
 body.yvStandalone .tlZoom input[type="range"] { accent-color: #1282a2; }
-body.yvStandalone .tlDrawer select {
-  background: #1e1e21;
-  border: 1px solid #3a3a40;
-  color: #eceef2;
-}
+body.yvStandalone .tlDrawer select { background: #1e1e21; border: 1px solid #3a3a40; color: #eceef2; }
 
-/* handle tinggi drawer timeline */
 .cfTlResizer {
-  position: absolute;
-  top: -5px;
-  left: 0;
-  right: 0;
-  height: 9px;
-  cursor: ns-resize;
-  z-index: 45;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  touch-action: none;
+  position: absolute; top: -5px; left: 0; right: 0; height: 9px; cursor: ns-resize; z-index: 45;
+  display: flex; align-items: center; justify-content: center; touch-action: none;
 }
-.cfTlResizer span {
-  width: 40px;
-  height: 3px;
-  border-radius: 999px;
-  background: #3a3a40;
-}
+.cfTlResizer span { width: 40px; height: 3px; border-radius: 999px; background: #3a3a40; }
 .cfTlResizer:hover span { background: #1282a2; }
 
-/* ops track (kunci/sembunyi) + marker */
-.tlTrackOps {
-  display: inline-flex;
-  gap: 4px;
-  margin-left: auto;
-}
+.tlTrackOps { display: inline-flex; gap: 4px; margin-left: auto; }
 .tlTOp {
-  appearance: none;
-  border: 1px solid transparent;
-  background: transparent;
-  color: #7d8494;
-  border-radius: 6px;
-  padding: 1px 5px;
-  font-size: 9px;
-  cursor: pointer;
-  opacity: 0.45;
+  appearance: none; border: 1px solid transparent; background: transparent; color: #7d8494;
+  border-radius: 6px; padding: 1px 5px; font-size: 9px; cursor: pointer; opacity: 0.45;
 }
 .tlTOp:hover { opacity: 1; background: #323236; }
-.tlTOp.on {
-  opacity: 1;
-  color: #7fd4e8;
-  border-color: #1282a2;
-  background: #323236;
-}
+.tlTOp.on { opacity: 1; color: #7fd4e8; border-color: #1282a2; background: #323236; }
 .tlMarker {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  color: #f5c542;
-  font-size: 9px;
-  z-index: 6;
-  cursor: pointer;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  position: absolute; top: 0; transform: translateX(-50%); color: #f5c542; font-size: 9px;
+  z-index: 6; cursor: pointer; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
+
+/* ---------- sisa permukaan putih lama -> gelap ---------- */
+body.yvStandalone .yvPlanItem, body.yvStandalone .yvCatalogCard {
+  background: #141414 !important; border: 1px solid #2e2e33 !important; border-radius: 8px !important;
+  box-shadow: none !important; color: #eceef2;
+}
+body.yvStandalone .yvSlideBtns button, body.yvStandalone .yvCardOps button,
+body.yvStandalone .yvComposerOps button, body.yvStandalone .projBgPreset {
+  background: #1e1e21 !important; border: 1px solid #3a3a40 !important; color: #eceef2 !important;
+}
+body.yvStandalone .yvComposer {
+  background: #141414 !important; border: 1px solid #2e2e33 !important; border-radius: 10px !important;
+  box-shadow: none !important;
+}
+body.yvStandalone .yvComposer textarea, body.yvStandalone .yvComposer input, body.yvStandalone .projBgUrl {
+  background: #1e1e21 !important; border: 1px solid #3a3a40 !important; color: #eceef2 !important;
+  border-radius: 8px !important;
+}
+body.yvStandalone .projPreview { background-color: #141414; }
+
+/* ---------- pop-out & resolusi kustom ---------- */
+.cfPopBtn {
+  appearance: none; border: 1px solid #3a3a40; background: #1e1e21; color: #a8adb8;
+  border-radius: 6px; padding: 3px 9px; font-size: 11px; cursor: pointer;
+}
+.cfPopBtn:hover { border-color: #1282a2; color: #7fd4e8; }
+.cfCustomRes { display: inline-flex; align-items: center; gap: 4px; color: #7d8494; font-size: 9.5px; }
+.cfCustomRes[hidden] { display: none !important; }
+.cfCustomRes input {
+  width: 58px; background: #1e1e21; border: 1px solid #3a3a40; color: #eceef2;
+  border-radius: 6px; padding: 3px 5px; font-size: 9.5px;
+}
+.cfCustomRes button {
+  background: #1282a2; border: 1px solid #1282a2; color: #eaf7fb; border-radius: 6px;
+  padding: 3px 8px; font-size: 9.5px; cursor: pointer;
+}
+
+/* jendela pratinjau melayang */
+.cfFloatWin {
+  position: fixed;
+  z-index: 1500; /* di atas .projPage (120) */
+  min-width: 240px; min-height: 150px;
+  background: #232326; border: 1px solid #3a3a40; border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55); overflow: hidden; display: flex; flex-direction: column;
+}
+.cfFloatWin[hidden] { display: none !important; }
+.cfFloatBar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 5px 10px;
+  background: #1e1e21; border-bottom: 1px solid #3a3a40; cursor: move; user-select: none; touch-action: none;
+}
+.cfFloatBar .t { font: 800 9px/1 inherit; letter-spacing: 1px; text-transform: uppercase; color: #a8adb8; }
+.cfFloatBar .sp { flex: 1 1 auto; }
+.cfFloatBar button {
+  appearance: none; border: 1px solid #3a3a40; background: #323236; color: #e8eaef;
+  border-radius: 6px; padding: 2px 8px; font-size: 9.5px; cursor: pointer;
+}
+.cfFloatBar button:hover { border-color: #1282a2; }
+.cfFloatBody { flex: 1 1 auto; position: relative; min-height: 0; background: #141414; }
+.cfFloatBody .cfPrevStage { max-width: none; margin: 0; height: 100%; border: 0; border-radius: 0; }
+.cfFloatResize {
+  position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; touch-action: none;
+}
+.cfFloatResize::after {
+  content: ""; position: absolute; right: 4px; bottom: 4px; width: 8px; height: 8px;
+  border-right: 2px solid #4a4a52; border-bottom: 2px solid #4a4a52; border-radius: 0 0 3px 0;
+}
+.cfFloatResize:hover::after { border-color: #1282a2; }
 
 /* ---------- penyesuaian kecil ---------- */
 body.yvStandalone ::-webkit-scrollbar { width: 8px; height: 8px; }
 body.yvStandalone ::-webkit-scrollbar-thumb {
-  background: #3a3a40;
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  background: #3a3a40; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box;
 }
 body.yvStandalone ::-webkit-scrollbar-thumb:hover { background: #1282a2; background-clip: padding-box; }
 body.yvStandalone ::-webkit-scrollbar-track { background: transparent; }
 body.yvStandalone ::selection { background: rgba(18, 130, 162, 0.4); color: #eaf7fb; }
 
-/* responsif: splitter disembunyikan di layar sempit */
+/* responsif */
 @media (max-width: 900px) {
-  .cfSplitter { display: none; }
-  body.yvStandalone .cfPrevStage { height: 140px; }
+  .cfSp { display: none; }
+  body.yvStandalone .projGrid.cfWork {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto auto;
+  }
+  .cfC-menu, .cfC-playlist, .cfC-preview, .cfC-lyric, .cfC-design { grid-column: 1; grid-row: auto; }
   .cfPrevHint { display: none; }
 }
-
-/* ================= v7.4 ================= */
-/* sisa permukaan putih dari stylesheet lama -> #141414 */
-body.yvStandalone .yvPlanItem,
-body.yvStandalone .yvCatalogCard {
-  background: #141414 !important;
-  border: 1px solid #2e2e33 !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-  color: #eceef2;
-}
-body.yvStandalone .yvSlideBtns button,
-body.yvStandalone .yvCardOps button,
-body.yvStandalone .yvComposerOps button,
-body.yvStandalone .projBgPreset {
-  background: #1e1e21 !important;
-  border: 1px solid #3a3a40 !important;
-  color: #eceef2 !important;
-}
-body.yvStandalone .yvComposer {
-  background: #141414 !important;
-  border: 1px solid #2e2e33 !important;
-  border-radius: 10px !important;
-  box-shadow: none !important;
-}
-body.yvStandalone .yvComposer textarea,
-body.yvStandalone .yvComposer input,
-body.yvStandalone .projBgUrl {
-  background: #1e1e21 !important;
-  border: 1px solid #3a3a40 !important;
-  color: #eceef2 !important;
-  border-radius: 8px !important;
-}
-/* pratinjau default gelap #141414 bila belum ada latar */
-body.yvStandalone .projPreview { background-color: #141414; }
-
-/* tombol pop-out + input resolusi kustom */
-.cfPopBtn {
-  appearance: none;
-  border: 1px solid #3a3a40;
-  background: #1e1e21;
-  color: #a8adb8;
-  border-radius: 6px;
-  padding: 3px 9px;
-  font-size: 11px;
-  cursor: pointer;
-}
-.cfPopBtn:hover { border-color: #1282a2; color: #7fd4e8; }
-.cfCustomRes {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #7d8494;
-  font-size: 9.5px;
-}
-.cfCustomRes[hidden] { display: none !important; }
-.cfCustomRes input {
-  width: 58px;
-  background: #1e1e21;
-  border: 1px solid #3a3a40;
-  color: #eceef2;
-  border-radius: 6px;
-  padding: 3px 5px;
-  font-size: 9.5px;
-}
-.cfCustomRes button {
-  background: #1282a2;
-  border: 1px solid #1282a2;
-  color: #eaf7fb;
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-size: 9.5px;
-  cursor: pointer;
-}
-
-/* strip atas diringkas saat pratinjau melayang -> panel naik penuh */
-body.yvStandalone .cfPrevWrap.popped { display: none !important; }
-
-/* jendela pratinjau melayang (bebas posisi & ukuran) */
-.cfFloatWin {
-  position: fixed;
-  /* v7.5: HARUS di atas .projPage (z-index:120) — v7.4 pakai 60 sehingga
-     jendela melayang tersembunyi DI BELAKANG panel (bug "preview hilang"). */
-  z-index: 1500;
-  min-width: 240px;
-  min-height: 150px;
-  background: #232326;
-  border: 1px solid #3a3a40;
-  border-radius: 12px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-.cfFloatWin[hidden] { display: none !important; }
-.cfFloatBar {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 10px;
-  background: #1e1e21;
-  border-bottom: 1px solid #3a3a40;
-  cursor: move;
-  user-select: none;
-  touch-action: none;
-}
-.cfFloatBar .t {
-  font: 800 9px/1 inherit;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: #a8adb8;
-}
-.cfFloatBar .sp { flex: 1 1 auto; }
-.cfFloatBar button {
-  appearance: none;
-  border: 1px solid #3a3a40;
-  background: #323236;
-  color: #e8eaef;
-  border-radius: 6px;
-  padding: 2px 8px;
-  font-size: 9.5px;
-  cursor: pointer;
-}
-.cfFloatBar button:hover { border-color: #1282a2; }
-.cfFloatBody {
-  flex: 1 1 auto;
-  position: relative;
-  min-height: 0;
-  background: #141414;
-}
-.cfFloatBody .cfPrevStage {
-  max-width: none;
-  margin: 0;
-  height: 100%;
-  border: 0;
-  border-radius: 0;
-}
-.cfFloatResize {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 16px;
-  height: 16px;
-  cursor: nwse-resize;
-  touch-action: none;
-}
-.cfFloatResize::after {
-  content: "";
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 8px;
-  height: 8px;
-  border-right: 2px solid #4a4a52;
-  border-bottom: 2px solid #4a4a52;
-  border-radius: 0 0 3px 0;
-}
-.cfFloatResize:hover::after { border-color: #1282a2; }
