@@ -1,12 +1,11 @@
 /* PNW-FILE-GUIDE
-   css/castflow.css — tema CastFlow (v7.2): abu netral #262626 ala CapCut/
-   ProPresenter + tipografi TikTok Sans + split panes. HANYA dimuat di
-   castflow.html, PALING AKHIR (menang cascade).
-   Palet: dasar #262626 · bar/panel-head #232326 · sumur (input/kartu/track)
-   #1e1e21 · raised/hover #323236 · garis #3a3a40 · aksen tetap #1282A2.
+   css/castflow.css — tema CastFlow (v7.3): abu netral #262626 ala CapCut,
+   panel melayang dengan celah + sudut membulat, splitter TAK TERLIHAT,
+   pratinjau terpusat (max-width), TikTok Sans diskalakan −20%.
+   HANYA dimuat di castflow.html, PALING AKHIR (menang cascade).
 */
 
-/* ---------- token + tipografi ---------- */
+/* ---------- token + tipografi (semua teks −20% dari v7.2) ---------- */
 body.yvStandalone {
   --cf-bg: #262626;
   --cf-panel: #232326;
@@ -21,24 +20,28 @@ body.yvStandalone {
   --cf-dim: #a8adb8;
   --cf-dim2: #7d8494;
   --cf-danger: #e05d5d;
-  background-color: #262626 !important; /* menang dari inline style lama */
+  background-color: #262626 !important;
   background-image: linear-gradient(165deg, #232326 0%, #262626 45%, #2a2a2e 100%) !important;
   background-attachment: fixed;
   color: #eceef2;
   color-scheme: dark;
-  /* TikTok Sans di seluruh UI CastFlow + teks lebih halus */
   font-family: "TikTok Sans", "Plus Jakarta Sans", Inter, system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 10.5px; /* v7.3: −20% dari 13px */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
-/* kontrol form tidak mewarisi font body secara bawaan — paksa waris */
 body.yvStandalone button,
 body.yvStandalone input,
 body.yvStandalone select,
 body.yvStandalone textarea {
   font-family: inherit;
+}
+/* tangkap semua teks warisan di dalam panel & drawer agar ikut skala kecil */
+body.yvStandalone .projPage,
+body.yvStandalone .tlDrawer,
+body.yvStandalone .yvBar {
+  font-size: 10.5px;
 }
 
 /* ---------- bar atas ---------- */
@@ -47,23 +50,29 @@ body.yvStandalone .yvBar {
   border-bottom: 1px solid #3a3a40;
   color: #eceef2;
 }
-body.yvStandalone .yvBarLogo {
-  height: 26px;
+/* v7.3: wordmark SVG menggantikan teks "CastFlow" di bar */
+body.yvStandalone .yvBarBrand {
+  height: 20px;
   width: auto;
   object-fit: contain;
+  display: block;
 }
 body.yvStandalone .yvBarBtn {
   background: #1e1e21;
   border: 1px solid #3a3a40;
   color: #e8eaef;
-  font-size: 12px;
+  font-size: 9.5px;
+  border-radius: 8px;
 }
 body.yvStandalone .yvBarBtn:hover {
   background: #323236;
   border-color: #1282a2;
 }
-body.yvStandalone .yvBarTitle { letter-spacing: 0.4px; }
-body.yvStandalone .yvBarNote { color: #a8adb8; font-size: 12px; }
+body.yvStandalone .yvBarNote { color: #a8adb8; font-size: 9.5px; }
+
+/* v7.3: header panel lama (CastFlow / PRESENTER BETA / EasyWorship… + tombol ✕)
+   disembunyikan — bar atas yvBar sudah jadi chrome utama halaman ini. */
+body.yvStandalone .projTop { display: none !important; }
 
 /* segmented EN/ID */
 .cfLangSeg {
@@ -77,9 +86,9 @@ body.yvStandalone .yvBarNote { color: #a8adb8; font-size: 12px; }
   border: 0;
   background: transparent;
   color: #a8adb8;
-  font: 700 11px/1 inherit;
+  font: 700 8.5px/1 inherit;
   letter-spacing: 0.5px;
-  padding: 6px 11px;
+  padding: 5px 10px;
   cursor: pointer;
 }
 .cfLangSeg button.on {
@@ -87,7 +96,7 @@ body.yvStandalone .yvBarNote { color: #a8adb8; font-size: 12px; }
   color: #eaf7fb;
 }
 
-/* ---------- kerangka panel ---------- */
+/* ---------- kerangka panel: celah + sudut membulat (ala CapCut) ---------- */
 body.yvStandalone .projPage.open {
   display: flex;
   flex-direction: column;
@@ -96,30 +105,13 @@ body.yvStandalone .projPage.open {
 body.yvStandalone .projGrid {
   flex: 1 1 auto;
   min-height: 0;
+  padding: 0 8px 8px; /* celah luar; celah antar kolom = track splitter 7px */
 }
-/* transisi mulus saat kolom berubah (reset/restore), bukan saat drag */
 body.yvStandalone .projGrid.cfSmooth {
   transition: grid-template-columns 0.18s ease;
 }
-body.yvStandalone .projTop {
-  background: #232326;
-  border-bottom: 1px solid #3a3a40;
-}
-body.yvStandalone .projBrand { color: #f4f6fb; font-size: 14px; }
-body.yvStandalone .projBadge {
-  background: #1e1e21;
-  border: 1px solid #3a3a40;
-  color: #7fd4e8;
-  font-size: 10.5px;
-}
-body.yvStandalone .projDev { color: #7d8494; font-size: 11px; }
-body.yvStandalone .xBtn {
-  background: #1e1e21;
-  border: 1px solid #3a3a40;
-  color: #e8eaef;
-}
 
-/* ---------- SPLITTER (split pane / resizable panels) ---------- */
+/* ---------- SPLITTER TAK TERLIHAT (hit-zone saja) ---------- */
 .cfSplitter {
   position: relative;
   cursor: col-resize;
@@ -130,42 +122,43 @@ body.yvStandalone .xBtn {
 .cfSplitter::after {
   content: "";
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 2px;
+  top: 12%;
+  bottom: 12%;
+  left: 3px;
   width: 1px;
-  background: #3a3a40;
-  transition: background 0.15s ease, width 0.15s ease, left 0.15s ease;
+  background: transparent; /* default: tanpa garis sama sekali */
+  transition: background 0.15s ease;
 }
 .cfSplitter:hover::after,
 .cfSplitter.dragging::after {
-  left: 1px;
+  left: 2px;
   width: 3px;
   background: #1282a2;
 }
 body.cfColResize, body.cfColResize * { cursor: col-resize !important; }
 body.cfColResize { user-select: none; }
 
-/* ---------- strip PRATINJAU di atas ---------- */
+/* ---------- strip PRATINJAU: terpusat, tidak makan seluruh lebar ---------- */
 body.yvStandalone .cfPrevWrap {
   flex: 0 0 auto;
-  background: #232326;
-  border-bottom: 1px solid #3a3a40;
-  padding: 8px 14px 10px;
+  background: transparent;
+  border: 0;
+  padding: 8px 8px 6px;
 }
 .cfPrevHead {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 7px;
+  gap: 8px;
+  margin: 0 auto 6px;
+  max-width: 880px; /* sejajar dengan stage */
 }
 .cfPrevTitle {
-  font: 800 11px/1 inherit;
-  letter-spacing: 1.1px;
+  font: 800 9px/1 inherit;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: #a8adb8;
 }
-.cfPrevHint { font-size: 11px; color: #7d8494; }
+.cfPrevHint { font-size: 9px; color: #7d8494; }
 .cfPrevSpacer { flex: 1 1 auto; }
 .cfPrevSize {
   appearance: none;
@@ -173,9 +166,9 @@ body.yvStandalone .cfPrevWrap {
   background: #1e1e21;
   color: #a8adb8;
   border-radius: 6px;
-  min-width: 26px;
-  padding: 4px 0;
-  font: 700 11px/1 inherit;
+  min-width: 24px;
+  padding: 3px 0;
+  font: 700 9px/1 inherit;
   cursor: pointer;
 }
 .cfPrevSize.on {
@@ -188,17 +181,19 @@ body.yvStandalone .cfPrevWrap {
   border: 1px solid #3a3a40;
   color: #e8eaef;
   border-radius: 6px;
-  font-size: 11.5px;
-  padding: 4px 6px;
-  max-width: 170px;
+  font-size: 9.5px;
+  padding: 3px 6px;
+  max-width: 160px;
 }
 .cfPrevStage {
   position: relative;
-  height: 220px;
+  height: 170px; /* v7.3: default lebih kecil (bisa diubah S/M/L atau drag) */
+  max-width: 880px; /* v7.3: terpusat ala CapCut, tidak full width */
+  margin: 0 auto;
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid #3a3a40;
-  background: #1a1a1c; /* letterbox lebih gelap dari dasar */
+  background: #1a1a1c;
 }
 body.yvStandalone .cfPrevStage .projPreview {
   position: absolute;
@@ -217,13 +212,15 @@ body.yvStandalone .cfPrevStage .projPreview {
   border: 2px dashed #1282a2;
   border-radius: 10px;
   color: #7fd4e8;
-  font: 700 14px/1.4 inherit;
+  font: 700 11px/1.4 inherit;
   z-index: 5;
   pointer-events: none;
 }
 .cfPrevStage.drag .cfPrevDrop { display: flex; }
 .cfPrevResizer {
-  height: 12px;
+  height: 10px;
+  max-width: 880px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -231,14 +228,14 @@ body.yvStandalone .cfPrevStage .projPreview {
   touch-action: none;
 }
 .cfPrevResizer span {
-  width: 46px;
-  height: 4px;
+  width: 40px;
+  height: 3px;
   border-radius: 999px;
   background: #3a3a40;
 }
 .cfPrevResizer:hover span { background: #1282a2; }
 
-/* papan catur saat latar kosong/transparan (ala ProPresenter) */
+/* papan catur saat latar kosong/transparan */
 body.yvStandalone .projPreview[data-bg="none"] {
   background-color: #101010 !important;
   background-image: conic-gradient(
@@ -249,35 +246,36 @@ body.yvStandalone .projPreview[data-bg="none"] {
   ) !important;
   background-size: 26px 26px !important;
 }
-
-/* swatch transparan di tab Warna */
 body.yvStandalone .cfSwatchNone {
   background: conic-gradient(#2a2a2a 0 25%, #3a3a3a 0 50%, #2a2a2a 0 75%, #3a3a3a 0) !important;
   background-size: 12px 12px !important;
   position: relative;
 }
 
-/* ---------- panel & kartu ---------- */
+/* ---------- panel & kartu (melayang, sudut membulat) ---------- */
 body.yvStandalone .projPane {
-  background: #262626;
-  border-color: #3a3a40;
+  background: #232326;
+  border: 1px solid #2e2e33;
+  border-radius: 10px;
   color: #eceef2;
+  overflow: hidden;
 }
 body.yvStandalone .projPaneHead {
   border-bottom: 1px solid #3a3a40;
   color: #eceef2;
 }
-body.yvStandalone .projPaneHead h3 { color: #eceef2; font-size: 13px; }
-body.yvStandalone .projRail { border-right: 1px solid #3a3a40; }
+body.yvStandalone .projPaneHead h3 { color: #eceef2; font-size: 10.5px; }
+body.yvStandalone .projRail { border-right: 0; border-radius: 10px; }
 body.yvStandalone .projRailTitle {
   color: #7d8494;
-  letter-spacing: 1.1px;
-  font-size: 10.5px;
+  letter-spacing: 1px;
+  font-size: 8.5px;
 }
 body.yvStandalone .projRailBtn {
   color: #a8adb8;
   background: transparent;
-  font-size: 12px;
+  font-size: 9.5px;
+  border-radius: 7px;
 }
 body.yvStandalone .projRailBtn:hover { background: #323236; color: #eceef2; }
 body.yvStandalone .projRailBtn.on {
@@ -291,7 +289,7 @@ body.yvStandalone .projTab {
   background: transparent;
   color: #a8adb8;
   border-bottom: 2px solid transparent;
-  font-size: 12px;
+  font-size: 9.5px;
 }
 body.yvStandalone .projTab.on {
   color: #7fd4e8;
@@ -301,7 +299,8 @@ body.yvStandalone .projChip {
   background: #1e1e21;
   border: 1px solid #3a3a40;
   color: #a8adb8;
-  font-size: 11.5px;
+  font-size: 9px;
+  border-radius: 999px;
 }
 body.yvStandalone .projChip.on,
 body.yvStandalone .projChip:hover {
@@ -313,7 +312,7 @@ body.yvStandalone .projBgTab {
   background: #1e1e21;
   border: 1px solid #3a3a40;
   color: #a8adb8;
-  font-size: 11.5px;
+  font-size: 9px;
 }
 body.yvStandalone .projBgTab.on {
   background: #1282a2;
@@ -326,7 +325,8 @@ body.yvStandalone .projMiniBtn {
   background: #323236;
   border: 1px solid #3a3a40;
   color: #e8eaef;
-  font-size: 12px;
+  font-size: 9.5px;
+  border-radius: 7px;
 }
 body.yvStandalone .projMiniBtn:hover {
   background: #3a3a40;
@@ -347,7 +347,8 @@ body.yvStandalone .projBtn {
   background: #323236;
   border: 1px solid #3a3a40;
   color: #e8eaef;
-  font-size: 12px;
+  font-size: 9.5px;
+  border-radius: 7px;
 }
 body.yvStandalone .projBtn:hover { background: #3a3a40; }
 
@@ -364,8 +365,8 @@ body.yvStandalone .yvBar select {
   background: #1e1e21;
   border: 1px solid #3a3a40;
   color: #eceef2;
-  border-radius: 8px;
-  font-size: 12.5px;
+  border-radius: 7px;
+  font-size: 10px;
 }
 body.yvStandalone .projPage input::placeholder,
 body.yvStandalone .projPage textarea::placeholder {
@@ -393,12 +394,12 @@ body.yvStandalone .projPage input[type="range"] {
 body.yvStandalone .projPage .label,
 body.yvStandalone .projPage label {
   color: #a8adb8;
-  font-size: 11px;
+  font-size: 9px;
 }
 body.yvStandalone .projPage .small,
 body.yvStandalone .projPage p.small {
   color: #7d8494;
-  font-size: 11px;
+  font-size: 9px;
 }
 
 /* ---------- kartu lagu / slide ---------- */
@@ -408,7 +409,8 @@ body.yvStandalone .projPlanItem,
 body.yvStandalone .projSlideCard,
 body.yvStandalone .projMediaItem {
   background: #1e1e21;
-  border: 1px solid #3a3a40;
+  border: 1px solid #2e2e33;
+  border-radius: 8px;
   color: #eceef2;
 }
 body.yvStandalone .projCard2:hover,
@@ -421,14 +423,14 @@ body.yvStandalone .projCardTitle,
 body.yvStandalone .projPlanTitle,
 body.yvStandalone .projActiveTitle {
   color: #f4f6fb;
-  font-size: 13px;
+  font-size: 10.5px;
 }
 body.yvStandalone .projCardMeta,
 body.yvStandalone .projPlanKind,
 body.yvStandalone .projActiveKind,
 body.yvStandalone .projActiveLines {
   color: #7d8494;
-  font-size: 11.5px;
+  font-size: 9px;
 }
 body.yvStandalone .projEmpty { color: #7d8494; }
 body.yvStandalone .projLive {
@@ -448,19 +450,26 @@ body.yvStandalone .projComposer,
 body.yvStandalone .projAuditLog {
   background: #1e1e21;
   border: 1px dashed #3a3a40;
+  border-radius: 8px;
   color: #a8adb8;
 }
 body.yvStandalone .projAuditOut {
   background: #232326;
   border: 1px solid #3a3a40;
+  border-radius: 8px;
   color: #a8adb8;
 }
 
-/* ---------- timeline drawer (abu netral) ---------- */
+/* ---------- timeline drawer (dok melayang) ---------- */
 body.yvStandalone .tlDrawer {
   background: #232326;
-  border-top: 1px solid #3a3a40;
+  border: 1px solid #3a3a40;
+  border-radius: 12px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
   color: #eceef2;
+  overflow: hidden;
 }
 body.yvStandalone .tlBar {
   background: #232326;
@@ -470,14 +479,15 @@ body.yvStandalone .tlBtn {
   background: #323236;
   border: 1px solid #3a3a40;
   color: #e8eaef;
-  font-size: 12px;
+  font-size: 9.5px;
+  border-radius: 7px;
 }
 body.yvStandalone .tlBtn:hover { background: #3a3a40; border-color: #1282a2; }
 body.yvStandalone .tlBtn.on { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
 body.yvStandalone .tlBtn.primary { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
 body.yvStandalone .tlBtn.danger { color: #ff9d9d; }
 body.yvStandalone .tlTime,
-body.yvStandalone .tlSelInfo { color: #a8adb8; font-size: 11.5px; }
+body.yvStandalone .tlSelInfo { color: #a8adb8; font-size: 9px; }
 body.yvStandalone .tlLive {
   background: rgba(224, 93, 93, 0.16);
   color: #ff9d9d;
@@ -487,7 +497,7 @@ body.yvStandalone .tlTrackHead {
   background: #26262a;
   border-bottom: 1px solid #3a3a40;
   color: #e8eaef;
-  font-size: 12px;
+  font-size: 9.5px;
 }
 body.yvStandalone .tlTrackHead span { color: #7d8494; }
 body.yvStandalone .tlTrack {
@@ -503,8 +513,9 @@ body.yvStandalone .tlPlayhead { background: #1282a2; }
 body.yvStandalone .tlClip {
   background: #323236;
   border: 1px solid #3a3a40;
+  border-radius: 6px;
   color: #eceef2;
-  font-size: 11.5px;
+  font-size: 9px;
 }
 body.yvStandalone .tlClip.sel {
   border-color: #1282a2;
@@ -517,7 +528,7 @@ body.yvStandalone .tlDrawer select {
   color: #eceef2;
 }
 
-/* handle tinggi drawer timeline (disuntik dari castflow.js) */
+/* handle tinggi drawer timeline */
 .cfTlResizer {
   position: absolute;
   top: -5px;
@@ -532,8 +543,8 @@ body.yvStandalone .tlDrawer select {
   touch-action: none;
 }
 .cfTlResizer span {
-  width: 46px;
-  height: 4px;
+  width: 40px;
+  height: 3px;
   border-radius: 999px;
   background: #3a3a40;
 }
@@ -552,7 +563,7 @@ body.yvStandalone .tlDrawer select {
   color: #7d8494;
   border-radius: 6px;
   padding: 1px 5px;
-  font-size: 11px;
+  font-size: 9px;
   cursor: pointer;
   opacity: 0.45;
 }
@@ -568,26 +579,27 @@ body.yvStandalone .tlDrawer select {
   top: 0;
   transform: translateX(-50%);
   color: #f5c542;
-  font-size: 10px;
+  font-size: 9px;
   z-index: 6;
   cursor: pointer;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 /* ---------- penyesuaian kecil ---------- */
-body.yvStandalone ::-webkit-scrollbar { width: 10px; height: 10px; }
+body.yvStandalone ::-webkit-scrollbar { width: 8px; height: 8px; }
 body.yvStandalone ::-webkit-scrollbar-thumb {
   background: #3a3a40;
   border-radius: 999px;
-  border: 2px solid #262626;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
-body.yvStandalone ::-webkit-scrollbar-thumb:hover { background: #1282a2; }
+body.yvStandalone ::-webkit-scrollbar-thumb:hover { background: #1282a2; background-clip: padding-box; }
 body.yvStandalone ::-webkit-scrollbar-track { background: transparent; }
 body.yvStandalone ::selection { background: rgba(18, 130, 162, 0.4); color: #eaf7fb; }
 
-/* responsif: splitter disembunyikan di layar sempit (grid 1 kolom) */
+/* responsif: splitter disembunyikan di layar sempit */
 @media (max-width: 900px) {
   .cfSplitter { display: none; }
-  body.yvStandalone .cfPrevStage { height: 150px; }
+  body.yvStandalone .cfPrevStage { height: 140px; }
   .cfPrevHint { display: none; }
 }

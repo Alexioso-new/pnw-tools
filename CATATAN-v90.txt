@@ -1,0 +1,29 @@
+============================================================
+PNW TOOLS v90 (label v7.3) — CASTFLOW: POLESAN ALA CAPCUT
+============================================================
+
+ISI RILIS
+1. SPLITTER TAK TERLIHAT — garis putih pengganggu dihapus. Sekarang ada
+   celah rapi 7px antar-panel (garis teal tipis hanya muncul saat Anda
+   mengarahkan/menyeret pemisah). Setiap panel punya sudut membulat dan
+   terlihat melayang seperti CapCut.
+2. PRATINJAU TERPUSAT — tidak lagi memakan seluruh lebar layar: kini
+   maksimal 880px di tengah (seperti pemutar CapCut), tinggi default
+   lebih kecil (170px; tetap bisa diubah S/M/L atau drag).
+3. LOGO SVG DI BAR — wordmark CastFlow (SVG yang Anda berikan) kini
+   menggantikan tulisan "CastFlow" di kiri atas. Logo kecil yang tidak
+   terlihat sudah dihapus, dan baris keterangan lama (CastFlow /
+   PRESENTER BETA / EasyWorship-ProPresenter workflow + tombol ✕ yang
+   membingungkan) ikut dihapus dari halaman ini.
+4. SEMUA TEKS TikTok Sans DIPERKECIL 20% LAGI — basis 10.5px, lebih rapi
+   dan lega.
+5. Semua isi v85–v89 tetap termasuk.
+
+CARA PASANG (urutan WAJIB)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah (database.rules.json
+   dari pnw-firebase-rules-v83.zip). Ini memperbaiki PERMISSION_DENIED.
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v90" && git push
+4. Setelah deploy: Ctrl+Shift+R -> menu -> CastFlow. Cek: label v7.3,
+   logo SVG di kiri atas, celah rapi antar panel (tanpa garis putih),
+   pratinjau di tengah, teks lebih kecil.

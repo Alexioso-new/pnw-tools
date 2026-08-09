@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var CF_VERSION = "v7.2";
+  var CF_VERSION = "v7.3";
   var LANG_KEY = "pnwCastflowLang";
   var PREV_H_KEY = "pnwCastflowPrevH";
   var FONTS_KEY = "pnwCastflowFonts.v1";
@@ -270,7 +270,7 @@
   }
 
   /* ================= 2. pratinjau atas: tinggi + rasio ================= */
-  var SIZES = { s: 140, m: 220, l: 330 };
+  var SIZES = { s: 120, m: 170, l: 260 }; /* v7.3: default lebih kecil */
   var RATIOS = { fit: 0, "16:9": 16 / 9, "4:3": 4 / 3, "1:1": 1, "9:16": 9 / 16 };
   function stage() {
     return document.getElementById("cfPrevStage");
@@ -600,7 +600,7 @@
     var parts = [];
     for (var i = 0; i < n; i++) {
       parts.push(i === n - 2 ? "minmax(0,1fr)" : colClamp(n, wIdx(n, i), widths[wIdx(n, i)]) + "px");
-      if (i < n - 1) parts.push("5px");
+      if (i < n - 1) parts.push("7px"); /* celah antar panel (splitter tak terlihat) */
     }
     if (smooth) {
       g.classList.add("cfSmooth");
