@@ -22,6 +22,11 @@ body.yvStandalone {
   --cf-danger: #e05d5d;
   /* v7.5: hilangkan garis terang warisan (#E2E8F0) — hanya di halaman ini */
   --d-line: #141414;
+  /* v7.6: var latar lama default #FEFCFB (nyaris putih) -> gelap; inilah sumber
+     area pratinjau & celah panel yang masih tampak putih */
+  --d-canvas: #141414;
+  /* ═══ UBAH UKURAN LOGO CASTFLOW DI SINI (tinggi, px) ═══ */
+  --cf-logo-h: 38px;
   background-color: #262626 !important;
   background-image: linear-gradient(165deg, #232326 0%, #262626 45%, #2a2a2e 100%) !important;
   background-attachment: fixed;
@@ -54,7 +59,7 @@ body.yvStandalone .yvBar {
 }
 /* wordmark SVG — v7.4: di TENGAH bar, selaras dengan baris tombol */
 body.yvStandalone .yvBarBrand {
-  height: 30px; /* v7.5: diperbesar dari 20px agar terbaca */
+  height: var(--cf-logo-h, 38px); /* ukuran dikontrol --cf-logo-h di blok atas */
   width: auto;
   object-fit: contain;
   display: block;
@@ -105,7 +110,8 @@ body.yvStandalone .projTop { display: none !important; }
 body.yvStandalone .projPage.open {
   display: flex;
   flex-direction: column;
-  background: transparent;
+  /* v7.6: paksa dasar halaman gelap (var(--d-canvas) lama = #FEFCFB putih) */
+  background: #262626 !important;
 }
 body.yvStandalone .projGrid {
   flex: 1 1 auto;
@@ -146,8 +152,9 @@ body.cfColResize { user-select: none; }
 /* ---------- strip PRATINJAU: terpusat ---------- */
 body.yvStandalone .cfPrevWrap {
   flex: 0 0 auto;
-  background: transparent;
+  background: #141414; /* v7.6: zona pratinjau hitam */
   border: 0;
+  border-bottom: 1px solid #2e2e33;
   padding: 8px 8px 6px;
 }
 .cfPrevHead {

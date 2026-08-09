@@ -1,0 +1,28 @@
+============================================================
+PNW TOOLS v93 (label v7.6) — SISA PUTIH DIHAPUS + LOGO DIPERBESAR
+============================================================
+
+ISI RILIS
+1. **SISA LATAR PUTIH DI AREA PRATINJAU DIHAPUS.** Akarnya ketemu:
+   variabel lama `--d-canvas: #FEFCFB` (nyaris putih) yang dipakai
+   `.projPage` belum pernah dioverride. Kini `--d-canvas` dioverride jadi
+   **#141414** (hanya di halaman CastFlow), zona pratinjau dipaksa hitam
+   #141414, dan dasar halaman tetap abu #262626. Tidak ada lagi area putih.
+2. **LOGO CASTFLOW DIPERBESAR** lagi (kini 38px) dan ukurannya bisa Anda
+   atur sendiri:
+   → Buka berkas **`css/castflow.css`**, paling atas ada blok
+     `body.yvStandalone { ... }`, cari baris **`--cf-logo-h: 38px;`**
+     (ada komentar "UBAH UKURAN LOGO CASTFLOW DI SINI").
+     Ganti angkanya (mis. 46px untuk lebih besar, 28px lebih kecil),
+     simpan, lalu deploy seperti biasa. Hanya itu.
+3. Semua isi v85–v92 tetap termasuk (termasuk perbaikan bug pratinjau
+   melayang ⧉ di v92).
+
+CARA PASANG (urutan WAJIB)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah (database.rules.json
+   dari pnw-firebase-rules-v83.zip).
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v93" && git push
+4. Ctrl+Shift+R -> menu -> CastFlow. Cek: label v7.6; area pratinjau kini
+   hitam #141414 (bukan putih); logo CastFlow di tengah bar lebih besar
+   dan jelas terbaca.
