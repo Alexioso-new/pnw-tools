@@ -41,6 +41,12 @@
     <link rel="stylesheet" href="./css/styles.css" />
     <link rel="stylesheet" href="./css/design.css" />
     <link rel="stylesheet" href="./css/yv-timeline.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=TikTok+Sans:opsz,wght@12..36,300..900&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./css/castflow.css" />
     <link
       rel="stylesheet"
@@ -142,6 +148,13 @@
           <button class="cfPrevSize" type="button" data-cfsize="s">S</button>
           <button class="cfPrevSize on" type="button" data-cfsize="m">M</button>
           <button class="cfPrevSize" type="button" data-cfsize="l">L</button>
+          <select class="cfPrevRatio" id="cfPrevRatio" title="Resolusi pratinjau">
+            <option value="fit">Pas ke layar</option>
+            <option value="16:9">16:9 · 1920×1080</option>
+            <option value="4:3">4:3 · 1024×768</option>
+            <option value="1:1">1:1 · 1080×1080</option>
+            <option value="9:16">9:16 · 1080×1920</option>
+          </select>
         </div>
         <div class="cfPrevStage" id="cfPrevStage">
           <div class="projPreview" id="projPreview">

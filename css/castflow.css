@@ -1,44 +1,51 @@
 /* PNW-FILE-GUIDE
-   css/castflow.css — tema CastFlow (v7.1): gelap netral HITAM → ABU-ABU
-   (berporos #101010) ala ProPresenter. HANYA dimuat di castflow.html,
-   PALING AKHIR (menang cascade).
-   Palet: dasar gradasi #0a0a0c → #101010 → #1c1e24 · panel #141519 ·
-   raised #1f222b · garis #2c2f39 · aksen tetap #1282A2 (dari palet v7.0).
-   Tidak ada permukaan putih; teks memakai off-white.
+   css/castflow.css — tema CastFlow (v7.2): abu netral #262626 ala CapCut/
+   ProPresenter + tipografi TikTok Sans + split panes. HANYA dimuat di
+   castflow.html, PALING AKHIR (menang cascade).
+   Palet: dasar #262626 · bar/panel-head #232326 · sumur (input/kartu/track)
+   #1e1e21 · raised/hover #323236 · garis #3a3a40 · aksen tetap #1282A2.
 */
 
-/* ---------- token ---------- */
+/* ---------- token + tipografi ---------- */
 body.yvStandalone {
-  --cf-bg: #101010;
-  --cf-panel: #141519;
-  --cf-raised: #1f222b;
-  --cf-raised2: #23252d;
-  --cf-line: #2c2f39;
-  --cf-line2: #3a3e4a;
+  --cf-bg: #262626;
+  --cf-panel: #232326;
+  --cf-well: #1e1e21;
+  --cf-raised: #323236;
+  --cf-line: #3a3a40;
+  --cf-line2: #4a4a52;
   --cf-accent: #1282a2;
   --cf-accent-hi: #1b9ec7;
   --cf-on-accent: #eaf7fb;
-  --cf-text: #e9edf4;
-  --cf-dim: #a3adbd;
-  --cf-dim2: #7b8496;
+  --cf-text: #eceef2;
+  --cf-dim: #a8adb8;
+  --cf-dim2: #7d8494;
   --cf-danger: #e05d5d;
-  background-color: #101010 !important; /* menang dari inline style lama (#07080c) */
-  background-image: linear-gradient(
-    165deg,
-    #0a0a0c 0%,
-    #101010 45%,
-    #1c1e24 100%
-  ) !important; /* hitam → abu-abu, berporos #101010 */
+  background-color: #262626 !important; /* menang dari inline style lama */
+  background-image: linear-gradient(165deg, #232326 0%, #262626 45%, #2a2a2e 100%) !important;
   background-attachment: fixed;
-  color: #e9edf4;
+  color: #eceef2;
   color-scheme: dark;
+  /* TikTok Sans di seluruh UI CastFlow + teks lebih halus */
+  font-family: "TikTok Sans", "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+/* kontrol form tidak mewarisi font body secara bawaan — paksa waris */
+body.yvStandalone button,
+body.yvStandalone input,
+body.yvStandalone select,
+body.yvStandalone textarea {
+  font-family: inherit;
 }
 
 /* ---------- bar atas ---------- */
 body.yvStandalone .yvBar {
-  background: #141519;
-  border-bottom: 1px solid #2c2f39;
-  color: #e9edf4;
+  background: #232326;
+  border-bottom: 1px solid #3a3a40;
+  color: #eceef2;
 }
 body.yvStandalone .yvBarLogo {
   height: 26px;
@@ -46,21 +53,22 @@ body.yvStandalone .yvBarLogo {
   object-fit: contain;
 }
 body.yvStandalone .yvBarBtn {
-  background: #1c1e24;
-  border: 1px solid #2c2f39;
-  color: #e6e9f0;
+  background: #1e1e21;
+  border: 1px solid #3a3a40;
+  color: #e8eaef;
+  font-size: 12px;
 }
 body.yvStandalone .yvBarBtn:hover {
-  background: #262932;
+  background: #323236;
   border-color: #1282a2;
 }
 body.yvStandalone .yvBarTitle { letter-spacing: 0.4px; }
-body.yvStandalone .yvBarNote { color: #a3adbd; }
+body.yvStandalone .yvBarNote { color: #a8adb8; font-size: 12px; }
 
 /* segmented EN/ID */
 .cfLangSeg {
   display: inline-flex;
-  border: 1px solid #2c2f39;
+  border: 1px solid #3a3a40;
   border-radius: 999px;
   overflow: hidden;
 }
@@ -68,8 +76,8 @@ body.yvStandalone .yvBarNote { color: #a3adbd; }
   appearance: none;
   border: 0;
   background: transparent;
-  color: #a3adbd;
-  font: 700 11px/1 Inter, system-ui, sans-serif;
+  color: #a8adb8;
+  font: 700 11px/1 inherit;
   letter-spacing: 0.5px;
   padding: 6px 11px;
   cursor: pointer;
@@ -89,28 +97,60 @@ body.yvStandalone .projGrid {
   flex: 1 1 auto;
   min-height: 0;
 }
+/* transisi mulus saat kolom berubah (reset/restore), bukan saat drag */
+body.yvStandalone .projGrid.cfSmooth {
+  transition: grid-template-columns 0.18s ease;
+}
 body.yvStandalone .projTop {
-  background: #141519;
-  border-bottom: 1px solid #2c2f39;
+  background: #232326;
+  border-bottom: 1px solid #3a3a40;
 }
-body.yvStandalone .projBrand { color: #f4f6fb; }
+body.yvStandalone .projBrand { color: #f4f6fb; font-size: 14px; }
 body.yvStandalone .projBadge {
-  background: #1c1e24;
-  border: 1px solid #2c2f39;
+  background: #1e1e21;
+  border: 1px solid #3a3a40;
   color: #7fd4e8;
+  font-size: 10.5px;
 }
-body.yvStandalone .projDev { color: #7b8496; }
+body.yvStandalone .projDev { color: #7d8494; font-size: 11px; }
 body.yvStandalone .xBtn {
-  background: #1c1e24;
-  border: 1px solid #2c2f39;
-  color: #e6e9f0;
+  background: #1e1e21;
+  border: 1px solid #3a3a40;
+  color: #e8eaef;
 }
+
+/* ---------- SPLITTER (split pane / resizable panels) ---------- */
+.cfSplitter {
+  position: relative;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 15;
+  touch-action: none;
+}
+.cfSplitter::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 1px;
+  background: #3a3a40;
+  transition: background 0.15s ease, width 0.15s ease, left 0.15s ease;
+}
+.cfSplitter:hover::after,
+.cfSplitter.dragging::after {
+  left: 1px;
+  width: 3px;
+  background: #1282a2;
+}
+body.cfColResize, body.cfColResize * { cursor: col-resize !important; }
+body.cfColResize { user-select: none; }
 
 /* ---------- strip PRATINJAU di atas ---------- */
 body.yvStandalone .cfPrevWrap {
   flex: 0 0 auto;
-  background: #141519;
-  border-bottom: 1px solid #2c2f39;
+  background: #232326;
+  border-bottom: 1px solid #3a3a40;
   padding: 8px 14px 10px;
 }
 .cfPrevHead {
@@ -120,22 +160,22 @@ body.yvStandalone .cfPrevWrap {
   margin-bottom: 7px;
 }
 .cfPrevTitle {
-  font: 800 11px/1 Inter, system-ui, sans-serif;
+  font: 800 11px/1 inherit;
   letter-spacing: 1.1px;
   text-transform: uppercase;
-  color: #a3adbd;
+  color: #a8adb8;
 }
-.cfPrevHint { font-size: 11px; color: #7b8496; }
+.cfPrevHint { font-size: 11px; color: #7d8494; }
 .cfPrevSpacer { flex: 1 1 auto; }
 .cfPrevSize {
   appearance: none;
-  border: 1px solid #2c2f39;
-  background: #1c1e24;
-  color: #a3adbd;
+  border: 1px solid #3a3a40;
+  background: #1e1e21;
+  color: #a8adb8;
   border-radius: 6px;
   min-width: 26px;
   padding: 4px 0;
-  font: 700 11px/1 Inter, system-ui, sans-serif;
+  font: 700 11px/1 inherit;
   cursor: pointer;
 }
 .cfPrevSize.on {
@@ -143,15 +183,23 @@ body.yvStandalone .cfPrevWrap {
   border-color: #1282a2;
   color: #eaf7fb;
 }
+.cfPrevRatio {
+  background: #1e1e21;
+  border: 1px solid #3a3a40;
+  color: #e8eaef;
+  border-radius: 6px;
+  font-size: 11.5px;
+  padding: 4px 6px;
+  max-width: 170px;
+}
 .cfPrevStage {
   position: relative;
   height: 220px;
   border-radius: 10px;
   overflow: hidden;
-  border: 1px solid #2c2f39;
-  background: #101010;
+  border: 1px solid #3a3a40;
+  background: #1a1a1c; /* letterbox lebih gelap dari dasar */
 }
-/* pratinjau mengisi strip penuh */
 body.yvStandalone .cfPrevStage .projPreview {
   position: absolute;
   inset: 0;
@@ -165,11 +213,11 @@ body.yvStandalone .cfPrevStage .projPreview {
   display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(16, 16, 16, 0.82);
+  background: rgba(26, 26, 28, 0.85);
   border: 2px dashed #1282a2;
   border-radius: 10px;
   color: #7fd4e8;
-  font: 700 14px/1.4 Inter, system-ui, sans-serif;
+  font: 700 14px/1.4 inherit;
   z-index: 5;
   pointer-events: none;
 }
@@ -186,7 +234,7 @@ body.yvStandalone .cfPrevStage .projPreview {
   width: 46px;
   height: 4px;
   border-radius: 999px;
-  background: #2c2f39;
+  background: #3a3a40;
 }
 .cfPrevResizer:hover span { background: #1282a2; }
 
@@ -194,10 +242,10 @@ body.yvStandalone .cfPrevStage .projPreview {
 body.yvStandalone .projPreview[data-bg="none"] {
   background-color: #101010 !important;
   background-image: conic-gradient(
-    #181818 0 25%,
-    #262626 0 50%,
-    #181818 0 75%,
-    #262626 0
+    #1c1c1e 0 25%,
+    #2a2a2c 0 50%,
+    #1c1c1e 0 75%,
+    #2a2a2c 0
   ) !important;
   background-size: 26px 26px !important;
 }
@@ -211,27 +259,29 @@ body.yvStandalone .cfSwatchNone {
 
 /* ---------- panel & kartu ---------- */
 body.yvStandalone .projPane {
-  background: #141519;
-  border-color: #2c2f39;
-  color: #e9edf4;
+  background: #262626;
+  border-color: #3a3a40;
+  color: #eceef2;
 }
 body.yvStandalone .projPaneHead {
-  border-bottom: 1px solid #2c2f39;
-  color: #e9edf4;
+  border-bottom: 1px solid #3a3a40;
+  color: #eceef2;
 }
-body.yvStandalone .projPaneHead h3 { color: #e9edf4; }
-body.yvStandalone .projRail { border-right: 1px solid #2c2f39; }
+body.yvStandalone .projPaneHead h3 { color: #eceef2; font-size: 13px; }
+body.yvStandalone .projRail { border-right: 1px solid #3a3a40; }
 body.yvStandalone .projRailTitle {
-  color: #7b8496;
+  color: #7d8494;
   letter-spacing: 1.1px;
+  font-size: 10.5px;
 }
 body.yvStandalone .projRailBtn {
-  color: #a3adbd;
+  color: #a8adb8;
   background: transparent;
+  font-size: 12px;
 }
-body.yvStandalone .projRailBtn:hover { background: #1f222b; color: #e9edf4; }
+body.yvStandalone .projRailBtn:hover { background: #323236; color: #eceef2; }
 body.yvStandalone .projRailBtn.on {
-  background: #1f222b;
+  background: #323236;
   color: #7fd4e8;
   box-shadow: inset 3px 0 0 #1282a2;
 }
@@ -239,28 +289,31 @@ body.yvStandalone .projRailBtn.on {
 /* ---------- tab & chip ---------- */
 body.yvStandalone .projTab {
   background: transparent;
-  color: #a3adbd;
+  color: #a8adb8;
   border-bottom: 2px solid transparent;
+  font-size: 12px;
 }
 body.yvStandalone .projTab.on {
   color: #7fd4e8;
   border-bottom-color: #1282a2;
 }
 body.yvStandalone .projChip {
-  background: #1c1e24;
-  border: 1px solid #2c2f39;
-  color: #a3adbd;
+  background: #1e1e21;
+  border: 1px solid #3a3a40;
+  color: #a8adb8;
+  font-size: 11.5px;
 }
 body.yvStandalone .projChip.on,
 body.yvStandalone .projChip:hover {
-  background: #262932;
-  color: #e9edf4;
+  background: #323236;
+  color: #eceef2;
   border-color: #1282a2;
 }
 body.yvStandalone .projBgTab {
-  background: #1c1e24;
-  border: 1px solid #2c2f39;
-  color: #a3adbd;
+  background: #1e1e21;
+  border: 1px solid #3a3a40;
+  color: #a8adb8;
+  font-size: 11.5px;
 }
 body.yvStandalone .projBgTab.on {
   background: #1282a2;
@@ -270,12 +323,13 @@ body.yvStandalone .projBgTab.on {
 
 /* ---------- tombol ---------- */
 body.yvStandalone .projMiniBtn {
-  background: #1f222b;
-  border: 1px solid #2c2f39;
-  color: #e6e9f0;
+  background: #323236;
+  border: 1px solid #3a3a40;
+  color: #e8eaef;
+  font-size: 12px;
 }
 body.yvStandalone .projMiniBtn:hover {
-  background: #262932;
+  background: #3a3a40;
   border-color: #1282a2;
 }
 body.yvStandalone .projMiniBtn.primary,
@@ -290,11 +344,12 @@ body.yvStandalone #projGoLive:hover {
   border-color: #1b9ec7;
 }
 body.yvStandalone .projBtn {
-  background: #1f222b;
-  border: 1px solid #2c2f39;
-  color: #e6e9f0;
+  background: #323236;
+  border: 1px solid #3a3a40;
+  color: #e8eaef;
+  font-size: 12px;
 }
-body.yvStandalone .projBtn:hover { background: #262932; }
+body.yvStandalone .projBtn:hover { background: #3a3a40; }
 
 /* ---------- input, select, textarea, range ---------- */
 body.yvStandalone .projPage input[type="text"],
@@ -306,10 +361,11 @@ body.yvStandalone .projPage textarea,
 body.yvStandalone .projPage select,
 body.yvStandalone .yvBar input,
 body.yvStandalone .yvBar select {
-  background: #17181d;
-  border: 1px solid #2c2f39;
-  color: #e9edf4;
+  background: #1e1e21;
+  border: 1px solid #3a3a40;
+  color: #eceef2;
   border-radius: 8px;
+  font-size: 12.5px;
 }
 body.yvStandalone .projPage input::placeholder,
 body.yvStandalone .projPage textarea::placeholder {
@@ -324,8 +380,8 @@ body.yvStandalone .projPage select:focus {
 }
 body.yvStandalone .projPage select option,
 body.yvStandalone .projPage select optgroup {
-  background: #141519;
-  color: #e9edf4;
+  background: #232326;
+  color: #eceef2;
 }
 body.yvStandalone .projPage input[type="range"] {
   accent-color: #1282a2;
@@ -336,11 +392,13 @@ body.yvStandalone .projPage input[type="range"] {
 /* ---------- label kecil ---------- */
 body.yvStandalone .projPage .label,
 body.yvStandalone .projPage label {
-  color: #a3adbd;
+  color: #a8adb8;
+  font-size: 11px;
 }
 body.yvStandalone .projPage .small,
 body.yvStandalone .projPage p.small {
-  color: #7b8496;
+  color: #7d8494;
+  font-size: 11px;
 }
 
 /* ---------- kartu lagu / slide ---------- */
@@ -349,28 +407,30 @@ body.yvStandalone .projCard,
 body.yvStandalone .projPlanItem,
 body.yvStandalone .projSlideCard,
 body.yvStandalone .projMediaItem {
-  background: #17181d;
-  border: 1px solid #2c2f39;
-  color: #e9edf4;
+  background: #1e1e21;
+  border: 1px solid #3a3a40;
+  color: #eceef2;
 }
 body.yvStandalone .projCard2:hover,
 body.yvStandalone .projPlanItem:hover,
 body.yvStandalone .projSlideCard:hover {
   border-color: #1282a2;
-  background: #1e2026;
+  background: #232326;
 }
 body.yvStandalone .projCardTitle,
 body.yvStandalone .projPlanTitle,
 body.yvStandalone .projActiveTitle {
   color: #f4f6fb;
+  font-size: 13px;
 }
 body.yvStandalone .projCardMeta,
 body.yvStandalone .projPlanKind,
 body.yvStandalone .projActiveKind,
 body.yvStandalone .projActiveLines {
-  color: #7b8496;
+  color: #7d8494;
+  font-size: 11.5px;
 }
-body.yvStandalone .projEmpty { color: #7b8496; }
+body.yvStandalone .projEmpty { color: #7d8494; }
 body.yvStandalone .projLive {
   background: rgba(224, 93, 93, 0.16);
   color: #ff9d9d;
@@ -386,62 +446,65 @@ body.yvStandalone .projLive.on {
 body.yvStandalone .projSoon,
 body.yvStandalone .projComposer,
 body.yvStandalone .projAuditLog {
-  background: #17181d;
-  border: 1px dashed #2c2f39;
-  color: #a3adbd;
+  background: #1e1e21;
+  border: 1px dashed #3a3a40;
+  color: #a8adb8;
 }
 body.yvStandalone .projAuditOut {
-  background: #141519;
-  border: 1px solid #2c2f39;
-  color: #a3adbd;
+  background: #232326;
+  border: 1px solid #3a3a40;
+  color: #a8adb8;
 }
 
-/* ---------- timeline drawer (gelap netral) ---------- */
+/* ---------- timeline drawer (abu netral) ---------- */
 body.yvStandalone .tlDrawer {
-  background: #141519;
-  border-top: 1px solid #2c2f39;
-  color: #e9edf4;
+  background: #232326;
+  border-top: 1px solid #3a3a40;
+  color: #eceef2;
 }
 body.yvStandalone .tlBar {
-  background: #141519;
-  border-bottom: 1px solid #2c2f39;
+  background: #232326;
+  border-bottom: 1px solid #3a3a40;
 }
 body.yvStandalone .tlBtn {
-  background: #1f222b;
-  border: 1px solid #2c2f39;
-  color: #e6e9f0;
+  background: #323236;
+  border: 1px solid #3a3a40;
+  color: #e8eaef;
+  font-size: 12px;
 }
-body.yvStandalone .tlBtn:hover { background: #262932; border-color: #1282a2; }
+body.yvStandalone .tlBtn:hover { background: #3a3a40; border-color: #1282a2; }
 body.yvStandalone .tlBtn.on { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
 body.yvStandalone .tlBtn.primary { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
 body.yvStandalone .tlBtn.danger { color: #ff9d9d; }
 body.yvStandalone .tlTime,
-body.yvStandalone .tlSelInfo { color: #a3adbd; }
+body.yvStandalone .tlSelInfo { color: #a8adb8; font-size: 11.5px; }
 body.yvStandalone .tlLive {
   background: rgba(224, 93, 93, 0.16);
   color: #ff9d9d;
 }
 body.yvStandalone .tlLive.on { background: #c0392b; color: #fff; }
 body.yvStandalone .tlTrackHead {
-  background: #191a20;
-  border-bottom: 1px solid #2c2f39;
-  color: #e6e9f0;
+  background: #26262a;
+  border-bottom: 1px solid #3a3a40;
+  color: #e8eaef;
+  font-size: 12px;
 }
-body.yvStandalone .tlTrackHead span { color: #7b8496; }
+body.yvStandalone .tlTrackHead span { color: #7d8494; }
 body.yvStandalone .tlTrack {
-  background: #17181d;
-  border-bottom: 1px solid #2c2f39;
+  background: #1e1e21;
+  border-bottom: 1px solid #3a3a40;
 }
 body.yvStandalone .tlRuler {
-  background: #141519;
-  border-bottom: 1px solid #2c2f39;
+  background: #232326;
+  border-bottom: 1px solid #3a3a40;
 }
-body.yvStandalone .tlTick { color: #7b8496; border-color: #2c2f39; }
+body.yvStandalone .tlTick { color: #7d8494; border-color: #3a3a40; }
 body.yvStandalone .tlPlayhead { background: #1282a2; }
 body.yvStandalone .tlClip {
-  background: #1f222b;
-  border: 1px solid #2c2f39;
-  color: #e9edf4;
+  background: #323236;
+  border: 1px solid #3a3a40;
+  color: #eceef2;
+  font-size: 11.5px;
 }
 body.yvStandalone .tlClip.sel {
   border-color: #1282a2;
@@ -449,12 +512,34 @@ body.yvStandalone .tlClip.sel {
 }
 body.yvStandalone .tlZoom input[type="range"] { accent-color: #1282a2; }
 body.yvStandalone .tlDrawer select {
-  background: #17181d;
-  border: 1px solid #2c2f39;
-  color: #e9edf4;
+  background: #1e1e21;
+  border: 1px solid #3a3a40;
+  color: #eceef2;
 }
 
-/* v87: ops track (kunci/sembunyi) + marker */
+/* handle tinggi drawer timeline (disuntik dari castflow.js) */
+.cfTlResizer {
+  position: absolute;
+  top: -5px;
+  left: 0;
+  right: 0;
+  height: 9px;
+  cursor: ns-resize;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+.cfTlResizer span {
+  width: 46px;
+  height: 4px;
+  border-radius: 999px;
+  background: #3a3a40;
+}
+.cfTlResizer:hover span { background: #1282a2; }
+
+/* ops track (kunci/sembunyi) + marker */
 .tlTrackOps {
   display: inline-flex;
   gap: 4px;
@@ -464,19 +549,19 @@ body.yvStandalone .tlDrawer select {
   appearance: none;
   border: 1px solid transparent;
   background: transparent;
-  color: #7b8496;
+  color: #7d8494;
   border-radius: 6px;
   padding: 1px 5px;
   font-size: 11px;
   cursor: pointer;
   opacity: 0.45;
 }
-.tlTOp:hover { opacity: 1; background: #1f222b; }
+.tlTOp:hover { opacity: 1; background: #323236; }
 .tlTOp.on {
   opacity: 1;
   color: #7fd4e8;
   border-color: #1282a2;
-  background: #1f222b;
+  background: #323236;
 }
 .tlMarker {
   position: absolute;
@@ -492,16 +577,17 @@ body.yvStandalone .tlDrawer select {
 /* ---------- penyesuaian kecil ---------- */
 body.yvStandalone ::-webkit-scrollbar { width: 10px; height: 10px; }
 body.yvStandalone ::-webkit-scrollbar-thumb {
-  background: #2c2f39;
+  background: #3a3a40;
   border-radius: 999px;
-  border: 2px solid #101010;
+  border: 2px solid #262626;
 }
 body.yvStandalone ::-webkit-scrollbar-thumb:hover { background: #1282a2; }
-body.yvStandalone ::-webkit-scrollbar-track { background: #101010; }
+body.yvStandalone ::-webkit-scrollbar-track { background: transparent; }
 body.yvStandalone ::selection { background: rgba(18, 130, 162, 0.4); color: #eaf7fb; }
 
-/* responsif: strip pratinjau lebih pendek di layar kecil */
+/* responsif: splitter disembunyikan di layar sempit (grid 1 kolom) */
 @media (max-width: 900px) {
+  .cfSplitter { display: none; }
   body.yvStandalone .cfPrevStage { height: 150px; }
   .cfPrevHint { display: none; }
 }

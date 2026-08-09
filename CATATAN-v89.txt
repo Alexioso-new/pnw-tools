@@ -1,0 +1,35 @@
+============================================================
+PNW TOOLS v89 (label v7.2) — CASTFLOW: WORKSPACE PROFESIONAL
+============================================================
+
+ISI RILIS
+1. SPLIT PANE / RESIZABLE PANELS — semua kolom CastFlow (rail, playlist,
+   katalog, panel kanan) kini bisa diubah lebarnya: seret garis pemisah
+   antar-kolom. Klik 2x pada pemisah untuk kembali ke ukuran bawaan.
+   Lebar tersimpan otomatis. Drawer Timeline juga bisa diubah tingginya
+   (seret pegangan di tepi atasnya). Transisi halus saat reset/restore.
+2. RESOLUSI PRATINJAU — dropdown baru di strip pratinjau atas: Fit to
+   screen, 16:9 (1920×1080), 4:3 (1024×768), 1:1 (1080×1080), dan
+   9:16 (1080×1920, untuk konten vertikal). Pratinjau di-letterbox rapi
+   di tengah seperti pemutar CapCut. Tersimpan otomatis.
+3. TIKTOK SANS di seluruh UI CastFlow — dimuat dari Google Fonts
+   (variable 300–900), dengan antialiasing (teks lebih halus) dan skala
+   ukuran yang dirapikan supaya tidak kebesaran. TikTok Sans juga masuk
+   library font lirik.
+4. TEMA ABU #262626 — seluruh CastFlow kini abu netral ala CapCut:
+   dasar #262626, bar/panel #232326, sumur input #1e1e21, garis #3a3a40,
+   aksen tetap teal #1282A2.
+5. Semua isi v85–v88 tetap termasuk.
+
+CARA PASANG (urutan WAJIB)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah (database.rules.json
+   dari pnw-firebase-rules-v83.zip). Ini memperbaiki PERMISSION_DENIED.
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v89" && git push
+4. Setelah deploy: Ctrl+Shift+R, buka menu -> CastFlow. Cek: label v7.2,
+   tema abu #262626, font TikTok Sans, seret pemisah antar-kolom, dan
+   ganti rasio pratinjau dari dropdown di strip atas.
+
+CATATAN: TikTok Sans dimuat dari Google Fonts — butuh internet saat
+pertama kali; setelah itu di-cache browser. Tanpa internet, UI memakai
+font fallback (tampilan tetap rapi).
