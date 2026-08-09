@@ -1,0 +1,56 @@
+============================================================
+PNW TOOLS v85 (label v6.3) — LOG ERROR & DIAGNOSTIK
+============================================================
+
+ISI RILIS
+1. Fitur baru: LOG ERROR & DIAGNOSTIK (window.PNWLog, js/logger.js)
+   - Menangkap otomatis: error JavaScript, promise rejection, gagal
+     memuat file (script/gambar), console.error / console.warn
+     (termasuk laporan PERMISSION_DENIED dari SDK Firebase), dan
+     penolakan siaran youTh Views (yv:sendError).
+   - Log tersimpan LOKAL di perangkat (maks 250 entri) — selamat walau
+     offline atau Firebase menolak.
+   - Panel penampil: filter Semua/Error/Warning/Info, kotak pencarian,
+     stack yang bisa dibentangkan (ketuk barisnya), tombol Salin semua /
+     Unduh .txt / Bersihkan.
+   - Badge merah di tombol menu = jumlah error sejak panel dibuka.
+   - Tombol keyboard L = buka/tutup panel (berguna di layar output yang
+     tanpa tombol), Esc = tutup.
+   - Di aplikasi utama: Menu -> Aksi -> "Log Error".
+   - Di youTh Views: tombol "Log Error" di bar atas.
+   - Bagian "Log cloud (semua perangkat)": admin bisa membaca log yang
+     dikirim semua perangkat ke Firebase node /logs (butuh aturan baca —
+     lihat bagian RULES di bawah).
+
+2. js/yv-standalone.js — penolakan kanal live kini otomatis tercatat di
+   Log Error; konteks versi/identitas ikut terkirim ke log cloud.
+
+3. Versi: cache sw.js = pnw-tools-v85, label UI = v6.3.
+
+CARA PASANG (urutan WAJIB — sama seperti v84)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah dilakukan
+   (berkas database.rules.json dari pnw-firebase-rules-v83.zip,
+   Firebase Console -> Realtime Database -> Aturan -> tempel -> Publish).
+   Inilah penyebab error "Siaran tidak bisa dibaca (PERMISSION_DENIED)"
+   di layar output — rules v83 membuat kanal youthviews/live boleh
+   dibaca tanpa login.
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini (menimpa tidak menghapus
+   berkas lain — aman).
+3. git add -A && git commit -m "v85" && git push
+4. Setelah deploy: Ctrl+Shift+R, cek label v6.3 di header.
+5. Uji cepat: buka Menu -> Log Error (panel terbuka), tekan tombol L
+   (panel menutup/terbuka), lalu buka youTh Views -> tombol Log Error.
+
+RULES OPSIONAL — supaya admin bisa MEMBACA log cloud semua perangkat
+Tambahkan blok ini sejajar node "pujianYouth" di database.rules.json
+(tidak wajib; tanpa ini log tetap tersimpan lokal + terkirim ke cloud,
+hanya tombol "Muat" di panel yang akan menolak):
+
+  "logs": {
+    ".read": "auth != null && (auth.uid == 'l9U1ktYog2X3vSA81JdsjHln5qu1' || root.child('pujianYouth/admins').child(auth.uid).exists())",
+    ".write": "auth != null"
+  }
+
+BERKAS YANG BERUBAH (9): index.html, youthviews.html, sw.js,
+js/logger.js (ditulis ulang), js/yv-standalone.js, package.json,
+package-lock.json, wrangler.jsonc, .assetsignore, .gitignore.

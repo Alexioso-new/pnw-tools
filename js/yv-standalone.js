@@ -1,5 +1,5 @@
 /* PNW-FILE-GUIDE
-   js/yv-standalone.js — mesin youTh Views MANDIRI (v6.2).
+   js/yv-standalone.js — mesin youTh Views MANDIRI (v6.3).
    Dipakai HANYA oleh youthviews.html. TIDAK memuat js/app.js.
 
    Prinsip:
@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v6.2-standalone";
+  var VERSION = "v6.3-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";
@@ -240,6 +240,11 @@
           (isAdmin ? " · boleh siaran" : " · belum admin");
     var b = document.getElementById("yvLoginBtn");
     if (b) b.textContent = u ? "Keluar" : "Masuk dengan Google";
+    /* v85: konteks identitas untuk entri log cloud. */
+    try {
+      if (window.PNWLog && window.PNWLog.setContext)
+        window.PNWLog.setContext({ uid: u ? u.uid : null, isAdmin: !!isAdmin });
+    } catch (e) {}
   }
   function toggleLogin() {
     if (typeof firebase === "undefined" || !firebase.auth) return;
@@ -875,6 +880,17 @@
           error: String((err && err.code) || err),
           at: Date.now(),
         });
+        /* v85: catat ke Log Error supaya pengurus bisa melapor lengkap. */
+        try {
+          if (window.PNWLog && window.PNWLog.event)
+            window.PNWLog.event("yv:liveRead", {
+              lvl: "error",
+              message:
+                "Kanal live ditolak (" +
+                String((err && err.code) || err) +
+                ") — rules Firebase v83 belum dipublish?",
+            });
+        } catch (e) {}
       },
     );
     safe("conn", function () {
@@ -909,6 +925,15 @@
   }
 
   function boot() {
+    /* v85: aktifkan Log Error sedini mungkin. PNWLog.ready tetap dipanggil
+       walau Firebase TIDAK termuat (offline) — log tersimpan lokal. */
+    safe("pnwlog", function () {
+      if (window.PNWLog && window.PNWLog.ready)
+        window.PNWLog.ready(
+          typeof firebase !== "undefined" ? firebase : null,
+          { version: VERSION, page: "youthviews" }
+        );
+    });
     initFirebase();
     if (DISPLAY_MODE) bootDisplay();
     else bootControl();
