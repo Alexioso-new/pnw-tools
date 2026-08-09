@@ -3,7 +3,9 @@
 <!-- PNW-FILE-GUIDE
   index.html — markup utama PNW TOOLS.
   Memuat CSS berurutan: css/styles.css lalu css/design.css (design.css MENIMPA styles.css).
-  Memuat JS lewat <script defer> di bagian bawah: logger -> firebase -> gsap -> motion -> recorder -> app -> guide -> projector -> hosana-flame-data -> logo-anim.
+  Memuat JS lewat <script defer> di bagian bawah: logger -> firebase -> gsap -> motion -> recorder -> app -> guide -> hosana-flame-data -> logo-anim.
+  v6.0: youTh Views TIDAK lagi dimuat di sini. Halaman terpisah: youthviews.html.
+  js/yv-motion.js TETAP dimuat karena app.js memakainya untuk latar output.
   Font: Google Fonts (Inter + JetBrains Mono) + Fontshare (Satoshi). Ikon: dimuat malas (lazy) dari js/animations.js.
   PERHATIAN: mengubah id/class elemen di sini berpengaruh ke js/app.js (getElementById) dan css/design.css — cek keduanya.
 -->
@@ -131,7 +133,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v5.9</span>
+            <span class="verTag" id="appVer">v6.0</span>
           </p>
         </div>
         <button
@@ -563,7 +565,7 @@
       <aside class="drawer">
         <div class="drawerHead">
           <b>Menu</b>
-          <span class="menuVer">v5.9</span>
+          <span class="menuVer">v6.0</span>
           <button class="xBtn" id="closeMenuBtn" type="button">&#10005;</button>
         </div>
         <div class="menuScroll">
@@ -588,9 +590,6 @@
               <span class="menuRowMain"><span class="menuRowTitle">youTh Views</span><span class="menuRowDesc">Halaman mandiri · presenter, proyektor, teks &amp; ayat</span></span>
               <span class="menuRowGo" aria-hidden="true">↗</span>
             </a>
-            <!-- v5.8: tombol lama disembunyikan supaya js/projector.js tetap
-                 bisa memasang binding-nya tanpa error. -->
-            <button class="menuRow" id="openProjBtn" type="button" hidden aria-hidden="true"></button>
             <button class="menuRow" id="openGuideBtn" type="button">
               <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="struktur"></span></span>
               <span class="menuRowMain"><span class="menuRowTitle">Buku Panduan</span><span class="menuRowDesc">Cara pakai semua fitur</span></span>
@@ -903,152 +902,6 @@
         <div class="guideBody" id="guideBody"></div>
       </div>
     </div>
-    <div class="projPage youthViewsPage no-print" id="projPage" aria-hidden="true">
-      <header class="projTop">
-        <div class="projTopL">
-          <span class="projBrand">youTh Views</span>
-          <span class="projBadge">Presenter Beta</span>
-          <span class="projDev">EasyWorship / ProPresenter workflow</span>
-        </div>
-        <button class="xBtn" id="closeProjBtn" type="button">&#10005;</button>
-      </header>
-      <div class="projGrid">
-        <aside class="projPane projPaneL">
-          <div class="projPaneHead">
-            <h3>Playlist / Rundown</h3>
-            <div class="projPaneOps">
-              <button class="projMiniBtn" id="projNewPlan" type="button">
-                Baru
-              </button>
-              <button
-                class="projMiniBtn primary"
-                id="projSavePlan"
-                type="button"
-              >
-                Simpan
-              </button>
-            </div>
-          </div>
-          <div class="projPlanList" id="projPlanList"></div>
-        </aside>
-        <section class="projPane projPaneC">
-          <div class="projTabs" id="projTabs">
-            <button class="projTab on" data-tab="lagu" type="button">
-              Lagu
-            </button>
-            <button class="projTab" data-tab="alkitab" type="button">
-              Alkitab
-            </button>
-            <button class="projTab" data-tab="teks" type="button">Teks</button>
-            <button class="projTab" data-tab="media" type="button">
-              Media
-            </button>
-            <button class="projTab" data-tab="template" type="button">
-              Template
-            </button>
-          </div>
-          <div class="projSearchRow">
-            <input id="projSearch" type="search" placeholder="Cari lagu / filter library..." />
-          </div>
-          <div class="projFilters" id="projFilters">
-            <button class="projChip on" data-filter="semua" type="button">
-              Semua <span id="projCountAll">0</span>
-            </button>
-            <button class="projChip" data-filter="rencana" type="button">
-              Di rencana
-            </button>
-          </div>
-          <div class="projCatalogList" id="projCatalogList"></div>
-          <div class="projSlideGrid" id="projSlideGrid" hidden></div>
-        </section>
-        <aside class="projPane projPaneR">
-          <div class="projPaneHead">
-            <h3>Active Item</h3>
-            <span class="projLive" id="projLiveDot">LIVE</span>
-          </div>
-          <div class="projActiveBody" id="projActiveBody"></div>
-          <div class="projRowBtns">
-            <button class="projMiniBtn" id="projPrevSlide" type="button" title="Slide sebelumnya (←)">
-              ◀
-            </button>
-            <button class="projMiniBtn primary" id="projGoLive" type="button">
-              Tayangkan
-            </button>
-            <button class="projMiniBtn" id="projNextSlide" type="button" title="Slide berikutnya (→ / Spasi)">
-              ▶
-            </button>
-            <button class="projMiniBtn" id="projClear" type="button">
-              Bersihkan Layar
-            </button>
-          </div>
-          <p class="label">Pengaturan Teks Sesi</p>
-          <div class="projField">
-            <label for="projFont">Font</label>
-            <select id="projFont">
-              <option value="Montserrat">Montserrat</option>
-            </select>
-          </div>
-          <div class="projField">
-            <label for="projSize"
-              >Ukuran <span id="projSizeVal">56px</span></label
-            >
-            <input type="range" id="projSize" min="24" max="140" step="2" />
-          </div>
-          <div class="projField">
-            <label for="projMaxLines"
-              >Baris per slide <span id="projMaxLinesVal">4</span></label
-            >
-            <input type="range" id="projMaxLines" min="1" max="8" step="1" />
-          </div>
-          <div class="projField">
-            <label>Perataan</label>
-            <div class="projSeg" id="projAlign">
-              <button data-align="left" type="button">Kiri</button>
-              <button data-align="center" type="button">Tengah</button>
-              <button data-align="right" type="button">Kanan</button>
-            </div>
-          </div>
-          <div class="projField">
-            <label for="projShadow">Bayangan</label>
-            <select id="projShadow">
-              <option value="soft">Lembut</option>
-              <option value="strong">Tegas</option>
-              <option value="none">Tanpa bayangan</option>
-            </select>
-          </div>
-          <p class="label">Latar Belakang</p>
-          <div class="projBgTabs" id="projBgTabs">
-            <button class="projBgTab on" data-bgtab="warna" type="button">Warna</button>
-            <button class="projBgTab" data-bgtab="animasi" type="button">Animasi</button>
-            <button class="projBgTab" data-bgtab="preset" type="button">Preset</button>
-            <button class="projBgTab" data-bgtab="api" type="button">API</button>
-          </div>
-          <div class="projSolids" id="projSolids"></div>
-          <div class="projPresets" id="projPresets" hidden></div>
-          <div class="projBgApi" id="projBgApi" hidden>
-            <div class="projBgApiRow">
-              <select id="projBgProvider">
-                <option value="pexels">Pexels</option>
-                <option value="pixabay">Pixabay</option>
-                <option value="picsum">Picsum (tanpa key)</option>
-              </select>
-              <input id="projBgKey" type="password" placeholder="API key kamu" autocomplete="off" />
-            </div>
-            <div class="projBgApiRow">
-              <input id="projBgQuery" placeholder="worship, light rays, clouds…" />
-              <button class="projMiniBtn primary" id="projBgSearch" type="button">Cari</button>
-            </div>
-            <div class="projBgChips" id="projBgChips"></div>
-            <div class="projBgResults" id="projBgResults"></div>
-          </div>
-          <input id="projBgUrl" class="projBgUrl" placeholder="Tempel URL gambar / video .mp4 sendiri" />
-          <p class="label">Pratinjau</p>
-          <div class="projPreview" id="projPreview">
-            <span id="projPreviewText">Contoh teks lirik</span>
-          </div>
-        </aside>
-      </div>
-    </div>
     <script
       defer
       src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"
@@ -1072,7 +925,6 @@
     <script defer src="./js/yv-motion.js"></script>
     <script defer src="./js/app.js"></script>
     <script defer src="./js/guide.js"></script>
-    <script defer src="./js/projector.js"></script>
     <script defer src="./js/hosana-flame-data.js"></script>
     <script defer src="./js/logo-anim.js"></script>
     <script defer src="./js/presenter-logo-data.js"></script>

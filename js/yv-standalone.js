@@ -1,5 +1,5 @@
 /* PNW-FILE-GUIDE
-   js/yv-standalone.js — mesin youTh Views MANDIRI (v5.9).
+   js/yv-standalone.js — mesin youTh Views MANDIRI (v6.0).
    Dipakai HANYA oleh youthviews.html. TIDAK memuat js/app.js.
 
    Prinsip:
@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v5.9-standalone";
+  var VERSION = "v6.0-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";

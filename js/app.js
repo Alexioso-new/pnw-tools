@@ -9715,7 +9715,7 @@
 
   // === Mesin youTh Views yang dipakai js/projector.js ===
   window.PNWYouthViews = {
-    version: "v81",
+    version: "v82",
     getSongs: function () {
       return Array.isArray(songs) ? songs : [];
     },
