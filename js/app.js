@@ -5,6 +5,21 @@
    Firebase RTDB: pujianYouth/songs, /songBank, /config/locked, /live.
  */
 
+/* v83: output youTh Views kini HANYA hidup di youthviews.html (melanjutkan
+   pemisahan tahap 1 di v82). URL lama (?mode=youthviews / youth-views /
+   views / display) dialihkan otomatis supaya bookmark lama tetap nyambung.
+   ?mode=stage (Stage Display musisi, kanal Spectate) TETAP di sini. */
+(function () {
+  var s = location.search || "";
+  if (!/[?&]mode=(youthviews|youth-views|views|display)([&#]|$)/.test(s))
+    return;
+  var q = s.replace(
+    /([?&])mode=(youthviews|youth-views|views|display)/,
+    "$1mode=display",
+  );
+  location.replace("./youthviews.html" + q + (location.hash || ""));
+})();
+
 (function () {
   // ================= KONFIGURASI ONLINE (FIREBASE) =================
   // Biarkan KOSONG = mode lokal (edit hanya tersimpan di perangkat ini).
@@ -9715,7 +9730,7 @@
 
   // === Mesin youTh Views yang dipakai js/projector.js ===
   window.PNWYouthViews = {
-    version: "v82",
+    version: "v84",
     getSongs: function () {
       return Array.isArray(songs) ? songs : [];
     },
@@ -9875,10 +9890,8 @@
     var odb = document.getElementById("openDisplayBtn");
     if (odb)
       odb.onclick = function () {
-        window.open(
-          location.origin + location.pathname + "?mode=youthviews",
-          "_blank",
-        );
+        // v83: output youTh Views hanya ada di halaman mandiri.
+        window.open("./youthviews.html?mode=display", "_blank");
       };
     var osb = document.getElementById("openStageBtn");
     if (osb)

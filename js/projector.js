@@ -1330,6 +1330,18 @@
           notify("Rundown disimpan.", "success");
         };
 
+      /* v83: permukaan-kan penolakan tulisan dari mesin (standalone)
+         sebagai toast, supaya operator tahu siaran TIDAK benar-benar keluar. */
+      try {
+        document.addEventListener("yv:sendError", function (ev) {
+          notify(
+            "Siaran ditolak server (" +
+              ((ev && ev.detail) || "error") +
+              "). Publish rules Firebase v83 / cek login admin.",
+            "error",
+          );
+        });
+      } catch (e) {}
       var lv = el("projGoLive");
       if (lv) lv.onclick = goLive;
       var cl = el("projClear");
@@ -1436,6 +1448,20 @@
   else init();
 
   window.PNWProjector = { open: open, close: close, init: init, audit: runAudit, fonts: FONTS };
+  /* v84: hook internal untuk js/yv-timeline.js (editor timeline). Baca data +
+     util saja; TIDAK mengubah perilaku presenter. */
+  window.PNWProjector.__tl = {
+    plan: function () {
+      return _plan;
+    },
+    settings: settings,
+    slidesOf: slidesOf,
+    songById: songById,
+    savePlan: savePlan,
+    notify: notify,
+    SOLIDS: SOLIDS,
+    MOTIONS: MOTIONS,
+  };
 })();
 
 

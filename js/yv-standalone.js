@@ -1,5 +1,5 @@
 /* PNW-FILE-GUIDE
-   js/yv-standalone.js — mesin youTh Views MANDIRI (v6.0).
+   js/yv-standalone.js — mesin youTh Views MANDIRI (v6.2).
    Dipakai HANYA oleh youthviews.html. TIDAK memuat js/app.js.
 
    Prinsip:
@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v6.0-standalone";
+  var VERSION = "v6.2-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";
@@ -74,6 +74,43 @@
     });
   } catch (e) {}
 
+  /* v83: toast mini mandiri. projector.js memanggil window.toast lewat
+     notify(), tetapi fungsi itu aslinya milik js/app.js yang TIDAK dimuat
+     di halaman ini -- akibatnya SEMUA umpan balik operator ("Tayang...",
+     "Gagal...") hilang tanpa jejak. Sediakan versi sederhana. */
+  if (typeof window.toast !== "function") {
+    window.toast = function (msg, kind) {
+      safe("toast", function () {
+        var host = document.getElementById("yvToastHost");
+        if (!host) {
+          host = document.createElement("div");
+          host.id = "yvToastHost";
+          host.style.cssText =
+            "position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:99999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;";
+          document.body.appendChild(host);
+        }
+        var t = document.createElement("div");
+        t.textContent = msg;
+        t.style.cssText =
+          "background:" +
+          (kind === "error"
+            ? "#b3261e"
+            : kind === "success"
+              ? "#146c43"
+              : "#1f2637") +
+          ";color:#fff;padding:10px 16px;border-radius:10px;font:600 13px/1.35 Inter,system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:82vw;text-align:center;";
+        host.appendChild(t);
+        setTimeout(function () {
+          t.style.transition = "opacity .4s";
+          t.style.opacity = "0";
+        }, 2600);
+        setTimeout(function () {
+          if (t.parentNode) t.parentNode.removeChild(t);
+        }, 3100);
+      });
+    };
+  }
+
   var DISPLAY_MODE =
     /[?&]mode=(display|stage|youthviews|youth-views|views)/.test(
       location.search,
@@ -89,6 +126,7 @@
   var _dispSig = "";
   var _lastBg = "";
   var _yvMotion = null;
+  var _cdTimer = null;
 
   /* ---------------- Firebase ---------------- */
   function initFirebase() {
@@ -343,6 +381,10 @@
           : "yvShadowStrong",
     );
     if (st.font) ensureFont(st.font);
+    // v84: gaya per-clip dari timeline (warna teks + posisi vertikal).
+    screen.style.setProperty("--yv-color", st.color || "#f4f8ff");
+    screen.classList.toggle("yvPosTop", st.pos === "top");
+    screen.classList.toggle("yvPosBottom", st.pos === "bottom");
   }
   function bgFromLive(v, song) {
     if (v && v.bg && typeof v.bg === "object" && v.bg.kind) return v.bg;
@@ -424,11 +466,36 @@
     return Promise.resolve(s);
   }
 
-  function paintLines(container, lines) {
+  /* v84: countdown besar di layar output (dari clip countdown timeline).
+     Output menghitung mundur SENDIRI dari endsAt -- kontrol tidak perlu
+     menyiarkan tiap detik. */
+  function paintCountdown(container, endsAt) {
+    if (!container) return;
+    container.innerHTML = "";
+    var d = document.createElement("div");
+    d.className = "dispCountdown";
+    d.textContent = "--:--";
+    container.appendChild(d);
+    function tickCd() {
+      var remain = Math.max(0, Math.round(((endsAt || Date.now()) - Date.now()) / 1000));
+      var m = Math.floor(remain / 60);
+      var s = remain % 60;
+      d.textContent = (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+      if (remain <= 0 && _cdTimer) {
+        clearInterval(_cdTimer);
+        _cdTimer = null;
+      }
+    }
+    tickCd();
+    _cdTimer = setInterval(tickCd, 250);
+  }
+
+  function paintLines(container, lines, trans) {
     if (!container) return;
     container.innerHTML = "";
     var wrap = document.createElement("div");
-    wrap.className = "dispTextBlock";
+    wrap.className =
+      "dispTextBlock" + (trans && trans !== "cut" ? " tlAnim tlAnim-" + trans : "");
     (lines || []).forEach(function (line) {
       var d = document.createElement("div");
       d.className = "dispTextLine";
@@ -442,7 +509,7 @@
       });
   }
 
-  function renderDisplay(v) {
+  function _renderMain(v) {
     return safe("output", function () {
       var screen = document.getElementById("displayScreen");
       if (!screen) return;
@@ -477,6 +544,41 @@
       if (stage) stage.hidden = false;
       screen.classList.add("hideChords");
 
+      // v84: clip kosong antar-clip -> hanya latar yang tampil.
+      if (v.kind === "blank") {
+        applyBackground(bgFromLive(v, null));
+        screen.classList.remove("dispTextMode");
+        screen.classList.add("yvSlideMode");
+        if ("blank" !== _dispSig) {
+          _dispSig = "blank";
+          if (titleEl) titleEl.textContent = "";
+          if (keyEl) keyEl.textContent = "";
+          if (body) body.innerHTML = "";
+        }
+        return;
+      }
+      // v84: clip countdown -> angka besar menghitung mundur.
+      if (v.kind === "countdown") {
+        applyBackground(bgFromLive(v, null));
+        screen.classList.remove("dispTextMode");
+        screen.classList.add("yvSlideMode");
+        var cSig =
+          "cd|" +
+          (v.title || "") +
+          "|" +
+          String(v.endsAt || 0) +
+          "|" +
+          JSON.stringify(v.style || {});
+        // repaint juga bila timer mati (mis. event nilai berulang dari
+        // reconnect) supaya angka tidak membeku.
+        if (cSig !== _dispSig || !_cdTimer) {
+          _dispSig = cSig;
+          if (titleEl) titleEl.textContent = v.title || "";
+          if (keyEl) keyEl.textContent = "";
+          paintCountdown(body, v.endsAt || Date.now());
+        }
+        return;
+      }
       if (v.kind === "text" || v.kind === "verse") {
         applyBackground(bgFromLive(v, null));
         screen.classList.remove("yvSlideMode");
@@ -486,7 +588,7 @@
         _dispSig = sigT;
         if (titleEl) titleEl.textContent = "";
         if (keyEl) keyEl.textContent = v.kind === "verse" ? v.ref || "" : "";
-        paintLines(body, String(v.text || "").replace(/\r/g, "").split("\n"));
+        paintLines(body, String(v.text || "").replace(/\r/g, "").split("\n"), v.transition);
         cue(v.kind, 1);
         return;
       }
@@ -507,7 +609,7 @@
             v.showMeta === false
               ? ""
               : "Slide " + (pIdx + 1) + " / " + (v.slideTotal || pIdx + 1) + (v.label ? " \u00b7 " + v.label : "");
-        paintLines(body, v.lines);
+        paintLines(body, v.lines, v.transition);
         cue(v.label || "", 1);
         return;
       }
@@ -550,9 +652,56 @@
               " / " +
               deck.length +
               (slide.label ? " · " + slide.label : "");
-      paintLines(body, slide.lines);
+      paintLines(body, slide.lines, v.transition);
       cue(slide.label || "", 1);
     });
+  }
+
+  /* v84: lapisan overlay (logo / lower-third) dirender TERPISAH dari konten
+     supaya ganti slide tidak mengedipkan overlay. */
+  var _lastOv = "__none__";
+  function renderOverlay(v) {
+    safe("overlay", function () {
+      var host = document.getElementById("dispOverlay");
+      if (!host) return;
+      var ov = v && v.active && v.overlay && v.overlay.kind ? v.overlay : null;
+      var sig = ov ? JSON.stringify(ov) : "";
+      if (sig === _lastOv) return;
+      _lastOv = sig;
+      host.innerHTML = "";
+      if (!ov) {
+        host.classList.remove("on");
+        return;
+      }
+      host.classList.add("on");
+      if (ov.kind === "logo") {
+        var box = document.createElement("div");
+        box.className = "dispOvLogo";
+        var img = document.createElement("img");
+        img.src = "./icon-192.png";
+        img.alt = "";
+        box.appendChild(img);
+        host.appendChild(box);
+      } else if (ov.kind === "third") {
+        var b = document.createElement("div");
+        b.className = "dispThird";
+        var t1 = document.createElement("b");
+        t1.textContent = ov.text || "";
+        var t2 = document.createElement("span");
+        t2.textContent = ov.sub || "";
+        b.appendChild(t1);
+        if (ov.sub) b.appendChild(t2);
+        host.appendChild(b);
+      }
+    });
+  }
+  function renderDisplay(v) {
+    if (_cdTimer) {
+      clearInterval(_cdTimer);
+      _cdTimer = null;
+    }
+    _renderMain(v);
+    renderOverlay(v);
   }
 
   function dispStatus(online) {
@@ -605,7 +754,28 @@
                 if (!p.songTitle) p.songTitle = sg.title || "";
               }
             }
-            liveRef.set(p);
+            var w = liveRef.set(p);
+            if (w && w.catch)
+              w.catch(function (err) {
+                // v83: tulisan ditolak server -> beri tahu operator. Dulu
+                // toast "Tayang" tampil padahal siaran tak pernah keluar.
+                var code = String((err && err.code) || err || "error");
+                window.PNWDiag.push({
+                  feature: "yv.broadcast",
+                  error: code,
+                  at: Date.now(),
+                });
+                status(
+                  "Siaran DITOLAK server (" +
+                    code +
+                    ") - publish rules v83 / cek login admin.",
+                );
+                try {
+                  document.dispatchEvent(
+                    new CustomEvent("yv:sendError", { detail: code }),
+                  );
+                } catch (e) {}
+              });
             return true;
           },
           false,
@@ -618,7 +788,26 @@
         safe(
           "clear",
           function () {
-            liveRef.set({ active: false, src: "youthviews", t: Date.now() });
+            var w = liveRef.set({
+              active: false,
+              src: "youthviews",
+              t: Date.now(),
+            });
+            if (w && w.catch)
+              w.catch(function (err) {
+                var code = String((err && err.code) || err || "error");
+                window.PNWDiag.push({
+                  feature: "yv.clear",
+                  error: code,
+                  at: Date.now(),
+                });
+                status("Perintah bersihkan layar DITOLAK (" + code + ").");
+                try {
+                  document.dispatchEvent(
+                    new CustomEvent("yv:sendError", { detail: code }),
+                  );
+                } catch (e) {}
+              });
             return true;
           },
           false,
@@ -635,6 +824,9 @@
     cue: cue,
     diagnostics: function () {
       return window.PNWDiag.slice(-50);
+    },
+    _renderForQA: function (v) {
+      return renderDisplay(v);
     },
   };
 
@@ -661,11 +853,30 @@
       status("Firebase tidak tersedia.");
       return;
     }
-    liveRef.on("value", function (s) {
-      _lastLive = s.val();
-      dispStatus(true);
-      renderDisplay(_lastLive);
-    });
+    liveRef.on(
+      "value",
+      function (s) {
+        _lastLive = s.val();
+        dispStatus(true);
+        renderDisplay(_lastLive);
+      },
+      function (err) {
+        // v83: JANGAN diam saja saat baca ditolak (rules lama / belum
+        // dipublish). Dulu output hang selamanya di "Menunggu live...".
+        dispStatus(false);
+        var wait = document.getElementById("dispWait");
+        if (wait)
+          wait.textContent =
+            "Siaran tidak bisa dibaca (" +
+            String((err && err.code) || err || "error") +
+            "). Operator: publish rules Firebase v83 (kanal live boleh dibaca tanpa login).";
+        window.PNWDiag.push({
+          feature: "yv.liveRead",
+          error: String((err && err.code) || err),
+          at: Date.now(),
+        });
+      },
+    );
     safe("conn", function () {
       db.ref(".info/connected").on("value", function (s) {
         dispStatus(!!s.val());

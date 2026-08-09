@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="id">
   <!-- PNW-FILE-GUIDE
-       youthviews.html — halaman youTh Views MANDIRI (v6.0).
+       youthviews.html — halaman youTh Views MANDIRI (v6.2).
        Tidak memuat js/app.js sama sekali. Mesinnya js/yv-standalone.js,
        yang hanya membaca DATA LAGU dan menyiarkan lewat kanal terpisah
        pujianYouth/youthviews/live (bukan pujianYouth/live milik spectate).
@@ -37,6 +37,7 @@
     />
     <link rel="stylesheet" href="./css/styles.css" />
     <link rel="stylesheet" href="./css/design.css" />
+    <link rel="stylesheet" href="./css/yv-timeline.css" />
     <link
       rel="stylesheet"
       href="https://cdn-uicons.flaticon.com/uicons-solid-rounded/css/uicons-solid-rounded.css"
@@ -47,7 +48,7 @@
     />
     <script defer src="./js/logger.js"></script>
       <style>
-      /* Bar kecil khusus halaman mandiri youTh Views (v6.0). */
+      /* Bar kecil khusus halaman mandiri youTh Views (v6.2). */
       body.yvStandalone { background: #07080c; }
       .yvBar {
         position: fixed; inset: 0 0 auto 0; z-index: 60;
@@ -99,6 +100,7 @@
       ></video>
       <canvas class="dispMotion" id="dispMotion" aria-hidden="true"></canvas>
       <div class="dispLottie" id="dispLottie" aria-hidden="true"></div>
+      <div class="dispOverlay" id="dispOverlay" aria-hidden="true"></div>
       <div class="dispBar">
         <span class="dispDot off" id="dispDot" title="Menyambung…"></span>
         <span class="dispBrand">youTh Views — Live Output</span>
@@ -275,5 +277,6 @@
     <script defer src="./js/yv-motion.js"></script>
     <script defer src="./js/projector.js"></script>
     <script defer src="./js/yv-standalone.js"></script>
+    <script defer src="./js/yv-timeline.js"></script>
   </body>
 </html>
