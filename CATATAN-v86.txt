@@ -1,0 +1,27 @@
+============================================================
+PNW TOOLS v86 (label v6.4) — FAVICON LOGO DI TAB BROWSER
+============================================================
+
+ISI RILIS
+1. Logo resmi (yang Anda lampirkan) kini tampil di TAB browser,
+   menggantikan ikon globe bawaan — di aplikasi utama (index.html)
+   maupun halaman youTh Views (youthviews.html), termasuk jendela Output.
+   Berkas baru: favicon.png (64x64, latar transparan), sudah masuk
+   daftar cache offline (APP_SHELL di sw.js).
+2. Semua isi v85 tetap termasuk: fitur Log Error & Diagnostik
+   (Menu -> Aksi -> Log Error; tombol L; panel di youTh Views).
+3. Versi: cache sw.js = pnw-tools-v86, label UI = v6.4.
+
+CARA PASANG (urutan WAJIB)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah dilakukan
+   (berkas database.rules.json dari pnw-firebase-rules-v83.zip,
+   Firebase Console -> Realtime Database -> Aturan -> tempel -> Publish).
+   Inilah penyebab error "Siaran tidak bisa dibaca (PERMISSION_DENIED)".
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v86" && git push
+4. Setelah deploy: Ctrl+Shift+R, cek label v6.4 di header dan logo
+   di tab browser.
+5. Uji cepat: Menu -> Log Error terbuka; tekan L; logo tampil di tab.
+
+CATATAN: bila Anda sudah terlanjur memasang v85, tidak apa-apa —
+langsung timpa dengan v86 ini (sudah mencakup semua isi v85).
