@@ -1,5 +1,5 @@
 /* PNW-FILE-GUIDE
-   js/yv-standalone.js — mesin youTh Views MANDIRI (v6.4).
+   js/yv-standalone.js — mesin CastFlow MANDIRI (v6.4).
    Dipakai HANYA oleh youthviews.html. TIDAK memuat js/app.js.
 
    Prinsip:
@@ -7,14 +7,14 @@
       localStorage). Tidak menyentuh jadwal, izin, rekaman, dsb.
    2. Siaran keluar lewat kanal SENDIRI: pujianYouth/youthviews/live.
       Kanal lama pujianYouth/live dipakai fitur Spectate aplikasi utama,
-      jadi output youTh Views TIDAK PERNAH lagi memicu mode spectate.
+      jadi output CastFlow TIDAK PERNAH lagi memicu mode spectate.
    3. Menyediakan window.PNWYouthViews dengan bentuk yang sama seperti di
       js/app.js supaya js/projector.js jalan tanpa perubahan.
  */
 (function () {
   "use strict";
 
-  var VERSION = "v6.4-standalone";
+  var VERSION = "v7.0-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";
@@ -47,7 +47,7 @@
           at: Date.now(),
         });
         if (window.console && console.warn)
-          console.warn("[youTh Views] gagal:", name, e);
+          console.warn("[CastFlow] gagal:", name, e);
         return { ok: false, error: e };
       }
     },
@@ -285,11 +285,28 @@
     }
     return true;
   }
+  /* v87: label bagian dibatasi 5 kanonik (permintaan pemilik).
+     Pengenalan baris TIDAK berubah; hanya NAMA label dipetakan. */
+  var SECTION_CANON = [
+    [/^(pre-?chorus)\b/i, "Pre-Chorus"],
+    [/^(reff|refrain|chorus)\b/i, "Chorus"],
+    [/^(bait|verse)\b/i, "Verse"],
+    [/^(coda|ending|outro|outtro)\b/i, "Coda"],
+    [/^(intro|interlude|bridge|musik|instrumen(tal)?|solo|transition|transisi|breakdown|modulation|overtune|key ?change)\b/i, "Interlude"],
+  ];
+  function canonSection(label) {
+    var t = String(label || "").trim();
+    for (var i = 0; i < SECTION_CANON.length; i++)
+      if (SECTION_CANON[i][0].test(t)) return SECTION_CANON[i][1];
+    return t;
+  }
   function sectionLabel(line) {
-    return stripChords(line)
-      .replace(/[:\-—]+$/, "")
-      .replace(/\s*\+\s*\d+\s*$/, "")
-      .trim();
+    return canonSection(
+      stripChords(line)
+        .replace(/[:\-—]+$/, "")
+        .replace(/\s*\+\s*\d+\s*$/, "")
+        .trim()
+    );
   }
   function buildSlides(song, maxLines) {
     var max = Math.max(1, parseInt(maxLines, 10) || 4);
@@ -837,6 +854,10 @@
 
   /* ---------------- status bar ---------------- */
   function status(msg) {
+    /* v87: CastFlow dwibahasa — status diterjemahkan bila perlu. */
+    try {
+      if (window.CFt) msg = window.CFt(msg);
+    } catch (e) {}
     var el = document.getElementById("yvStatus");
     if (el) el.textContent = msg;
   }
@@ -908,14 +929,14 @@
     var ob = document.getElementById("yvOutputBtn");
     if (ob)
       ob.onclick = function () {
-        window.open("./youthviews.html?mode=display", "yvOutput");
+        window.open("./castflow.html?mode=display", "yvOutput");
       };
     var cb = document.getElementById("closeProjBtn");
     if (cb)
       cb.onclick = function () {
         location.href = "./index.html";
       };
-    /* Panel youTh Views selalu terbuka di halaman ini. */
+    /* Panel CastFlow selalu terbuka di halaman ini. */
     setTimeout(function () {
       safe("openPanel", function () {
         if (window.PNWProjector && window.PNWProjector.open)

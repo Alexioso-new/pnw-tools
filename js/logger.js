@@ -16,14 +16,14 @@
    5. Tetap mengirim ke Firebase node "/logs" (throttle + dedupe), dan bisa
       MEMBACA balik log cloud semua perangkat (khusus admin, bila rules
       mengizinkan).
-   Tombol #openLogBtn (menu aplikasi) & #yvLogBtn (bar youTh Views)
+   Tombol #openLogBtn (menu aplikasi) & #yvLogBtn (bar CastFlow)
    terpasang otomatis. Tombol keyboard L = buka/tutup panel (berguna di
    layar output yang tanpa tombol).
 */
 (function () {
   "use strict";
 
-  var FALLBACK_VERSION = "v6.4";
+  var FALLBACK_VERSION = "v7.0";
   var STORE_KEY = "pnwErrorLog.v1";
   var OPEN_KEY = "pnwErrorLog.lastOpenAt";
   var MAX_LOCAL = 250;
@@ -293,7 +293,7 @@
   wrapConsole("error", "error");
   wrapConsole("warn", "warn");
 
-  /* v85: kanal siaran youTh Views menolak -> tercatat otomatis. */
+  /* v85: kanal siaran CastFlow menolak -> tercatat otomatis. */
   try {
     document.addEventListener("yv:sendError", function (e) {
       enqueue({

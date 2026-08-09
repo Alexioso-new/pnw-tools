@@ -5,7 +5,7 @@
    Firebase RTDB: pujianYouth/songs, /songBank, /config/locked, /live.
  */
 
-/* v83: output youTh Views kini HANYA hidup di youthviews.html (melanjutkan
+/* v83: output CastFlow kini HANYA hidup di youthviews.html (melanjutkan
    pemisahan tahap 1 di v82). URL lama (?mode=youthviews / youth-views /
    views / display) dialihkan otomatis supaya bookmark lama tetap nyambung.
    ?mode=stage (Stage Display musisi, kanal Spectate) TETAP di sini. */
@@ -17,7 +17,7 @@
     /([?&])mode=(youthviews|youth-views|views|display)/,
     "$1mode=display",
   );
-  location.replace("./youthviews.html" + q + (location.hash || ""));
+  location.replace("./castflow.html" + q + (location.hash || ""));
 })();
 
 (function () {
@@ -1394,7 +1394,7 @@
       if (msg) msg.textContent = "Gagal: " + ((err && err.message) || "");
     });
   }
-  // v5.8: youTh Views punya kanal siaran SENDIRI, terpisah dari spectate.
+  // v5.8: CastFlow punya kanal siaran SENDIRI, terpisah dari spectate.
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var spectateOn = false,
     liveRef = null,
@@ -1410,7 +1410,7 @@
     DISPLAY_MODE = /[?&]mode=(display|stage|youthviews|youth-views|views)/.test(location.search);
   var STAGE_MODE = /[?&]mode=stage/.test(location.search);
   // v81: pemisahan kanal TEGAS. mode=stage mengikuti Spectate (pemusik, butuh
-  // chord). mode=display/youthviews/views HANYA mengikuti kanal youTh Views.
+  // chord). mode=display/youthviews/views HANYA mengikuti kanal CastFlow.
   // Tidak ada lagi percampuran antar kanal.
   var YV_OUTPUT_MODE = DISPLAY_MODE && !STAGE_MODE;
   function initSpectate() {
@@ -1424,8 +1424,8 @@
         if (STAGE_MODE) renderDisplay(v);
       });
     } catch (e) {}
-    // Kanal youTh Views: isinya TIDAK PERNAH dikirim ke applyLive(), jadi
-    // menyalakan output youTh Views tidak lagi menarik layar anggota masuk
+    // Kanal CastFlow: isinya TIDAK PERNAH dikirim ke applyLive(), jadi
+    // menyalakan output CastFlow tidak lagi menarik layar anggota masuk
     // ke mode spectate.
     try {
       yvLiveRef = firebase.database().ref(YV_LIVE_PATH);
@@ -1468,7 +1468,7 @@
   function applyLive(v) {
     var banner = document.getElementById("liveBanner");
     // v5.8: HANYA siaran spectate (src "spectate") yang boleh mengunci layar
-    // anggota. Siaran youTh Views (src "youthviews") diabaikan sepenuhnya.
+    // anggota. Siaran CastFlow (src "youthviews") diabaikan sepenuhnya.
     if (v && v.src && v.src !== "spectate") {
       if (banner) banner.hidden = true;
       document.body.classList.remove("spectating");
@@ -1570,7 +1570,7 @@
     }
   }
   var _lastBg = "";
-  // ---- youTh Views engine: bikin slide ala ProPresenter/EasyWorship ----
+  // ---- CastFlow engine: bikin slide ala ProPresenter/EasyWorship ----
   var YV_CHORD_RE = /^[A-G](#|b)?(maj|min|m|M|sus|add|dim|aug|\+|°)?\d*(sus\d)?(\/[A-G](#|b)?)?$/;
   function yvStripChords(line) {
     return String(line || "").replace(/\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
@@ -9728,7 +9728,7 @@
     });
   } catch (e) {}
 
-  // === Mesin youTh Views yang dipakai js/projector.js ===
+  // === Mesin CastFlow yang dipakai js/projector.js ===
   window.PNWYouthViews = {
     version: "v84",
     getSongs: function () {
@@ -9890,8 +9890,8 @@
     var odb = document.getElementById("openDisplayBtn");
     if (odb)
       odb.onclick = function () {
-        // v83: output youTh Views hanya ada di halaman mandiri.
-        window.open("./youthviews.html?mode=display", "_blank");
+        // v83: output CastFlow hanya ada di halaman mandiri.
+        window.open("./castflow.html?mode=display", "_blank");
       };
     var osb = document.getElementById("openStageBtn");
     if (osb)
@@ -10361,7 +10361,7 @@
       { k: "tampilan", lbl: "Tampilan", anim: "layer", sub: true },
       {
         k: "proyektor",
-        lbl: "youTh Views",
+        lbl: "CastFlow",
         ico: "\u25A3",
         act: function () {
           var b = document.getElementById("openDisplayBtn");

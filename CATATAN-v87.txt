@@ -1,0 +1,47 @@
+============================================================
+PNW TOOLS v87 (label v7.0) — CASTFLOW: NAMA BARU + TEMA GELAP NAVY
+============================================================
+
+BERITA BESAR: youTh Views kini bernama **CastFlow**.
+Semua teks yang terlihat pengguna sudah berganti; URL lama
+(youthviews.html) otomatis mengalihkan ke halaman baru castflow.html,
+jadi bookmark lama tidak rusak.
+
+ISI RILIS
+1. REBRAND — nama CastFlow + logo baru (panah biru) di bar atas, favicon,
+   dan layar idle output. Nol teks "youTh Views" tersisa.
+2. TEMA GELAP NAVY ala ProPresenter — dasar #101010 (bukan putih lagi),
+   panel 0A1128 / 001F54, garis 034078, aksen 1282A2. Berkas:
+   css/castflow.css (hanya memengaruhi halaman CastFlow).
+3. PRATINJAU DI ATAS — pindah dari panel kanan ke strip atas, tinggi bisa
+   diubah: seret pegangan bawahnya atau tombol S/M/L (tersimpan otomatis).
+4. DRAG & DROP — seret file gambar/video langsung ke kotak pratinjau untuk
+   menjadikannya latar. Pilihan latar "Transparan" baru di tab Warna
+   menampilkan pola PAPAN CATUR (ala ProPresenter).
+5. DWIBAHASA — CastFlow default English; tombol EN/ID di bar atas untuk
+   ganti ke Bahasa Indonesia (tersimpan).
+6. LIBRARY FONT DIPERBESAR — dari 53 jadi 210+ font Google siap pakai,
+   plus kolom "Tambah font Google apa pun" untuk nama font kustom.
+7. LABEL BAGIAN dibatasi 5: Verse / Chorus / Pre-Chorus / Interlude / Coda
+   (pemetaan otomatis: Bait→Verse, Reff→Chorus, Bridge/Intro/Solo→Interlude,
+   Ending/Outro→Coda, dst).
+8. TIMELINE ala video editor — Ripple delete (Shift+Del, hapus + rapatkan
+   celah), Marker (M, klik=seek, Shift+klik=hapus), Kunci 🔒 / Sembunyikan 👁
+   per track, tombol zoom − / + dan Fit (F), semua dengan undo.
+9. Log Error & Diagnostik (dari v85) tetap ada: tombol "Log Error" di bar.
+
+BERKAS BARU: castflow.html, css/castflow.css, js/castflow.js,
+castflow-logo.png, castflow-logo-light.png, castflow-icon.png,
+castflow-favicon.png, castflow-logo.svg, castflow-logo-light.svg.
+youthviews.html kini hanya stub pengalih (JANGAN dihapus).
+
+CARA PASANG (urutan WAJIB)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah (database.rules.json
+   dari pnw-firebase-rules-v83.zip -> Firebase Console -> Realtime Database
+   -> Aturan -> Publish). Ini memperbaiki error PERMISSION_DENIED.
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v87" && git push
+4. Setelah deploy: Ctrl+Shift+R, buka menu -> CastFlow (ikon panah biru),
+   cek tema gelap navy + logo baru + pratinjau di atas.
+5. Uji cepat: ganti EN/ID di bar atas; seret file gambar ke kotak pratinjau;
+   buka Timeline (T) lalu coba tombol Ripple/Marker/Fit.

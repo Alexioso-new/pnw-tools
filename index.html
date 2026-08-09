@@ -4,7 +4,7 @@
   index.html — markup utama PNW TOOLS.
   Memuat CSS berurutan: css/styles.css lalu css/design.css (design.css MENIMPA styles.css).
   Memuat JS lewat <script defer> di bagian bawah: logger -> firebase -> gsap -> motion -> recorder -> app -> guide -> hosana-flame-data -> logo-anim.
-  v6.0: youTh Views TIDAK lagi dimuat di sini. Halaman terpisah: youthviews.html.
+  v6.0: CastFlow TIDAK lagi dimuat di sini. Halaman terpisah: youthviews.html.
   js/yv-motion.js TETAP dimuat karena app.js memakainya untuk latar output.
   Font: Google Fonts (Inter + JetBrains Mono) + Fontshare (Satoshi). Ikon: dimuat malas (lazy) dari js/animations.js.
   PERHATIAN: mengubah id/class elemen di sini berpengaruh ke js/app.js (getElementById) dan css/design.css — cek keduanya.
@@ -102,7 +102,7 @@
       <div class="dispLottie" id="dispLottie" aria-hidden="true"></div>
       <div class="dispBar">
         <span class="dispDot off" id="dispDot" title="Menyambung…"></span>
-        <span class="dispBrand">youTh Views — Live Output</span>
+        <span class="dispBrand">CastFlow — Live Output</span>
       </div>
       <div class="dispIdle" id="dispIdle">
         <div class="dispIdleInner">
@@ -134,7 +134,7 @@
           <h1>PNW TOOLS</h1>
           <p class="sub">
             Let your worship speak louder than your worries
-            <span class="verTag" id="appVer">v6.4</span>
+            <span class="verTag" id="appVer">v7.0</span>
           </p>
         </div>
         <button
@@ -566,7 +566,7 @@
       <aside class="drawer">
         <div class="drawerHead">
           <b>Menu</b>
-          <span class="menuVer">v6.4</span>
+          <span class="menuVer">v7.0</span>
           <button class="xBtn" id="closeMenuBtn" type="button">&#10005;</button>
         </div>
         <div class="menuScroll">
@@ -586,9 +586,9 @@
               <span class="menuRowMain"><span class="menuRowTitle">Song Bank</span><span class="menuRowDesc">Cari, tambah &amp; atur daftar lagu</span></span>
               <span class="menuRowGo" aria-hidden="true">›</span>
             </button>
-            <a class="menuRow" id="openYvLink" href="./youthviews.html" target="_blank" rel="noopener">
+            <a class="menuRow" id="openYvLink" href="./castflow.html" target="_blank" rel="noopener">
               <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="layer"></span></span>
-              <span class="menuRowMain"><span class="menuRowTitle">youTh Views</span><span class="menuRowDesc">Halaman mandiri · presenter, proyektor, teks &amp; ayat</span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">CastFlow</span><span class="menuRowDesc">Halaman mandiri · presenter, proyektor, teks &amp; ayat</span></span>
               <span class="menuRowGo" aria-hidden="true">↗</span>
             </a>
             <button class="menuRow" id="openGuideBtn" type="button">
@@ -694,7 +694,7 @@
               type="button"
               style="width: 100%"
             >
-              Buka output youTh Views
+              Buka output CastFlow
             </button>
             <button
               class="actionBtn secondary"
@@ -705,11 +705,11 @@
               Buka Stage Display (musisi)
             </button>
             <p class="menuGroupLabel" style="margin: 10px 0 4px">
-              youTh Views
+              CastFlow
             </p>
             <p class="small">
               Kontrol Teks/Pengumuman dan Ayat Alkitab sekarang berada di modul
-              youTh Views supaya output proyektor berdiri independen.
+              CastFlow supaya output proyektor berdiri independen.
             </p>
             <label class="lockRow"
               ><input type="checkbox" id="liveChordsToggle" /> Tampilkan chord

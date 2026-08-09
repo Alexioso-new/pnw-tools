@@ -1,5 +1,5 @@
 /* PNW-FILE-GUIDE
-   js/yv-motion.js — Mesin animasi latar belakang youTh Views (v5.5).
+   js/yv-motion.js — Mesin animasi latar belakang CastFlow (v5.5).
    • window.PNWMotion : mesin canvas generatif (8 engine) yang bisa diedit dari web
      dan bereaksi mengikuti alur lirik (pulse per baris + mood per bagian lagu).
    • window.PNWMedia  : penyimpan file lokal (IndexedDB) untuk video/GIF hasil

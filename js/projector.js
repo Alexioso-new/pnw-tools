@@ -1,5 +1,5 @@
 /* PNW-FILE-GUIDE
-   js/projector.js — youTh Views (presenter ala ProPresenter/EasyWorship).
+   js/projector.js — CastFlow (presenter ala ProPresenter/EasyWorship).
    Controller TUNGGAL untuk #projPage. Memakai mesin window.PNWYouthViews (js/app.js).
    RTDB: pujianYouth/projector/plan + /settings, tayang lewat pujianYouth/live.
    Output: 1 halaman, lirik saja, keluar bertahap per slide (bukan seluruh lirik).
@@ -21,7 +21,7 @@
     } catch (e) {
       var log = (window.PNWDiag = window.PNWDiag || []);
       log.push({ feature: "youthviews." + name, error: String((e && e.message) || e), at: Date.now() });
-      if (window.console && console.warn) console.warn("[youTh Views] gagal:", name, e);
+      if (window.console && console.warn) console.warn("[CastFlow] gagal:", name, e);
       return fallback;
     }
   }
@@ -223,7 +223,7 @@
         notify("Pilih slide / isi konten dulu.", "info");
         return;
       }
-      if (e.broadcast(p)) notify("Tayang di youTh Views.", "success");
+      if (e.broadcast(p)) notify("Tayang di CastFlow.", "success");
       else notify("Gagal menayangkan.", "info");
     });
   }
@@ -437,7 +437,7 @@
       if (_tab === "teks") {
         host.innerHTML =
           '<div class="projComposer"><h3>Teks / Pengumuman</h3>' +
-          "<p>Tampil sebagai satu halaman penuh di output youTh Views.</p>" +
+          "<p>Tampil sebagai satu halaman penuh di output CastFlow.</p>" +
           '<textarea id="projTextInput" rows="7" placeholder="Tulis pengumuman, arahan ibadah, atau teks bebas..."></textarea>' +
           '<div class="projComposerOps"><button class="projMiniBtn primary" id="projTextGo" type="button">Tampilkan teks</button>' +
           '<button class="projMiniBtn" id="projTextClear" type="button">Bersihkan layar</button></div></div>';
@@ -523,7 +523,7 @@
           checks.push({ name: name, ok: false, note: String((e && e.message) || e) });
         }
       }
-      add("Mesin youTh Views", function () {
+      add("Mesin CastFlow", function () {
         var e = engine();
         return { ok: !!e, note: e ? "aktif " + e.version : "js/app.js tidak memuat mesin" };
       });
@@ -650,7 +650,12 @@
       if (_bgTab === "media") renderMediaLib();
 
       if (solids && _bgTab === "warna") {
-        solids.innerHTML = SOLIDS.map(function (c) {
+        /* v87: swatch Transparan — pratinjau jadi papan catur, output polos. */
+        solids.innerHTML =
+          '<button class="projSwatch cfSwatchNone' +
+          (s.bg && s.bg.kind === "none" ? " on" : "") +
+          '" type="button" data-cfnone="1" title="Transparan (papan catur)"></button>' +
+          SOLIDS.map(function (c) {
           var on = s.bg && s.bg.kind === "color" && s.bg.value === c;
           return '<button class="projSwatch' + (on ? " on" : "") + '" type="button" data-color="' + c + '" style="background:' + c + '"></button>';
         }).join("");
@@ -659,6 +664,11 @@
             setBg({ kind: "color", value: b.getAttribute("data-color") });
           };
         });
+        var nb = solids.querySelector("[data-cfnone]");
+        if (nb)
+          nb.onclick = function () {
+            setBg({ kind: "none" });
+          };
       }
       if (presets && _bgTab === "animasi") {
         presets.innerHTML = MOTIONS.map(function (m) {
@@ -1125,8 +1135,26 @@
       var b = s.bg || {};
       if (b.kind === "color") p.style.background = b.value;
       else if (b.kind === "motion") p.setAttribute("data-bg", b.value);
-      else if (b.kind === "image")
-        p.style.background = "#000 center/cover no-repeat url('" + String(b.value).replace(/'/g, "%27") + "')";
+      else if (b.kind === "none") p.setAttribute("data-bg", "none");
+      else if (b.kind === "image") {
+        var pvUrl = String(b.value || "");
+        /* v87: gambar hasil drag & drop disimpan di IndexedDB (idb:) — */
+        /* resolve dulu supaya pratinjau bisa menampilkannya. */
+        if (pvUrl.indexOf("idb:") === 0 && window.PNWMedia && window.PNWMedia.resolve) {
+          p.style.background = "#000";
+          window.PNWMedia.resolve(pvUrl)
+            .then(function (u) {
+              if (u) {
+                p.style.backgroundImage = "url('" + String(u).replace(/'/g, "%27") + "')";
+                p.style.backgroundSize = "cover";
+                p.style.backgroundPosition = "center";
+                p.style.backgroundRepeat = "no-repeat";
+              }
+            })
+            .catch(function () {});
+        } else
+          p.style.background = "#000 center/cover no-repeat url('" + pvUrl.replace(/'/g, "%27") + "')";
+      }
       else if (b.kind === "studio" || b.kind === "lottie") p.style.background = "#0b1020";
       // video / unggahan: WAJIB elemen <video>. Kalau dipasang sebagai
       // background-image, browser mengunduh seluruh berkas .mp4 dan hang.
@@ -1459,6 +1487,7 @@
     songById: songById,
     savePlan: savePlan,
     notify: notify,
+    setBg: setBg,
     SOLIDS: SOLIDS,
     MOTIONS: MOTIONS,
   };
@@ -1526,7 +1555,7 @@
     var rail = document.createElement("nav");
     rail.className = "projPane projRail";
     rail.id = "projRail";
-    rail.setAttribute("aria-label", "Navigasi fitur youTh Views");
+    rail.setAttribute("aria-label", "Navigasi fitur CastFlow");
     var html = '<div class="projRailTitle">Fitur</div>';
     ITEMS.forEach(function (it, i) {
       if (i === 6) html += '<div class="projRailTitle">Tampilan</div>';

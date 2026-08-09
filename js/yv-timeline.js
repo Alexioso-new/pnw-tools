@@ -1,5 +1,5 @@
 /* PNW-FILE-GUIDE
-   js/yv-timeline.js — TIMELINE EDITOR youTh Views (v6.2 / v84).
+   js/yv-timeline.js — TIMELINE EDITOR CastFlow (v6.2 / v84).
    HANYA dipakai oleh youthviews.html (halaman kontrol). Editor multi-track
    ala editor video: track LATAR / MEDIA / LIRIK & TEKS / OVERLAY, clip yang
    bisa digeser/ditrim/di-split, transisi & gaya per clip, undo/redo, snap,
@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v6.2-timeline";
+  var VERSION = "v7.0-timeline";
   var TL_REF = "pujianYouth/projector/timelines";
   var LOCAL_TL = "pnwYvTimelines.v1";
 
@@ -99,6 +99,9 @@
       updatedAt: Date.now(),
       settings: { defDur: 8, defTrans: "fade" },
       tracks: { bg: [], media: [], lyrics: [], overlay: [] },
+      markers: [],
+      locks: {},
+      hidden: {},
     };
   }
   function proj() {
@@ -120,6 +123,9 @@
       });
       sortTrack(p.tracks[t.id]);
     });
+    /* v87 */ if (!Array.isArray(p.markers)) p.markers = [];
+    if (!p.locks || typeof p.locks !== "object") p.locks = {};
+    if (!p.hidden || typeof p.hidden !== "object") p.hidden = {};
   }
   function sortTrack(arr) {
     arr.sort(function (a, b) {
@@ -313,6 +319,10 @@
     });
   }
   function removeClip(track, id) {
+    if ((proj().locks || {})[track]) {
+      toast("Track terkunci.", "info");
+      return;
+    }
     hist();
     var p = proj();
     p.tracks[track] = p.tracks[track].filter(function (c) {
@@ -324,6 +334,10 @@
   }
   function splitClip(track, id, at) {
     return safe("split", function () {
+      if ((proj().locks || {})[track]) {
+        toast("Track terkunci.", "info");
+        return false;
+      }
       var c = findClip(track, id);
       if (!c) return false;
       if (at <= c.start + 0.25 || at >= c.start + c.dur - 0.25) return false;
@@ -361,6 +375,99 @@
       return "Latar: " + String(c.bg.value || "").split("/").pop().slice(0, 26);
     }
     return "Clip";
+  }
+
+  /* ---------------- v87: fitur ala video editor ---------------- */
+  function rippleDelete(track, id) {
+    return safe("ripple", function () {
+      if ((proj().locks || {})[track]) {
+        toast("Track terkunci.", "info");
+        return false;
+      }
+      var p = proj();
+      var arr = p.tracks[track] || [];
+      var c = null;
+      for (var i = 0; i < arr.length; i++) if (arr[i].id === id) c = arr[i];
+      if (!c) return false;
+      hist();
+      var from = c.start;
+      var dur = c.dur || 0;
+      p.tracks[track] = arr.filter(function (o) {
+        return o.id !== id;
+      });
+      /* ripple: semua clip SESUDAHnya di track ini mundur menutup celah */
+      p.tracks[track].forEach(function (o) {
+        if (o.start > from) o.start = Math.max(from, o.start - dur);
+      });
+      sortTrack(p.tracks[track]);
+      if (_sel && _sel.id === id) _sel = null;
+      saveProject(true);
+      renderAll();
+      return true;
+    });
+  }
+  function addMarker(at) {
+    return safe("marker", function () {
+      var p = proj();
+      if (!Array.isArray(p.markers)) p.markers = [];
+      var t = Math.max(0, +(at != null ? at : curT()).toFixed(2));
+      p.markers.push(t);
+      p.markers.sort(function (a, b) {
+        return a - b;
+      });
+      saveProject(true);
+      renderAll();
+      return t;
+    });
+  }
+  function removeMarker(at) {
+    return safe("unmarker", function () {
+      var p = proj();
+      hist();
+      p.markers = (p.markers || []).filter(function (m) {
+        return Math.abs(m - at) > 0.001;
+      });
+      saveProject(true);
+      renderAll();
+    });
+  }
+  function toggleLock(track) {
+    var p = proj();
+    if (!p.locks) p.locks = {};
+    p.locks[track] = !p.locks[track];
+    saveProject(true);
+    paintTrackOps();
+  }
+  function toggleHide(track) {
+    var p = proj();
+    if (!p.hidden) p.hidden = {};
+    p.hidden[track] = !p.hidden[track];
+    saveProject(true);
+    paintTrackOps();
+  }
+  function paintTrackOps() {
+    var p = proj();
+    qa("[data-tlock]").forEach(function (b) {
+      b.classList.toggle("on", !!((p.locks || {})[b.getAttribute("data-tlock")]));
+    });
+    qa("[data-thide]").forEach(function (b) {
+      b.classList.toggle("on", !!((p.hidden || {})[b.getAttribute("data-thide")]));
+    });
+  }
+  function zoomBy(f) {
+    _pps = Math.max(3, Math.min(60, Math.round(_pps * f)));
+    var z = el("tlZoom");
+    if (z) z.value = _pps;
+    renderTracks();
+  }
+  function zoomFit() {
+    var sc = el("tlScroll");
+    if (!sc) return;
+    var dur = totalDur(proj()) || 30;
+    _pps = Math.max(3, Math.min(60, Math.floor((sc.clientWidth - 60) / dur)));
+    var z = el("tlZoom");
+    if (z) z.value = _pps;
+    renderTracks();
   }
 
   /* ---------------- auto dari rundown ---------------- */
@@ -440,12 +547,14 @@
     return null;
   }
   function stateAt(t) {
+    /* v87: track yang disembunyikan (👁) tidak ikut ke output. */
+    var hid = (proj() && proj().hidden) || {};
     return {
       t: t,
-      lyrics: clipAt("lyrics", t),
-      bg: clipAt("bg", t),
-      media: clipAt("media", t),
-      overlay: clipAt("overlay", t),
+      lyrics: hid.lyrics ? null : clipAt("lyrics", t),
+      bg: hid.bg ? null : clipAt("bg", t),
+      media: hid.media ? null : clipAt("media", t),
+      overlay: hid.overlay ? null : clipAt("overlay", t),
     };
   }
   function mergedStyle(clipStyle) {
@@ -611,13 +720,18 @@
       "</div>" +
       '<div class="tlGroup">' +
       '<button class="tlBtn" id="tlSplit" type="button" title="Belah clip terpilih di playhead (S)">Split</button>' +
+      '<button class="tlBtn" id="tlRipple" type="button" title="Hapus clip & rapatkan celah (Shift+Del)">Ripple</button>' +
       '<button class="tlBtn danger" id="tlDel" type="button" title="Hapus clip terpilih (Del)">Hapus</button>' +
+      '<button class="tlBtn" id="tlMark" type="button" title="Tambah marker di playhead (M)">◈ Marker</button>' +
       '<button class="tlBtn" id="tlUndo" type="button" title="Urungkan (Ctrl+Z)">↺</button>' +
       '<button class="tlBtn" id="tlRedo" type="button" title="Ulangi (Ctrl+Shift+Z)">↻</button>' +
       "</div>" +
       '<div class="tlGroup">' +
       '<button class="tlBtn on" id="tlSnap" type="button" title="Snap ke detik & tepi clip">Snap</button>' +
+      '<button class="tlBtn" id="tlZoomOut" type="button" title="Perkecil (-)">−</button>' +
       '<span class="tlZoom"><input type="range" id="tlZoom" min="3" max="60" step="1" value="12" title="Zoom timeline" /></span>' +
+      '<button class="tlBtn" id="tlZoomIn" type="button" title="Perbesar (+)">+</button>' +
+      '<button class="tlBtn" id="tlFit" type="button" title="Pas seluruh proyek (F)">Fit</button>' +
       "</div>" +
       '<div class="tlGroup">' +
       '<select id="tlProjects" title="Proyek timeline"></select>' +
@@ -645,9 +759,27 @@
         t.name +
         "</b><span>" +
         t.desc +
+        '</span><span class="tlTrackOps">' +
+        '<button class="tlTOp" type="button" data-tlock="' +
+        t.id +
+        '" title="Kunci track (lindungi dari edit)">🔒</button>' +
+        '<button class="tlTOp" type="button" data-thide="' +
+        t.id +
+        '" title="Sembunyikan track ini di output">👁</button>' +
         "</span></div>";
     });
     el("tlHeadL").innerHTML = head;
+    /* v87: binding kunci/sembunyikan track */
+    qa("[data-tlock]", el("tlHeadL")).forEach(function (b) {
+      b.onclick = function () {
+        toggleLock(b.getAttribute("data-tlock"));
+      };
+    });
+    qa("[data-thide]", el("tlHeadL")).forEach(function (b) {
+      b.onclick = function () {
+        toggleHide(b.getAttribute("data-thide"));
+      };
+    });
     bindBar();
   }
 
@@ -682,6 +814,17 @@
         (major ? fmt(s) : "") +
         "</div>";
     }
+    /* v87: marker di ruler */
+    (p.markers || []).forEach(function (mk) {
+      rh +=
+        '<div class="tlMarker" data-mk="' +
+        mk +
+        '" style="left:' +
+        mk * _pps +
+        'px" title="Marker ' +
+        fmt(mk) +
+        ' · klik = seek, Shift+klik = hapus">◆</div>';
+    });
     rh += "</div>";
     var th = "";
     TRACKS.forEach(function (t) {
@@ -692,6 +835,16 @@
       th += "</div>";
     });
     cv.innerHTML = rh + th + '<div class="tlPlayhead" id="tlPlayhead"></div>';
+    /* v87: klik marker = seek, Shift+klik = hapus */
+    qa(".tlMarker", cv).forEach(function (mkn) {
+      mkn.addEventListener("pointerdown", function (ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        var t = parseFloat(mkn.getAttribute("data-mk")) || 0;
+        if (ev.shiftKey) removeMarker(t);
+        else seek(t);
+      });
+    });
     bindClips();
     bindRuler();
     paintPlayhead();
@@ -764,6 +917,11 @@
         if (!c) return;
         _sel = { track: track, id: id };
         paintSel();
+        /* v87: track terkunci boleh dipilih tapi tidak bisa digeser */
+        if ((proj().locks || {})[track]) {
+          toast("Track terkunci — buka kunci 🔒 dulu untuk mengedit.", "info");
+          return;
+        }
         var edge = null;
         if (ev.target && ev.target.classList && ev.target.classList.contains("tlEdge"))
           edge = ev.target.classList.contains("l") ? "l" : "r";
@@ -915,6 +1073,23 @@
       openEditor(null, "overlay");
     };
     el("tlSplit").onclick = splitSel;
+    /* v87 */
+    el("tlRipple").onclick = function () {
+      if (_sel) rippleDelete(_sel.track, _sel.id);
+      else toast("Pilih clip dulu untuk ripple delete.", "info");
+    };
+    el("tlMark").onclick = function () {
+      addMarker();
+    };
+    el("tlZoomIn").onclick = function () {
+      zoomBy(1.25);
+    };
+    el("tlZoomOut").onclick = function () {
+      zoomBy(0.8);
+    };
+    el("tlFit").onclick = function () {
+      zoomFit();
+    };
     el("tlDel").onclick = function () {
       if (_sel) removeClip(_sel.track, _sel.id);
     };
@@ -1461,9 +1636,22 @@
     } else if (k === "s") {
       splitSel();
       e.preventDefault();
+    } else if (k === "m") {
+      addMarker();
+      e.preventDefault();
+    } else if (k === "+" || k === "=") {
+      zoomBy(1.25);
+      e.preventDefault();
+    } else if (k === "-") {
+      zoomBy(0.8);
+      e.preventDefault();
+      } else if (k === "f") {
+      zoomFit();
+      e.preventDefault();
     } else if (e.key === "Delete" || e.key === "Backspace") {
       if (_sel) {
-        removeClip(_sel.track, _sel.id);
+        if (e.shiftKey) rippleDelete(_sel.track, _sel.id);
+        else removeClip(_sel.track, _sel.id);
         e.preventDefault();
       }
     } else if (e.key === "Escape") {
@@ -1566,6 +1754,12 @@
     deleteProject: deleteProject,
     saveProject: saveProject,
     autoFromPlan: autoFromPlan,
+    rippleDelete: rippleDelete,
+    addMarker: addMarker,
+    removeMarker: removeMarker,
+    toggleLock: toggleLock,
+    toggleHide: toggleHide,
+    zoomFit: zoomFit,
     clipLabel: clipLabel,
     totalDur: totalDur,
     _setSnap: function (v) {
