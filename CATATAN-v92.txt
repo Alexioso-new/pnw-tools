@@ -1,0 +1,26 @@
+============================================================
+PNW TOOLS v92 (label v7.5) — PERBAIKAN PRATINJAU MELAYANG + POLESAN
+============================================================
+
+PENTING — rilis ini memperbaiki bug v91:
+1. **BUG ⧉ DIPERBAIKI.** Di v91, menekan tombol ⧉ membuat pratinjau
+   "hilang" dan tidak bisa kembali. Penyebabnya: jendela melayang punya
+   z-index 60 sedangkan panel CastFlow 120 — jadi jendela terbuka tapi
+   TERSEMBUNYI DI BELAKANG panel. Kini jendela melayang z-index 1500
+   (selalu di atas) + ada penyembuhan diri: bila jendela entah bagaimana
+   terbuka di luar layar / berukuran nol, pratinjau otomatis kembali ke
+   strip atas. Kalau preview Anda masih "hilang" dari v91: pasang v92 ini,
+   lalu Ctrl+Shift+R — ia akan kembali normal (dan bisa di-Dock).
+2. **Garis terang #E2E8F0 dihapus** dari CastFlow (variabel `--d-line`
+   dioverride jadi #141414 — hanya di halaman ini, aplikasi utama aman).
+3. **Logo CastFlow di bar diperbesar** (tinggi 20px -> 30px) agar terbaca.
+4. Semua isi v85–v91 tetap termasuk.
+
+CARA PASANG (urutan WAJIB)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah (database.rules.json
+   dari pnw-firebase-rules-v83.zip).
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v92" && git push
+4. Ctrl+Shift+R -> menu -> CastFlow. Cek: label v7.5; tekan ⧉ -> jendela
+   pratinjau melayang kini BENAR-BENAR tampil di atas dan bisa di-drag /
+   resize; tekan ⤓ Dock untuk mengembalikan.

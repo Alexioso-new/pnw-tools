@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var CF_VERSION = "v7.4";
+  var CF_VERSION = "v7.5";
   var LANG_KEY = "pnwCastflowLang";
   var PREV_H_KEY = "pnwCastflowPrevH";
   var FONTS_KEY = "pnwCastflowFonts.v1";
@@ -585,6 +585,14 @@
       s2.popped = true;
       saveFloat(s2);
       fitPreview();
+      /* v7.5: penyembuhan diri — kalau jendela ternyata di luar layar atau
+         berukuran nol, langsung kembalikan ke strip (jangan biarkan pengguna
+         kehilangan pratinjau). */
+      var r = w.getBoundingClientRect();
+      var onScreen =
+        r.width > 10 && r.height > 10 && r.left < window.innerWidth &&
+        r.top < window.innerHeight && r.right > 0 && r.bottom > 0;
+      if (!onScreen) dockPreview();
     });
   }
   function dockPreview() {

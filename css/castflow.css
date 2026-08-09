@@ -20,6 +20,8 @@ body.yvStandalone {
   --cf-dim: #a8adb8;
   --cf-dim2: #7d8494;
   --cf-danger: #e05d5d;
+  /* v7.5: hilangkan garis terang warisan (#E2E8F0) — hanya di halaman ini */
+  --d-line: #141414;
   background-color: #262626 !important;
   background-image: linear-gradient(165deg, #232326 0%, #262626 45%, #2a2a2e 100%) !important;
   background-attachment: fixed;
@@ -52,7 +54,7 @@ body.yvStandalone .yvBar {
 }
 /* wordmark SVG — v7.4: di TENGAH bar, selaras dengan baris tombol */
 body.yvStandalone .yvBarBrand {
-  height: 20px;
+  height: 30px; /* v7.5: diperbesar dari 20px agar terbaca */
   width: auto;
   object-fit: contain;
   display: block;
@@ -690,7 +692,9 @@ body.yvStandalone .cfPrevWrap.popped { display: none !important; }
 /* jendela pratinjau melayang (bebas posisi & ukuran) */
 .cfFloatWin {
   position: fixed;
-  z-index: 60;
+  /* v7.5: HARUS di atas .projPage (z-index:120) — v7.4 pakai 60 sehingga
+     jendela melayang tersembunyi DI BELAKANG panel (bug "preview hilang"). */
+  z-index: 1500;
   min-width: 240px;
   min-height: 150px;
   background: #232326;
