@@ -1,0 +1,44 @@
+CASTFLOW v101 (label v9.1) — STABILITY & ARCHITECTURE
+=====================================================
+
+Rilis ini mengikuti dokumen CASTFLOW_V101_MASTER_PLAN.md / 01_PRD.md /
+02_TECH_SPEC.md / 03_SPRINT_TASKS.md / 04_AGENT_RULES.md / 06_QA_CHECKLIST.md.
+Adaptasi: struktur src/ + Vite dari tech spec TIDAK diterapkan karena deploy
+kita static assets tanpa build (keputusan Cloudflare v82). Kontrak arsitektur
+tetap sama, diimplementasikan sebagai modul flat js/cf-*.js (strangler pattern).
+
+BERKAS BARU
+- js/cf-kernel.js    : event bus, global store, persistence adapter
+                       (namespace castflow:v101:), feature flags, global
+                       error handler -> PNWLog. (Sprint 1 / S1-01..S1-05)
+- js/cf-health.js    : Output heartbeat tiap 2 dtk (BroadcastChannel +
+                       Firebase youthviews/heartbeat), watchdog status
+                       idle/connecting/connected/stale(>5d)/disconnected(>10d),
+                       chip status di top bar, reconnect, slide ACK. (S2)
+- js/cf-preflight.js : Preflight Check (menu Avatar): storage, network,
+                       Firebase, auth, rules-write probe, output, font,
+                       media hilang. Hasil pass/warn/fail + actionable. (S2/S3)
+- css/cf-tokens.css  : design tokens resmi (warna, spacing, radius, z-index). (S4)
+- css/cf-v101.css    : style chip + modal (prefix cf-, tanpa !important baru).
+- database.rules.json + CARA-PASANG-RULES-v101.txt : rules v83 + heartbeat.
+- docs/v101-architecture.md : registry event, storage key, dan kontrak.
+
+PERUBAHAN
+- castflow.html : font Inter/JetBrains/Satoshi yang tidak dipakai DIHAPUS
+                  (hanya TikTok Sans yang dimuat); +3 css/js v101.
+- yv-standalone.js : memancarkan event cf:output:rendered setiap output
+                     selesai render (kontrak untuk heartbeat + ack).
+- Versi: label v9.1, cache sw.js pnw-tools-v101 (APP_SHELL + file v100/v101).
+
+WAJIB DIBACA OPERATOR
+- Chip Output di top bar: Connected (hijau) / Stale (kuning) / Offline (merah).
+  Klik chip = reconnect. Badge ACK kecil muncul bila output mengonfirmasi
+  slide yang Anda tayangkan sudah benar-benar tampil.
+- Jalankan Preflight Check (menu Avatar) sebelum ibadah. Baris "rules" FAIL
+  berarti database.rules.json v101 belum dipublish.
+
+URUTAN DEPLOY
+1. Publish database.rules.json v101 (lihat CARA-PASANG-RULES-v101.txt).
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v101" && git push
+4. Ctrl+Shift+R -> label v9.1 / cache pnw-tools-v101.

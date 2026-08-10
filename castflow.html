@@ -28,16 +28,9 @@
     <meta name="apple-mobile-web-app-title" content="PNW TOOLS" />
     <meta name="mobile-web-app-capable" content="yes" />
     <!-- FONT: mau pakai font BARU? Muat <link>-nya di sini, lalu set kategori di css/design.css -> "PANEL KONTROL FONT". -->
+    <!-- v101: font Inter/JetBrains/Satoshi dihapus - UI CastFlow 100% TikTok Sans (S5-05). -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://api.fontshare.com/v2/css?f[]=satoshi@500,700,900&display=swap"
-      rel="stylesheet"
-    />
     <link rel="stylesheet" href="./css/styles.css" />
     <link rel="stylesheet" href="./css/design.css" />
     <link rel="stylesheet" href="./css/yv-timeline.css" />
@@ -49,6 +42,8 @@
     />
     <link rel="stylesheet" href="./css/castflow.css" />
     <link rel="stylesheet" href="./css/castflow-v100.css" />
+    <link rel="stylesheet" href="./css/cf-tokens.css" />
+    <link rel="stylesheet" href="./css/cf-v101.css" />
     <link
       rel="stylesheet"
       href="https://cdn-uicons.flaticon.com/uicons-solid-rounded/css/uicons-solid-rounded.css"
@@ -67,7 +62,7 @@
         padding: 8px 14px; min-height: 46px;
         background: rgba(10, 12, 18, 0.92);
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        color: #e9eefb; font: 500 13px/1.3 Inter, system-ui, sans-serif;
+        color: #e9eefb; font: 500 13px/1.3 "TikTok Sans", system-ui, sans-serif;
         backdrop-filter: blur(10px);
       }
       .yvBarTitle { font-weight: 800; letter-spacing: 0.2px; }
@@ -78,7 +73,7 @@
         border: 1px solid rgba(255, 255, 255, 0.16);
         background: rgba(255, 255, 255, 0.06);
         color: #e9eefb; border-radius: 999px;
-        padding: 6px 14px; font: 600 12px/1 Inter, system-ui, sans-serif;
+        padding: 6px 14px; font: 600 12px/1 "TikTok Sans", system-ui, sans-serif;
         text-decoration: none;
       }
       .yvBarBtn:hover { background: rgba(255, 255, 255, 0.14); }
@@ -321,5 +316,8 @@
     <script defer src="./js/yv-timeline.js"></script>
     <script defer src="./js/castflow.js"></script>
     <script defer src="./js/castflow-v100.js"></script>
+    <script defer src="./js/cf-kernel.js"></script>
+    <script defer src="./js/cf-health.js"></script>
+    <script defer src="./js/cf-preflight.js"></script>
   </body>
 </html>

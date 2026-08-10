@@ -1696,9 +1696,30 @@
     if (_paint) clearInterval(_paint);
     _paint = null;
   }
-  /* v100: Timeline hanya dibuka dari toggle Lyric / Timeline di Flow.
-     Rail/Features tidak lagi diberi shortcut duplikat. */
+  function injectRail() {
+    var rail = el("projRail");
+    if (!rail || rail.querySelector('[data-rail="timeline"]')) return;
+    var b = document.createElement("button");
+    b.className = "projRailBtn";
+    b.type = "button";
+    b.setAttribute("data-rail", "timeline");
+    b.innerHTML = '<span class="ic">⏱</span><span>Timeline</span>';
+    b.onclick = function () {
+      qa(".projRailBtn", rail).forEach(function (x) {
+        x.classList.remove("on");
+      });
+      b.classList.add("on");
+      open();
+    };
+    rail.appendChild(b);
+  }
   function hook() {
+    try {
+      var mo = new MutationObserver(function () {
+        if (el("projRail")) injectRail();
+      });
+      mo.observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
     document.addEventListener("keydown", onKey);
   }
 

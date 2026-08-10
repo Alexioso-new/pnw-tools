@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v9.0-standalone";
+  var VERSION = "v9.1-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";
@@ -727,7 +727,7 @@
   function smEsc(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
-  /* v9.0: Stage Display — monitor panggung (lirik kini + berikutnya + countdown, tanpa latar visual) */
+  /* v8.2: Stage Display — monitor panggung (lirik kini + berikutnya + countdown, tanpa latar visual) */
   function renderStage(v) {
     var scr = document.getElementById("displayScreen");
     var idle = document.getElementById("dispIdle");
@@ -774,6 +774,21 @@
   try { window.__renderStage = renderStage; } catch (e) {}
 
   function renderDisplay(v) {
+    /* v101: pancarkan kontrak render untuk heartbeat + slide ACK (cf-health.js) */
+    try {
+      window.dispatchEvent(
+        new CustomEvent("cf:output:rendered", {
+          detail: {
+            kind: (v && v.kind) || "",
+            slideIndex: v && typeof v.slideIndex === "number" ? v.slideIndex : -1,
+            sig: v
+              ? [v.kind || "", v.songId || "", typeof v.slideIndex === "number" ? v.slideIndex : -1].join("|")
+              : "idle",
+            active: !!(v && v.active),
+          },
+        }),
+      );
+    } catch (e) {}
     if (_cdTimer) {
       clearInterval(_cdTimer);
       _cdTimer = null;

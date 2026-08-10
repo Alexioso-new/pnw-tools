@@ -15,7 +15,7 @@
 (function () {
   "use strict";
 
-  var CF_VERSION = "v9.0";
+  var CF_VERSION = "v9.1";
   var LANG_KEY = "pnwCastflowLang";
   var FONTS_KEY = "pnwCastflowFonts.v1";
   var GRID_KEY = "pnwCastflowGrid.v1";
@@ -747,11 +747,19 @@
     var gw = g.clientWidth || window.innerWidth;
     var rowMin = avail < 620 ? 105 : 140;
     var tPx = Math.max(rowMin, Math.min(avail - rowMin, Math.round(avail * state.t)));
-    var left = state.l, right = state.r;
-    if (gw < 1380) { left = Math.min(left, Math.max(180, Math.round(gw * 0.21))); right = Math.min(right, Math.max(235, Math.round(gw * 0.27))); }
+    var left = state.l;
+    var right = state.r;
+    if (gw < 1380) {
+      left = Math.min(left, Math.max(180, Math.round(gw * 0.21)));
+      right = Math.min(right, Math.max(235, Math.round(gw * 0.27)));
+    }
     var centerMin = gw < 1120 ? 350 : 430;
     var maxSides = Math.max(380, gw - centerMin - 14);
-    if (left + right > maxSides) { var scale = maxSides / (left + right); left = Math.max(170, Math.round(left * scale)); right = Math.max(220, Math.round(right * scale)); }
+    if (left + right > maxSides) {
+      var scale = maxSides / (left + right);
+      left = Math.max(170, Math.round(left * scale));
+      right = Math.max(220, Math.round(right * scale));
+    }
     var cols = Math.round(left) + "px 7px minmax(0,1fr) 7px " + Math.round(right) + "px";
     var rows = tPx + "px 7px minmax(0,1fr)";
     if (smooth) {
@@ -1190,7 +1198,7 @@
     });
   }
 
-  /* ---- C1. Resolution tetap di Preview (v9.0) ---- */
+  /* ---- C1. Resolution tetap di Preview (v8.2) ---- */
   function buildPrevSettings() {
     /* v99: jangan pindahkan resolution ke popover/body. Biarkan kontrol
        asli tetap berada di header Preview. Jika versi lama sempat membuat

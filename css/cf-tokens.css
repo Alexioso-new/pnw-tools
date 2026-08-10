@@ -1,0 +1,55 @@
+/* PNW-FILE-GUIDE
+   css/cf-tokens.css — DESIGN TOKENS v101 (Sprint 4: S4-01, fondasi).
+   Sumber token visual resmi untuk SEMUA kode baru CastFlow (prefix cf-).
+   Aturan: kode baru tidak boleh hardcode warna/spacing di luar token ini.
+   Nilai mengikuti tema yang sudah disetujui: dasar #262626, sumur #1e1e21,
+   panel #232326, garis #3a3a40, kanvas preview #141414, aksen teal #1282A2.
+   Dimuat SEBELUM cf-v101.css.
+*/
+:root {
+  /* warna */
+  --cf-color-bg: #262626;
+  --cf-color-canvas: #141414;
+  --cf-color-surface: #232326;
+  --cf-color-sunken: #1e1e21;
+  --cf-color-hover: #323236;
+  --cf-color-border: #3a3a40;
+  --cf-color-text: #ffffff;
+  --cf-color-text-muted: #a3a3ab;
+  --cf-color-primary: #1282a2;
+  --cf-color-primary-hover: #1a9ec4;
+  --cf-color-success: #2e9e6b;
+  --cf-color-warning: #d9a13b;
+  --cf-color-danger: #e05c5c;
+
+  /* spacing (skala 4px) */
+  --cf-space-1: 4px;
+  --cf-space-2: 8px;
+  --cf-space-3: 12px;
+  --cf-space-4: 16px;
+
+  /* radius */
+  --cf-radius-sm: 6px;
+  --cf-radius-md: 10px;
+  --cf-radius-lg: 12px;
+
+  /* tipografi */
+  --cf-font-ui: "TikTok Sans", system-ui, -apple-system, sans-serif;
+  --cf-font-size-base: 10.5px;
+  --cf-weight-heading: 500;
+  --cf-weight-sub: 400;
+  --cf-weight-text: 300;
+
+  /* z-index (satu tangga resmi — jangan angka acak) */
+  --cf-z-base: 1;
+  --cf-z-panel: 10;
+  --cf-z-topbar: 50;
+  --cf-z-floating: 1500;
+  --cf-z-modal: 2000;
+  --cf-z-toast: 2500;
+
+  /* timing */
+  --cf-motion-fast: 120ms;
+  --cf-motion-med: 220ms;
+  --cf-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
