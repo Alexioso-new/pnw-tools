@@ -1,0 +1,20 @@
+============================================================
+PNW TOOLS v99 (label v8.2) — Fix Auto-Format + Resolution
+============================================================
+
+ISI RILIS
+1. **Auto-Format Lyrics bisa ditutup normal.**
+   Penyebab bug: CSS overlay memakai `display:flex`, sehingga atribut `hidden`
+   tidak benar-benar menyembunyikan modal. Sekarang `[hidden]` dipaksa
+   `display:none !important`, dan modal bisa ditutup via tombol X, klik luar,
+   atau Esc.
+2. **Auto-Format Lyrics dipindah ke menu Avatar (👤)** — tidak lagi muncul
+   sebagai tombol petir di area library.
+3. **Kotak Resolution lama di kiri/atas dihilangkan.** Kontrol Resolution tetap
+   memakai kontrol yang ada di area Preview saja.
+
+CARA PASANG
+1. Publish rules Firebase v83 dulu bila belum pernah.
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v99" && git push
+4. Ctrl+Shift+R -> menu -> CastFlow -> label v8.2.

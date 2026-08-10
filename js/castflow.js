@@ -15,7 +15,7 @@
 (function () {
   "use strict";
 
-  var CF_VERSION = "v8.0";
+  var CF_VERSION = "v8.2";
   var LANG_KEY = "pnwCastflowLang";
   var FONTS_KEY = "pnwCastflowFonts.v1";
   var GRID_KEY = "pnwCastflowGrid.v1";
@@ -1183,42 +1183,21 @@
     });
   }
 
-  /* ---- C1. pindahkan kontrol rasio ke popover Settings (⚙) ---- */
+  /* ---- C1. Resolution tetap di Preview (v8.2) ---- */
   function buildPrevSettings() {
-    var head = document.querySelector(".cfPrevHead");
+    /* v99: jangan pindahkan resolution ke popover/body. Biarkan kontrol
+       asli tetap berada di header Preview. Jika versi lama sempat membuat
+       popover/gear, bersihkan secara defensif. */
+    var pop = document.getElementById("cfPrevSettings");
+    var gear = document.getElementById("cfPrevSettingsBtn");
     var ratio = document.getElementById("cfPrevRatio");
-    if (!head || !ratio || document.getElementById("cfPrevSettingsBtn")) return;
     var custom = document.getElementById("cfCustomRes");
-    var pop = document.createElement("div");
-    pop.className = "cfPrevSettings";
-    pop.id = "cfPrevSettings";
-    pop.hidden = true;
-    var lab = document.createElement("div");
-    lab.className = "cfPrevSettingsTitle";
-    lab.textContent = "Resolution";
-    pop.appendChild(lab);
-    pop.appendChild(ratio);
-    if (custom) pop.appendChild(custom);
-    document.body.appendChild(pop);
-    var gear = document.createElement("button");
-    gear.type = "button";
-    gear.id = "cfPrevSettingsBtn";
-    gear.className = "cfIconBtn";
-    gear.title = "Preview settings";
-    gear.textContent = "\u2699";
-    head.insertBefore(gear, document.getElementById("cfPopBtn") || null);
-    gear.onclick = function (e) {
-      e.stopPropagation();
-      pop.hidden = !pop.hidden;
-      if (!pop.hidden) {
-        var r = gear.getBoundingClientRect();
-        pop.style.top = r.bottom + 6 + "px";
-        pop.style.right = Math.max(8, window.innerWidth - r.right) + "px";
-      }
-    };
-    document.addEventListener("click", function (e) {
-      if (!pop.hidden && !pop.contains(e.target) && e.target !== gear) pop.hidden = true;
-    });
+    var head = document.querySelector(".cfPrevHead");
+    var popBtn = document.getElementById("cfPopBtn");
+    if (head && ratio && ratio.parentNode !== head) head.insertBefore(ratio, popBtn || null);
+    if (head && custom && custom.parentNode !== head) head.insertBefore(custom, popBtn || null);
+    if (pop) pop.remove();
+    if (gear) gear.remove();
   }
 
   /* ---- D2. kartu bantuan hotkey ---- */
@@ -1390,43 +1369,38 @@
     return out;
   }
   function buildAutoFormat() {
-    var gs = document.querySelector(".cfGSWrap");
-    if (!gs || document.getElementById("cfAfBtn")) return;
-    var btn = document.createElement("button");
-    btn.type = "button";
-    btn.id = "cfAfBtn";
-    btn.className = "cfIconBtn";
-    btn.title = "Auto-format lyrics";
-    btn.textContent = "\u26A1";
-    gs.appendChild(btn);
+    if (document.getElementById("cfAfOverlay")) return;
     var ov = document.createElement("div");
     ov.className = "cfAfOverlay"; ov.id = "cfAfOverlay"; ov.hidden = true;
     ov.innerHTML =
-      '<div class="cfAfModal">' +
-      '<div class="cfAfHead"><b>Auto-Format Lyrics</b><button type="button" class="cfAfX" id="cfAfX">\u2715</button></div>' +
-      '<textarea id="cfAfIn" placeholder="Tempel lirik mentah dari internet di sini\u2026" rows="8"></textarea>' +
+      '<div class="cfAfModal" role="dialog" aria-modal="true" aria-label="Auto-Format Lyrics">' +
+      '<div class="cfAfHead"><b>Auto-Format Lyrics</b><button type="button" class="cfAfX" id="cfAfX" aria-label="Close">✕</button></div>' +
+      '<textarea id="cfAfIn" placeholder="Tempel lirik mentah dari internet di sini…" rows="8"></textarea>' +
       '<div class="cfAfOps"><button type="button" class="projMiniBtn primary" id="cfAfGo">Format</button>' +
       '<button type="button" class="projMiniBtn" id="cfAfCopy">Salin</button>' +
       '<button type="button" class="projMiniBtn" id="cfAfUse">Pakai di Teks</button></div>' +
       '<div class="cfAfPreview" id="cfAfPreview"></div>' +
       "</div>";
     document.body.appendChild(ov);
-    btn.onclick = function () { ov.hidden = false; };
-    ov.querySelector("#cfAfX").onclick = function () { ov.hidden = true; };
-    ov.addEventListener("click", function (e) { if (e.target === ov) ov.hidden = true; });
+    function closeAf() { ov.hidden = true; }
+    function openAf() { ov.hidden = false; setTimeout(function(){ var ta=document.getElementById("cfAfIn"); if(ta) ta.focus(); }, 30); }
+    window.__openAutoFormat = openAf;
+    ov.querySelector("#cfAfX").onclick = closeAf;
+    ov.addEventListener("click", function (e) { if (e.target === ov) closeAf(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !ov.hidden) closeAf(); });
     var formatted = [];
     function toText() { return formatted.map(function (s) { return "[" + s.label + "]\n" + s.lines.join("\n"); }).join("\n\n"); }
     ov.querySelector("#cfAfGo").onclick = function () {
       formatted = cfAutoFormat(ov.querySelector("#cfAfIn").value);
       ov.querySelector("#cfAfPreview").innerHTML = formatted.map(function (s) {
-        return '<div class="cfAfSec"><span class="cfSecChip" data-sec="' + s.label.split(" ")[0].toLowerCase() + '">' + s.label + "</span> " + s.lines.join(" \u00b7 ") + "</div>";
+        return '<div class="cfAfSec"><span class="cfSecChip" data-sec="' + s.label.split(" ")[0].toLowerCase() + '">' + s.label + "</span> " + s.lines.join(" · ") + "</div>";
       }).join("") || '<div class="cfGSEmpty">Tidak ada isi</div>';
     };
     ov.querySelector("#cfAfCopy").onclick = function () { try { navigator.clipboard.writeText(toText()); } catch (e) {} };
     ov.querySelector("#cfAfUse").onclick = function () {
       var ti = document.getElementById("projTextInput");
       if (ti) { ti.value = toText(); ti.dispatchEvent(new Event("input", { bubbles: true })); }
-      ov.hidden = true;
+      closeAf();
     };
   }
 
@@ -1512,20 +1486,34 @@
     }, 900);
   }
 
-  /* ---- 4. Stage Display: item di menu avatar ---- */
+  /* ---- 4. Roadmap items di menu avatar ---- */
   function addStageMenuItem() {
     var menu = document.getElementById("cfUserMenu");
-    if (!menu || document.getElementById("cfStageItem")) return;
-    var b = document.createElement("button");
-    b.type = "button";
-    b.className = "cfUserItem";
-    b.id = "cfStageItem";
-    b.textContent = "Open Stage Display";
-    b.onclick = function () {
-      window.open("./castflow.html?mode=stage", "_blank", "noopener");
-      menu.hidden = true;
-    };
-    menu.appendChild(b);
+    if (!menu) return;
+    if (!document.getElementById("cfAfMenuItem")) {
+      var a = document.createElement("button");
+      a.type = "button";
+      a.className = "cfUserItem";
+      a.id = "cfAfMenuItem";
+      a.textContent = "Auto-Format Lyrics";
+      a.onclick = function () {
+        if (window.__openAutoFormat) window.__openAutoFormat();
+        menu.hidden = true;
+      };
+      menu.appendChild(a);
+    }
+    if (!document.getElementById("cfStageItem")) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "cfUserItem";
+      b.id = "cfStageItem";
+      b.textContent = "Open Stage Display";
+      b.onclick = function () {
+        window.open("./castflow.html?mode=stage", "_blank", "noopener");
+        menu.hidden = true;
+      };
+      menu.appendChild(b);
+    }
   }
 
   function initRoadmap() {

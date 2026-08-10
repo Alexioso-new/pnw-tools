@@ -23,7 +23,7 @@
 (function () {
   "use strict";
 
-  var FALLBACK_VERSION = "v8.1";
+  var FALLBACK_VERSION = "v8.2";
   var STORE_KEY = "pnwErrorLog.v1";
   var OPEN_KEY = "pnwErrorLog.lastOpenAt";
   var MAX_LOCAL = 250;

@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v8.1-standalone";
+  var VERSION = "v8.2-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";
@@ -721,7 +721,7 @@
   function smEsc(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
-  /* v8.1: Stage Display — monitor panggung (lirik kini + berikutnya + countdown, tanpa latar visual) */
+  /* v8.2: Stage Display — monitor panggung (lirik kini + berikutnya + countdown, tanpa latar visual) */
   function renderStage(v) {
     var scr = document.getElementById("displayScreen");
     var idle = document.getElementById("dispIdle");

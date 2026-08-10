@@ -748,3 +748,9 @@ body.yvStandalone .cfIconBtn:hover { color:#eceef2; border-color:#1282a2; }
 #displayScreen.stageMonitor .smNext { margin-top:5vh; font-size:1.7vw; color:#6b7280; font-weight:300; line-height:1.4; }
 #displayScreen.stageMonitor .smNext span { display:block; font-size:1.1vw; text-transform:uppercase; letter-spacing:2px; color:#1282a2; margin-bottom:1vh; }
 #displayScreen.stageMonitor .smCount { font-size:14vw; text-align:center; color:#fff; font-variant-numeric:tabular-nums; }
+
+/* v8.2: hidden modal harus benar-benar tertutup */
+.cfAfOverlay[hidden] { display:none !important; }
+
+/* v8.2: hapus popover Resolution lama; pakai kontrol Resolution di Preview saja */
+#cfPrevSettings, #cfPrevSettingsBtn { display:none !important; }
