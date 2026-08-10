@@ -26,7 +26,7 @@ body.yvStandalone {
   --d-line: #141414;
   --d-canvas: #141414;
   /* ═══ UBAH UKURAN LOGO CASTFLOW DI SINI (px) ═══ */
-  --cf-logo-h: 200px;
+  --cf-logo-h: 160px;
   background-color: #262626 !important;
   background-image: linear-gradient(165deg, #232326 0%, #262626 45%, #2a2a2e 100%) !important;
   background-attachment: fixed;
