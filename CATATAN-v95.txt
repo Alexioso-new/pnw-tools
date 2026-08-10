@@ -1,0 +1,24 @@
+============================================================
+PNW TOOLS v95 (label v7.8) — perbaikan bug toggle + font + chip section
+============================================================
+
+ISI RILIS
+1. **PERBAIKAN BUG "STUCK DI TIMELINE":** dulu tombol Lyric/Timeline ada di
+   dalam panel katalog, dan panel itu ikut tersembunyi saat mode Timeline aktif
+   — jadi tombolnya hilang dan Anda tidak bisa kembali ke Lyric Control.
+   Sekarang toggle ada di **header panel yang permanen** (selalu terlihat),
+   jadi Anda bebas bolak-balik Lyric <-> Timeline.
+2. **SEMUA FONT -> TikTok Sans:** sisa font lama (JetBrains Mono pada judul
+   panel seperti "Kontrol Panel" & "Playlist / Rundown", dan Satoshi pada label
+   "BACKGROUND") kini dipaksa ke TikTok Sans di seluruh CastFlow.
+3. **Chip warna penanda bagian lagu** di Lyric Control — setiap slide kini
+   punya label berwarna: VERSE (biru), CHORUS (hijau), PRE-CHORUS (ungu),
+   INTERLUDE (abu), CODA (oranye). Memudahkan mengenali bagian lagu.
+4. Tata letak mockup + splitter fleksibel dari v94 tetap berfungsi penuh.
+
+CARA PASANG (urutan WAJIB)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah.
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v95" && git push
+4. Ctrl+Shift+R -> menu -> CastFlow -> label v7.8. Coba toggle Lyric/Timeline
+   (harus bisa bolak-balik), lihat judul panel & chip warna di Lyric Control.

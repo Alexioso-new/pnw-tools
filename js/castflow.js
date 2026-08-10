@@ -15,7 +15,7 @@
 (function () {
   "use strict";
 
-  var CF_VERSION = "v7.7";
+  var CF_VERSION = "v7.8";
   var LANG_KEY = "pnwCastflowLang";
   var FONTS_KEY = "pnwCastflowFonts.v1";
   var GRID_KEY = "pnwCastflowGrid.v1";
@@ -694,6 +694,39 @@
     field.appendChild(row);
   }
 
+  /* ================= 4b. chip warna section (Verse/Chorus/…) ================= */
+  var SEC_COLORS = {
+    verse: "#2f6fb2",
+    chorus: "#2e9e6b",
+    "pre-chorus": "#8b5cf6",
+    interlude: "#64748b",
+    coda: "#e0653a",
+  };
+  function paintSectionChips() {
+    qa(".projSlideCard .projSlideNo").forEach(function (no) {
+      if (no.__cfChip) return;
+      no.__cfChip = 1;
+      var m = (no.textContent || "").match(
+        /^(.*?)\u00b7\s*(VERSE|CHORUS|PRE-CHORUS|INTERLUDE|CODA)\s*$/i,
+      );
+      if (!m) return;
+      var num = (m[1] || "").trim();
+      var lab = m[2].toUpperCase();
+      no.innerHTML = "";
+      if (num) {
+        var ns = document.createElement("span");
+        ns.className = "cfSlideNum";
+        ns.textContent = num;
+        no.appendChild(ns);
+      }
+      var chip = document.createElement("span");
+      chip.className = "cfSecChip";
+      chip.setAttribute("data-sec", lab.toLowerCase());
+      chip.textContent = lab;
+      no.appendChild(chip);
+    });
+  }
+
   /* ================= 5. WORKSPACE 2D (mockup) ================= */
   function loadGrid() {
     try {
@@ -831,23 +864,22 @@
     dockTimelineInline(isTl);
   }
   function addLyricToggle(cLyr, paneC) {
-    var head = paneC.querySelector(".projPaneHead");
-    if (!head) {
-      /* pane katalog tidak punya .projPaneHead — buat toolbar toggle sendiri */
-      head = document.createElement("div");
-      head.className = "cfCellHead";
-      head.style.cssText = "display:flex;align-items:center;gap:8px;";
-      var lbl = document.createElement("span");
-      lbl.textContent = "Lyric Control / Timeline";
-      head.appendChild(lbl);
-      paneC.insertBefore(head, paneC.firstChild);
-    }
+    /* header PERMANEN di sel (BUKAN di dalam paneC) supaya tombol toggle tetap
+       terlihat saat paneC disembunyikan oleh mode Timeline — memperbaiki bug
+       "stuck di timeline, tidak bisa balik ke Lyric". */
+    var head = document.createElement("div");
+    head.className = "cfCellHead cfLyricHead";
+    var lbl = document.createElement("span");
+    lbl.className = "cfLyricTitle";
+    lbl.textContent = "Lyric Control / Timeline";
+    head.appendChild(lbl);
     var t = document.createElement("span");
     t.className = "cfViewToggle";
     t.innerHTML =
       '<button type="button" data-cfview="lyric">🎬 Lyric</button>' +
       '<button type="button" data-cfview="timeline">⏱ Timeline</button>';
     head.appendChild(t);
+    cLyr.insertBefore(head, cLyr.firstChild);
     qa("[data-cfview]", t).forEach(function (b) {
       b.onclick = function () {
         setLyricView(b.getAttribute("data-cfview"));
@@ -1019,6 +1051,10 @@
     safe("ratio", initRatio);
     safe("drop", initDrop);
     safe("customFont", initCustomFont);
+    safe("chips", function () {
+      paintSectionChips();
+      setInterval(paintSectionChips, 900);
+    });
     safe("workspace", buildWorkspace);
     safe("float", initFloat);
     safe("tlResizer", initTlResizer);

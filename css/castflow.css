@@ -596,3 +596,34 @@ body.yvStandalone ::selection { background: rgba(18, 130, 162, 0.4); color: #eaf
   .cfC-menu, .cfC-playlist, .cfC-preview, .cfC-lyric, .cfC-design { grid-column: 1; grid-row: auto; }
   .cfPrevHint { display: none; }
 }
+
+/* ============================================================
+   v7.8 — font TikTok Sans menyeluruh + chip warna section
+   ============================================================ */
+body.yvStandalone {
+  --font-sans: "TikTok Sans", "Plus Jakarta Sans", Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "TikTok Sans", "Plus Jakarta Sans", Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-judul: "TikTok Sans", "Plus Jakarta Sans", Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+body.yvStandalone h1, body.yvStandalone h2, body.yvStandalone h3, body.yvStandalone h4,
+body.yvStandalone .projPaneHead, body.yvStandalone .projPaneHead h3,
+body.yvStandalone .projField > .label, body.yvStandalone .projLabel,
+body.yvStandalone label, body.yvStandalone .label, body.yvStandalone strong, body.yvStandalone code {
+  font-family: "TikTok Sans", "Plus Jakarta Sans", Inter, "Segoe UI", system-ui, -apple-system, sans-serif !important;
+}
+
+/* header sel Lyric/Timeline PERMANEN (perbaikan bug "stuck") */
+.cfLyricHead { display:flex; align-items:center; gap:8px; }
+.cfC-lyric.showTl .cfLyricHead { display:flex; }
+.cfLyricTitle { font:800 9px/1 inherit; letter-spacing:1px; text-transform:uppercase; color:#a8adb8; }
+.tlDrawer.cfTlInline { flex:1 1 auto; height:auto !important; min-height:0; }
+
+/* chip warna penanda section */
+.projSlideCard .projSlideNo { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+.cfSlideNum { color:#8a8f99; font-weight:700; }
+.cfSecChip { display:inline-block; padding:2px 7px; border-radius:4px; font-size:8.5px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:#fff; line-height:1.4; }
+.cfSecChip[data-sec="verse"] { background:#2f6fb2; }
+.cfSecChip[data-sec="chorus"] { background:#2e9e6b; }
+.cfSecChip[data-sec="pre-chorus"] { background:#8b5cf6; }
+.cfSecChip[data-sec="interlude"] { background:#64748b; }
+.cfSecChip[data-sec="coda"] { background:#e0653a; }
