@@ -154,6 +154,16 @@
       if (r) r.set(_plan);
     });
   }
+  /* v102: kontrak resmi untuk importer project (js/cf-package.js).
+     Menyetel _plan + persist (lokal & cloud) + repaint playlist. */
+  function setPlan(next) {
+    safe("setPlan", function () {
+      if (!Array.isArray(next)) return;
+      _plan = next;
+      savePlan();
+      renderPlan();
+    });
+  }
   function loadLocalPlan() {
     safe("loadPlan", function () {
       var p = JSON.parse(localStorage.getItem(LOCAL_PLAN) || "null");
@@ -1485,6 +1495,7 @@
     slidesOf: slidesOf,
     songById: songById,
     savePlan: savePlan,
+    setPlan: setPlan,
     notify: notify,
     setBg: setBg,
     SOLIDS: SOLIDS,

@@ -1,24 +1,26 @@
 /* PNW-FILE-GUIDE
-   js/cf-kernel.js — KERNEL v101 (Sprint 1: S1-01..S1-05).
+   js/cf-kernel.js — KERNEL v102 (Sprint 1 + S3-06 storage registry).
    Satu sumber kebenaran untuk arsitektur baru CastFlow:
      • bus      : event bus (on/off/once/emit) — komunikasi antar modul.
      • store    : state global per slice (app/connection/program/diagnostics).
-     • storage  : persistence adapter, semua key ber-namespace castflow:v101:.
+     • storage  : persistence adapter, semua key BARU ber-namespace
+                  castflow:v101: (namespace mengikuti SKEMA, bukan nomor rilis),
+                  plus registry migrasi legacy (MIGRATIONS + migratedGet).
      • flags    : feature flags tersimpan (bisa dipakai mematikan fitur baru).
      • errors   : global error handler -> PNWLog + event app:error.
    ATURAN (04_AGENT_RULES): modul baru WAJIB lewat kernel ini; dilarang
    menulis localStorage langsung dan dilarang polling untuk berkomunikasi.
-   Dimuat SEBELUM cf-health.js / cf-preflight.js, SETELAH logger.js.
+   Dimuat SEBELUM cf-health.js / cf-preflight.js / cf-media.js / cf-package.js.
  */
 (function () {
   "use strict";
   if (window.CastFlowKernel) return;
 
-  var VERSION = "v101";
-  var LABEL = "v9.1";
-  var NS = "castflow:v101:";
+  var VERSION = "v102";
+  var LABEL = "v9.2";
+  var NS = "castflow:v101:"; /* namespace skema — JANGAN diganti per rilis */
 
-  /* Event catalog (02_TECH_SPEC §8) — daftar resmi event v101. */
+  /* Event catalog (02_TECH_SPEC §8 + tambahan v102) — daftar resmi. */
   var Events = {
     APP_INIT: "app:init",
     APP_READY: "app:ready",
@@ -34,6 +36,10 @@
     PREFLIGHT_STARTED: "diagnostics:preflight-started",
     PREFLIGHT_FINISHED: "diagnostics:preflight-finished",
     MEDIA_MISSING: "media:missing-detected",
+    MEDIA_RESOLVED: "media:resolved",
+    PROJECT_EXPORTED: "project:exported",
+    PROJECT_IMPORTED: "project:imported",
+    PROJECT_IMPORT_FAILED: "project:import-failed",
   };
 
   function logWarn(msg, meta) {
@@ -140,13 +146,32 @@
     },
   };
 
-  /* ---------------- Persistence Adapter (S1-04) ---------------- */
+  /* ---------------- Persistence Adapter (S1-04 + S3-06) ---------------- */
   function skey(key) {
     return NS + key;
   }
+
+  /* Registry migrasi legacy -> key baru (S3-06). Sifatnya: baca-baru-dulu,
+     kalau kosong baca legacy LALU SALIN ke key baru (write-through).
+     Key legacy TIDAK dihapus — rollback selalu aman. */
+  var MIGRATIONS = {
+    "workspace:layout": "pnwCastflowGrid.v1",
+    "preview:mode": "pnwCastflowPreviewMode.v2",
+    "preview:ratio": "pnwCastflowPrevRatio",
+    "design:visual": "pnwCastflowVisualStyle.v2",
+    lang: "pnwCastflowLang",
+    "media:tags": "pnwCastflowMediaTags.v1",
+    "bible:version": "pnwCastflowBibleVer",
+    "fonts:custom": "pnwCastflowFonts.v1",
+    "preview:float": "pnwCastflowFloat.v1",
+    "timeline:height": "pnwCastflowTlH",
+    "lyric:view": "pnwCastflowLyricView",
+  };
+
   var storage = {
     NS: NS,
     key: skey,
+    MIGRATIONS: MIGRATIONS,
     get: function (key, fallback) {
       try {
         var raw = localStorage.getItem(skey(key));
@@ -170,6 +195,18 @@
         localStorage.removeItem(skey(key));
       } catch (e) {}
     },
+    /* migratedGet: baca key baru; bila kosong dan ada pasangan legacy,
+       salin nilai legacy ke key baru lalu kembalikan. (S3-06) */
+    migratedGet: function (key, fallback) {
+      var v = storage.get(key, undefined);
+      if (typeof v !== "undefined") return v;
+      var legacyKey = MIGRATIONS[key];
+      if (!legacyKey) return fallback;
+      var lv = storage.legacyRead(legacyKey, undefined);
+      if (typeof lv === "undefined" || lv === null) return fallback;
+      storage.set(key, lv); /* write-through, legacy tetap ada */
+      return lv;
+    },
     /* Baca key legacy (pnw*) TANPA memigrasikan — jembatan strangler. */
     legacyRead: function (legacyKey, fallback) {
       try {
@@ -178,6 +215,17 @@
         return JSON.parse(raw);
       } catch (e) {
         return fallback;
+      }
+    },
+    /* Tulis key legacy — HANYA untuk interop masa transisi (mis. importer
+       menulis pnwCastflowVisualStyle.v2 yang masih dibaca modul v100). */
+    legacyWrite: function (legacyKey, value) {
+      try {
+        localStorage.setItem(legacyKey, JSON.stringify(value));
+        return true;
+      } catch (e) {
+        logWarn("legacyWrite gagal", { key: legacyKey, error: String(e) });
+        return false;
       }
     },
   };

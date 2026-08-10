@@ -1,0 +1,27 @@
+CASTFLOW v102 (label v9.2) — PROJECT & MEDIA PORTABILITY (dasar)
+=================================================================
+
+Melanjutkan v101 (Sprint 3 dari dokumen rencana Anda). Isi utama:
+
+- EXPORT PROJECT — menu Avatar -> "Export Project" mengunduh satu file
+  .cfproj.json berisi rundown + pengaturan sesi + visual style + daftar
+  referensi media. Inilah cadangan project yang bisa dipindah antar laptop.
+- IMPORT PROJECT — menu Avatar -> "Import Project": file divalidasi dulu
+  (file salah = ditolak dengan pesan jelas, tidak merusak apa pun), lalu
+  rundown diterapkan lewat kontrak resmi dan playlist langsung segar.
+- MEDIA RESOLVER + MISSING ASSET — semua referensi media kini lewat satu
+  jalur; media yang hilang di perangkat terdeteksi dan dilaporkan saat impor
+  dan saat Preflight Check (bukan diam-diam saat live).
+- STORAGE REGISTRY — key storage baru ber-namespace castflow:v101: dengan
+  tabel migrasi legacy; key lama tidak dihapus (rollback aman).
+
+BERKAS BARU: js/cf-media.js, js/cf-package.js
+DIPATCH: js/projector.js (kontrak __tl.setPlan), castflow.html, sw.js,
+         label versi v9.2, cache pnw-tools-v102.
+
+URUTAN DEPLOY (rules v101 sudah Anda publish — tidak perlu diulang):
+1. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+2. git add -A && git commit -m "v102" && git push
+3. Ctrl+Shift+R -> label v9.2.
+4. Uji: menu Avatar -> Export Project (file terunduh), lalu Import Project
+   (pilih file tadi) -> playlist kembali + toast konfirmasi.

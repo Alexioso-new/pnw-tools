@@ -1,6 +1,6 @@
-# CastFlow v101 — Arsitektur (kontrak resmi kode baru)
+# CastFlow v101+ — Arsitektur (kontrak resmi kode baru)
 
-Dokumen ini mendaftarkan kontrak yang diperkenalkan v101. Aturan main ada di
+Dokumen ini mendaftarkan kontrak yang diperkenalkan v101/v102. Aturan main ada di
 `04_AGENT_RULES.md`; dokumen ini adalah registry-nya.
 
 ## Adaptasi dari 02_TECH_SPEC
@@ -12,11 +12,13 @@ store, adapter, events, namespace storage) identik dengan spec.
 ## Modul
 | Modul | File | Tanggung jawab |
 |---|---|---|
-| Kernel | `js/cf-kernel.js` | bus, store, storage adapter, flags, error handler |
+| Kernel | `js/cf-kernel.js` | bus, store, storage adapter + migrasi, flags, error handler |
 | Output Health | `js/cf-health.js` | heartbeat, status output, chip, ack, reconnect |
 | Preflight | `js/cf-preflight.js` | pemeriksaan pra-live + modal hasil |
+| Media | `js/cf-media.js` | resolver aset (idb:/http), missing asset checker |
+| Package | `js/cf-package.js` | schema project, export, import, validasi |
 | Tokens | `css/cf-tokens.css` | design tokens (satu-satunya sumber warna/spacing baru) |
-| Komponen | `css/cf-v101.css` | style komponen v101 (prefix cf-, tanpa !important) |
+| Komponen | `css/cf-v101.css` | style komponen v101+ (prefix cf-, tanpa !important) |
 
 ## Event registry (format domain:entity:action)
 | Event | Emitter | Payload |
@@ -29,18 +31,29 @@ store, adapter, events, namespace storage) identik dengan spec.
 | `output:slide-ack` | health | `{sig, at}` |
 | `output:request-reconnect` | health | `{at}` |
 | `diagnostics:preflight-started` / `-finished` | preflight | `{at}` / `{status, checks[], generatedAt}` |
-| `media:missing-detected` | preflight | `{ids[]}` |
+| `media:missing-detected` | media / preflight | `{ids[]}` |
+| `media:resolved` | media | `{ref}` |
+| `project:exported` | package | `{name, items, media}` |
+| `project:imported` | package | `{name, items, missing}` |
+| `project:import-failed` | package | `{reason}` |
 | `cf:output:rendered` (DOM CustomEvent) | yv-standalone | `{kind, slideIndex, sig, active}` |
 
-## Storage key registry (namespace `castflow:v101:`)
+## Storage key registry
+Namespace skema: **`castflow:v101:`** — mengikuti SKEMA, bukan nomor rilis;
+JANGAN diganti per rilis. Key baru:
 | Key | Isi | Penulis |
 |---|---|---|
 | `flags` | feature flags | kernel |
 | `diagnostics:lastPreflight` | hasil preflight terakhir | preflight |
 | `diagnostics:probe` | probe tulis (langsung dihapus) | preflight |
+| `media:missing` | daftar ref media hilang | media |
+| `project:lastExport` | meta ekspor terakhir | package |
 
-Key legacy `pnw*` TIDAK dimigrasi di v101; pembacaan lama hanya lewat
-`storage.legacyRead()` bila dibutuhkan. Migrasi penuh = task S3-06.
+### Migrasi legacy (S3-06)
+`storage.MIGRATIONS` memetakan key baru -> key legacy `pnw*`. Aturan:
+`migratedGet()` membaca key baru dulu; bila kosong, baca legacy LALU salin
+ke key baru (write-through). Key legacy TIDAK pernah dihapus — rollback aman.
+`legacyWrite()` hanya untuk interop transisi (mis. visual style v100).
 
 ## State slices (store)
 `app {version, label, mode, initialized}` ·
@@ -48,15 +61,25 @@ Key legacy `pnw*` TIDAK dimigrasi di v101; pembacaan lama hanya lewat
 `program {lastSentSig, lastSentAt, lastAckSig, ackAt}` ·
 `diagnostics {preflight, errors[]}`
 
-## Output reliability
+## Output reliability (v101)
 - Heartbeat: output menulis tiap 2 dtk ke BroadcastChannel `castflow:v101:live`
   dan (best-effort) RTDB `pujianYouth/youthviews/heartbeat`.
 - Ambang status: `connected <=5d`, `stale >5d`, `disconnected >10d`.
-- ACK: sig = `kind|songId|slideIndex`. Operator mencatat sig saat broadcast
-  (wrap `PNWYouthViews.broadcast`, penanda `__cfWrapped`); output menggemakan
-  sig render terakhir; cocok = ACK.
-- Rules v101 menambah node `heartbeat` (read/write publik tervalidasi ketat)
-  supaya layar output tanpa login tetap bisa melapor.
+- ACK: sig = `kind|songId|slideIndex`; operator membungkus
+  `PNWYouthViews.broadcast` (`__cfWrapped`); output menggemakan sig render.
+
+## Project package (v102, schemaVersion 1)
+```
+{ format:"castflow-project", schemaVersion:1, name, exportedAt,
+  app:{release,label}, rundown:[...], settings:{...}, visual:{...}|null,
+  mediaRefs:[{ref}] }
+```
+- Validasi impor: format cocok, schemaVersion <= 1, rundown array. File salah
+  DITOLAK tanpa menyentuh state; event `project:import-failed` dipancarkan.
+- Rundown diterapkan lewat kontrak `PNWYouthViews.__tl.setPlan` (baru v102 —
+  set + persist lokal/cloud + `renderPlan()`).
+- Visual style diterapkan lewat `legacyWrite` + `CastFlowV100.applyVisualPreview`.
+- Media refs dipindai `K.media.scanRefs`; yang hilang dilaporkan.
 
 ## Exit plan legacy (strangler)
 - Polling `setInterval` di `js/castflow.js`/`yv-timeline.js` tetap jalan sampai
