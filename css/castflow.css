@@ -717,3 +717,34 @@ body.yvStandalone .cfIconBtn:hover { color:#eceef2; border-color:#1282a2; }
 
 /* B1: hint idle di output */
 .cfIdleHint { display:block; margin-top:10px; font-size:.5em; color:#8a8f99; font-weight:300; }
+
+/* ============================================================
+   v8.1 — Roadmap lanjutan
+   ============================================================ */
+.cfAfOverlay { position:fixed; inset:0; z-index:2700; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:20px; }
+.cfAfModal { background:#1e1e21; border:1px solid #343439; border-radius:14px; box-shadow:0 20px 50px rgba(0,0,0,.6); width:100%; max-width:520px; padding:14px; color:#eceef2; display:flex; flex-direction:column; gap:10px; }
+.cfAfHead { display:flex; align-items:center; justify-content:space-between; font-size:12px; font-weight:500; color:#fff; }
+.cfAfX { background:#26262b; border:1px solid #3a3a40; color:#a8adb8; border-radius:7px; width:22px; height:22px; cursor:pointer; }
+.cfAfModal textarea { background:#141414; border:1px solid #3a3a40; color:#eceef2; border-radius:9px; padding:9px; font-size:11px; font-family:inherit; font-weight:300; resize:vertical; }
+.cfAfOps { display:flex; gap:7px; flex-wrap:wrap; }
+.cfAfPreview { max-height:200px; overflow:auto; border-top:1px solid #2c2c30; padding-top:8px; display:flex; flex-direction:column; gap:6px; }
+.cfAfSec { font-size:10.5px; color:#c6cbd4; line-height:1.5; }
+
+/* Next Slide Thumbnail */
+.cfNextThumb { background:#1a1a1d; border:1px solid #2e2e33; border-radius:10px; padding:8px 11px; margin:0 0 8px; }
+.cfNextThumb .t { font-size:8.5px; font-weight:500; letter-spacing:1px; text-transform:uppercase; color:#7fd4e8; margin-bottom:3px; }
+.cfNextThumb .b { font-size:10.5px; color:#eceef2; font-weight:300; line-height:1.4; }
+
+/* Media tagging */
+.cfMediaFilter { width:100%; box-sizing:border-box; background:#1e1e21; border:1px solid #3a3a40; color:#eceef2; border-radius:8px; padding:6px 10px; font-size:10.5px; margin-bottom:7px; font-family:inherit; }
+.cfMediaTag { background:#141414; border:1px solid #343439; color:#7fd4e8; border-radius:5px; padding:2px 7px; font-size:9px; margin-top:5px; width:100%; box-sizing:border-box; font-family:inherit; }
+
+/* Stage Display (monitor panggung) */
+#displayScreen.stageMonitor { background:#000 !important; }
+#displayScreen.stageMonitor .dispBg, #displayScreen.stageMonitor .dispVideo, #displayScreen.stageMonitor .dispMotion, #displayScreen.stageMonitor .dispLottie { display:none !important; }
+#displayScreen.stageMonitor .dispStage { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:6vh 6vw; }
+#displayScreen.stageMonitor #dispTitle { font-size:2.2vw; color:#8a8f99; font-weight:500; margin:0 0 3vh; }
+#displayScreen.stageMonitor .smCur { font-size:4.6vw; line-height:1.3; color:#ffffff; font-weight:500; }
+#displayScreen.stageMonitor .smNext { margin-top:5vh; font-size:1.7vw; color:#6b7280; font-weight:300; line-height:1.4; }
+#displayScreen.stageMonitor .smNext span { display:block; font-size:1.1vw; text-transform:uppercase; letter-spacing:2px; color:#1282a2; margin-bottom:1vh; }
+#displayScreen.stageMonitor .smCount { font-size:14vw; text-align:center; color:#fff; font-variant-numeric:tabular-nums; }

@@ -1352,6 +1352,194 @@
     }, 300);
   }
 
+  /* ================= 8. ROADMAP LANJUTAN (v8.1) ================= */
+  /* ---- 1. Auto-Format Lyrics ---- */
+  var CF_SEC_RX = [
+    [/^(pre[- ]?chorus|prechorus)/i, "Pre-Chorus"],
+    [/^(chorus|reff?|refrain)/i, "Chorus"],
+    [/^(bridge)/i, "Interlude"],
+    [/^(interlude|interlud|instrumental|solo|intro)/i, "Interlude"],
+    [/^(coda|ending|outro|akhir)/i, "Coda"],
+    [/^(verse|bait|stanza|v\s*\d+)/i, "Verse"],
+  ];
+  function cfAutoFormat(raw) {
+    var lines = String(raw || "").replace(/\r\n?/g, "\n").split("\n");
+    var blocks = [];
+    var cur = [];
+    lines.forEach(function (ln) {
+      if (ln.trim() === "") { if (cur.length) { blocks.push(cur); cur = []; } }
+      else cur.push(ln.trim());
+    });
+    if (cur.length) blocks.push(cur);
+    var out = [];
+    var vCount = 0;
+    blocks.forEach(function (blk) {
+      var label = null;
+      var body = blk;
+      var first = (blk[0] || "").trim();
+      if (first && first.length <= 24) {
+        for (var i = 0; i < CF_SEC_RX.length; i++) {
+          if (CF_SEC_RX[i][0].test(first)) { label = CF_SEC_RX[i][1]; break; }
+        }
+      }
+      if (label) body = blk.slice(1);
+      if (!label || label === "Verse") { vCount++; label = "Verse " + vCount; }
+      if (!body.length) body = [first];
+      out.push({ label: label, lines: body });
+    });
+    return out;
+  }
+  function buildAutoFormat() {
+    var gs = document.querySelector(".cfGSWrap");
+    if (!gs || document.getElementById("cfAfBtn")) return;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "cfAfBtn";
+    btn.className = "cfIconBtn";
+    btn.title = "Auto-format lyrics";
+    btn.textContent = "\u26A1";
+    gs.appendChild(btn);
+    var ov = document.createElement("div");
+    ov.className = "cfAfOverlay"; ov.id = "cfAfOverlay"; ov.hidden = true;
+    ov.innerHTML =
+      '<div class="cfAfModal">' +
+      '<div class="cfAfHead"><b>Auto-Format Lyrics</b><button type="button" class="cfAfX" id="cfAfX">\u2715</button></div>' +
+      '<textarea id="cfAfIn" placeholder="Tempel lirik mentah dari internet di sini\u2026" rows="8"></textarea>' +
+      '<div class="cfAfOps"><button type="button" class="projMiniBtn primary" id="cfAfGo">Format</button>' +
+      '<button type="button" class="projMiniBtn" id="cfAfCopy">Salin</button>' +
+      '<button type="button" class="projMiniBtn" id="cfAfUse">Pakai di Teks</button></div>' +
+      '<div class="cfAfPreview" id="cfAfPreview"></div>' +
+      "</div>";
+    document.body.appendChild(ov);
+    btn.onclick = function () { ov.hidden = false; };
+    ov.querySelector("#cfAfX").onclick = function () { ov.hidden = true; };
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.hidden = true; });
+    var formatted = [];
+    function toText() { return formatted.map(function (s) { return "[" + s.label + "]\n" + s.lines.join("\n"); }).join("\n\n"); }
+    ov.querySelector("#cfAfGo").onclick = function () {
+      formatted = cfAutoFormat(ov.querySelector("#cfAfIn").value);
+      ov.querySelector("#cfAfPreview").innerHTML = formatted.map(function (s) {
+        return '<div class="cfAfSec"><span class="cfSecChip" data-sec="' + s.label.split(" ")[0].toLowerCase() + '">' + s.label + "</span> " + s.lines.join(" \u00b7 ") + "</div>";
+      }).join("") || '<div class="cfGSEmpty">Tidak ada isi</div>';
+    };
+    ov.querySelector("#cfAfCopy").onclick = function () { try { navigator.clipboard.writeText(toText()); } catch (e) {} };
+    ov.querySelector("#cfAfUse").onclick = function () {
+      var ti = document.getElementById("projTextInput");
+      if (ti) { ti.value = toText(); ti.dispatchEvent(new Event("input", { bubbles: true })); }
+      ov.hidden = true;
+    };
+  }
+
+  /* ---- 2. Next Slide Thumbnail ---- */
+  function initNextThumb() {
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      var des = document.querySelector(".cfC-design");
+      if (des && !document.getElementById("cfNextThumb")) {
+        var card = document.createElement("div");
+        card.className = "cfNextThumb";
+        card.id = "cfNextThumb";
+        card.innerHTML = '<div class="t">Next</div><div class="b" id="cfNextThumbBody">—</div>';
+        des.insertBefore(card, des.firstChild);
+      }
+      var grid = document.getElementById("projSlideGrid");
+      var body = document.getElementById("cfNextThumbBody");
+      if (grid && body) {
+        var cur = grid.querySelector(".projSlideCard.on");
+        var txt = "—";
+        if (cur) {
+          var nx = cur.nextElementSibling;
+          while (nx && !nx.classList.contains("projSlideCard")) nx = nx.nextElementSibling;
+          if (nx) {
+            var b = nx.querySelector(".projSlideBody");
+            var no = nx.querySelector(".projSlideNo");
+            txt = (no ? no.textContent.trim() + "  " : "") + (b ? b.textContent.trim().slice(0, 70) : "");
+          } else txt = "Slide terakhir";
+        }
+        if (body.textContent !== txt) body.textContent = txt;
+      }
+      if (tries > 400) clearInterval(iv);
+    }, 800);
+  }
+
+  /* ---- 3. Media tagging ---- */
+  var MEDIATAG_KEY = "pnwCastflowMediaTags.v1";
+  function mediaTags() { try { return JSON.parse(localStorage.getItem(MEDIATAG_KEY) || "{}"); } catch (e) { return {}; } }
+  function saveMediaTags(t) { try { localStorage.setItem(MEDIATAG_KEY, JSON.stringify(t)); } catch (e) {} }
+  function initMediaTags() {
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      var grid = document.getElementById("projMediaGrid");
+      if (!grid) { if (tries > 200) clearInterval(iv); return; }
+      if (!document.getElementById("cfMediaFilter")) {
+        var fb = document.createElement("input");
+        fb.id = "cfMediaFilter";
+        fb.className = "cfMediaFilter";
+        fb.placeholder = "Filter media (nama/tag)\u2026";
+        grid.parentNode.insertBefore(fb, grid);
+        fb.addEventListener("input", function () {
+          var q = (fb.value || "").trim().toLowerCase();
+          var tags = mediaTags();
+          qa(".projMediaItem", grid).forEach(function (it) {
+            var id = it.getAttribute("data-mid") || "";
+            var hay = ((it.textContent || "") + " " + (tags[id] || "")).toLowerCase();
+            it.style.display = !q || hay.indexOf(q) >= 0 ? "" : "none";
+          });
+        });
+      }
+      var tags = mediaTags();
+      qa(".projMediaItem", grid).forEach(function (it) {
+        if (it.__cfTag) return;
+        it.__cfTag = 1;
+        var ub = it.querySelector("[data-use]");
+        var db = it.querySelector("[data-del]");
+        var mid = ub ? ub.getAttribute("data-use") : (db ? db.getAttribute("data-del") : "");
+        it.setAttribute("data-mid", mid);
+        var ti = document.createElement("input");
+        ti.className = "cfMediaTag";
+        ti.placeholder = "+ tag";
+        ti.value = tags[mid] || "";
+        ti.onchange = function () {
+          var t2 = mediaTags();
+          if (ti.value.trim()) t2[mid] = ti.value.trim(); else delete t2[mid];
+          saveMediaTags(t2);
+        };
+        it.appendChild(ti);
+      });
+      if (tries > 200) clearInterval(iv);
+    }, 900);
+  }
+
+  /* ---- 4. Stage Display: item di menu avatar ---- */
+  function addStageMenuItem() {
+    var menu = document.getElementById("cfUserMenu");
+    if (!menu || document.getElementById("cfStageItem")) return;
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "cfUserItem";
+    b.id = "cfStageItem";
+    b.textContent = "Open Stage Display";
+    b.onclick = function () {
+      window.open("./castflow.html?mode=stage", "_blank", "noopener");
+      menu.hidden = true;
+    };
+    menu.appendChild(b);
+  }
+
+  function initRoadmap() {
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      safe("autoFormat", buildAutoFormat);
+      safe("stageItem", addStageMenuItem);
+      if (tries > 80) clearInterval(iv);
+    }, 300);
+    initNextThumb();
+    initMediaTags();
+  }
+
   /* ================= boot ================= */
   function boot() {
     safe("fonts", extendFonts);
@@ -1369,6 +1557,7 @@
     /* panel revisi A–E (v8.0) */
     safe("panels", initPanels);
     safe("hotkeys", initHotkeys);
+    safe("roadmap", initRoadmap);
     setInterval(function () {
       safe("net", paintNetStatus);
       safe("viewOnly", applyViewOnly);
@@ -1405,6 +1594,7 @@
     },
     paintNetStatus: paintNetStatus,
     applyViewOnly: applyViewOnly,
+    autoFormat: cfAutoFormat,
   };
   if (document.readyState === "loading")
     document.addEventListener("DOMContentLoaded", boot);

@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v8.0-standalone";
+  var VERSION = "v8.1-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";
@@ -115,6 +115,7 @@
     /[?&]mode=(display|stage|youthviews|youth-views|views)/.test(
       location.search,
     );
+  var STAGE_MODE = /[?&]mode=stage/.test(location.search);
 
   /* ---------------- keadaan ---------------- */
   var songs = [];
@@ -717,10 +718,63 @@
       }
     });
   }
+  function smEsc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  /* v8.1: Stage Display — monitor panggung (lirik kini + berikutnya + countdown, tanpa latar visual) */
+  function renderStage(v) {
+    var scr = document.getElementById("displayScreen");
+    var idle = document.getElementById("dispIdle");
+    var stage = document.getElementById("dispStage");
+    var content = document.getElementById("dispContent");
+    var title = document.getElementById("dispTitle");
+    if (!scr || !content) return;
+    scr.classList.add("stageMonitor");
+    if (!v || !v.active) {
+      if (idle) idle.hidden = false;
+      if (stage) stage.hidden = true;
+      return;
+    }
+    if (idle) idle.hidden = true;
+    if (stage) stage.hidden = false;
+    if (title) title.textContent = v.songTitle || "";
+    var html = "";
+    if (v.kind === "song" && v.songId) {
+      var sg = getSong(v.songId);
+      var deck = sg ? buildSlides(sg, v.slideMax || 4) : [];
+      var ix = Math.max(0, parseInt(v.slideIndex, 10) || 0);
+      var cur = deck[ix];
+      var nx = deck[ix + 1];
+      html += '<div class="smCur">' + (cur ? cur.lines.map(smEsc).join("<br>") : "") + "</div>";
+      html += '<div class="smNext"><span>Next' + (nx && nx.label ? " · " + smEsc(nx.label) : "") + "</span>" + (nx ? smEsc((nx.lines || [])[0] || "") : "—") + "</div>";
+    } else if (v.kind === "countdown" && v.endsAt) {
+      html += '<div class="smCur smCount" id="smCount"></div>';
+    } else if (v.text) {
+      html += '<div class="smCur">' + smEsc(v.text).replace(/\n/g, "<br>") + "</div>";
+    } else if (v.lines) {
+      html += '<div class="smCur">' + (v.lines || []).map(smEsc).join("<br>") + "</div>";
+    }
+    content.innerHTML = html;
+    if (v.kind === "countdown" && v.endsAt) {
+      var cEl = document.getElementById("smCount");
+      var tick = function () {
+        var s = Math.max(0, Math.round((v.endsAt - Date.now()) / 1000));
+        if (cEl) cEl.textContent = Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2);
+      };
+      tick();
+      _cdTimer = setInterval(tick, 500);
+    }
+  }
+  try { window.__renderStage = renderStage; } catch (e) {}
+
   function renderDisplay(v) {
     if (_cdTimer) {
       clearInterval(_cdTimer);
       _cdTimer = null;
+    }
+    if (STAGE_MODE) {
+      renderStage(v);
+      return;
     }
     _renderMain(v);
     renderOverlay(v);

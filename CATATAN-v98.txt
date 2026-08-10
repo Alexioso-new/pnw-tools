@@ -1,0 +1,24 @@
+============================================================
+PNW TOOLS v98 (label v8.1) — Roadmap lanjutan (dari revisi-castflow.md)
+============================================================
+
+ISI RILIS
+1. **Auto-Format Lyrics (⚡)** — tombol petir di atas library. Tempel lirik
+   mentah dari internet -> sistem otomatis memecah jadi bait (Verse/Chorus/
+   Pre-Chorus/Interlude/Coda) berdasarkan pola baris kosong + kata kunci.
+   Ada pratinjau ber-chip warna, tombol Salin, dan "Pakai di Teks".
+2. **Next Slide Thumbnail** — kartu "Next" di panel kontrol menampilkan slide
+   berikutnya, supaya operator bisa bersiap sebelum ganti slide.
+3. **Stage Display** — output monitor panggung terpisah. Buka lewat menu
+   Avatar (👤) -> "Open Stage Display". Menampilkan lirik slide sekarang
+   (besar) + slide berikutnya (kecil) + countdown, tanpa latar visual —
+   ideal untuk monitor panggung/musisi.
+4. **Media tagging** — setiap item media kini punya kolom tag + kotak filter,
+   supaya tab Media yang penuh tetap rapi dan cepat dicari.
+
+CARA PASANG (urutan WAJIB)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah.
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v98" && git push
+4. Ctrl+Shift+R -> menu -> CastFlow -> label v8.1. Coba: ⚡ Auto-Format, kartu
+   Next, menu Avatar -> Open Stage Display, filter media.
