@@ -1,0 +1,2880 @@
+/* PNW-FILE-GUIDE
+   css/design.css — lapisan desain (Design DNA): token --d-*, tipografi, menu, rekaman, proyektor.
+   Dimuat oleh index.html SETELAH styles.css sehingga MENIMPA-nya.
+   Class yang dipakai JS: .recEdit-* & .recItemNote (js/recorder.js), .chord-maj & .chord-min (js/app.js), .proj-* (js/projector.js).
+ */
+
+/* =========================================================================
+   PNW TOOLS v64 - DESIGN DNA LAYER
+   Referensi: Supabase (struktur hairline, near-black, restraint)
+              Raycast  (kontras tinggi, tipografi tegas, permukaan tenang)
+   Prinsip: 1px border menggantikan bayangan, skala radius dipadatkan,
+            satu warna aksen, teks rata kiri, motion fungsional.
+   Lapisan ini hanya menimpa gaya. Tidak ada class/id yang diubah.
+   ========================================================================= */
+
+:root {
+  /* ============================================================
+     PANEL KONTROL FONT  (ganti font DI SINI saja)
+     Alur: (1) daftar TYPEFACE  ->  (2) tetapkan ke KATEGORI teks.
+     Ubah nilai kategori -> semua teks kategori itu ikut berubah.
+     Font BARU? Muat dulu <link>-nya di index.html.
+     ============================================================ */
+
+  /* (1) TYPEFACE tersedia (harus dimuat di index.html) */
+  --ff-sans:
+    "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    system-ui, sans-serif;
+  --ff-display:
+    "Satoshi", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ff-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* (2) KATEGORI TEKS  ->  cukup ganti isian di kanan ini */
+  --font-judul: var(--ff-mono); /* Judul utama: nama app, judul lagu, judul proyektor (H1/H2) */
+  --font-subjudul: var(--ff-display); /* Subjudul: label section & kartu, judul menu (H3/H4) */
+  --font-body: var(--ff-sans); /* Teks isi: paragraf, tombol, input, menu, tabel */
+  --font-chord: var(--ff-mono); /* Chord, angka & lirik (selaras kolom) */
+
+  /* alias lama (dipakai internal oleh banyak aturan - biarkan) */
+  --font-sans: var(--font-body);
+  --font-head: var(--font-subjudul);
+  --font-mono: var(--font-chord);
+
+  /* =====================================================================
+     PALET HOSANA YOUTH TOOLS - dark mode taktis, minimalis, futuristik
+     Biru logo sebagai aksen. Semua pasangan lulus WCAG AA/AAA.
+     Distribusi 60-30-10:
+       60% kanvas  -> --d-canvas
+       30% surface -> --d-s1..--d-s3 + --d-line
+       10% aksen   -> --d-accent + semantik
+     ===================================================================== */
+
+  /* --- 60%: Background Utama. Near-black bernuansa biru, bukan hitam murni:
+         mengurangi halation/silau di ruangan gelap saat ibadah. --- */
+  --d-canvas: #FEFCFB;
+
+  /* --- 30%: Background Sekunder / Surface (kartu, tabel, menu nav) --- */
+  --d-s1: #FFFFFF; /* kartu, baris daftar */
+  --d-s2: #FFFFFF; /* modal, drawer menu, header */
+  --d-s3: #F3F6F8; /* hover, input, keadaan tertekan */
+  --d-s4: #EDF2F6; /* tumpukan tertinggi */
+
+  /* --- garis hairline: pengganti bayangan --- */
+  --d-line: #E2E8F0;
+  --d-line-strong: #CBD5E1;
+  --d-line-soft: #EEF2F6;
+
+  /* --- Teks: putih sejuk, bukan #fff murni (menekan glare di ruang gelap) --- */
+  --d-ink: #0A1128; /* Teks Utama  - 16.5:1 di kanvas  -> AAA */
+  --d-ink-2: #034078; /* Teks Sekunder - 7.1:1 di surface -> AAA */
+  --d-ink-3: #64748b; /* Teks Tersier  - 4.6:1 di kanvas  -> AA  */
+
+  /* --- 10%: Primary Color, biru logo --- */
+  --d-accent: #1282A2; /* aksi utama, indikator aktif - 6.9:1 -> AA/AAA besar */
+  --d-accent-hi: #0E6E88; /* hover */
+  --d-accent-deep: #0B5A70; /* tertekan */
+  --d-accent-wash: #E5F3F8; /* latar tint */
+  --d-accent-ink: #FFFFFF; /* teks di atas tombol biru - 6.9:1 -> AA */
+
+  /* --- Semantic Colors khusus mode gelap --- */
+  --d-ok: #047857; /* sukses  - 9.4:1 -> AAA */
+  --d-ok-wash: #E7F6F0;
+  --d-warn: #B45309; /* peringatan - 10.8:1 -> AAA */
+  --d-warn-wash: #FCF3E6;
+  --d-danger: #DC2626; /* error  - 6.5:1 -> AA */
+  --d-danger-wash: #FDECEC;
+  --d-chord: #1282A2; /* akor/kunci - 10.6:1 -> AAA */
+
+  /* --- radius: panduan memakai 8px konsisten (tactical), pill tetap bulat --- */
+  --d-r-sm: 8px;
+  --d-r-md: 10px;
+  --d-r-lg: 12px;
+  --d-r-pill: 999px;
+
+  /* --- elevasi: ambient halus saja --- */
+  --d-e1: 0 1px 2px rgba(10, 17, 40, 0.04);
+  --d-e2: 0 4px 20px rgba(10, 17, 40, 0.06);
+  --d-e3: 0 12px 32px rgba(10, 17, 40, 0.1);
+
+  /* --- token lama dipetakan ulang --- */
+  --text: var(--d-ink);
+  --muted: var(--d-ink-2);
+  --line: var(--d-line);
+  --soft: var(--d-s2);
+  --paper: var(--d-s1);
+  --blue: var(--d-accent);
+  --blueSoft: var(--d-accent-wash);
+  --orange: var(--d-chord);
+  --green: var(--d-ok);
+  --greenSoft: var(--d-ok-wash);
+  --red: var(--d-danger);
+  --redSoft: var(--d-danger-wash);
+
+  --ring: 0 0 0 3px rgba(18, 130, 162, 0.28);
+  --lift: var(--d-e2);
+  --lift-sm: var(--d-e1);
+
+  /* --- motion: fungsional, bukan dekoratif --- */
+  --dur-micro: 100ms;
+  --dur-quick: 180ms;
+  --dur-normal: 260ms;
+  --dur-slow: 380ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.3, 0, 1, 1);
+  --ease-sig: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* toggle gelap tetap hidup: versi hitam pekat ala Raycast */
+body.dark {
+  --d-canvas: #05070c;
+  --d-s1: #0b1120;
+  --d-s2: #1e293b;
+  --d-s3: #263449;
+  --d-s4: #334155;
+  --text: var(--d-ink);
+  --muted: var(--d-ink-2);
+  --line: var(--d-line);
+  --soft: var(--d-s2);
+  --blue: var(--d-accent);
+  --blueSoft: var(--d-accent-wash);
+  background: var(--d-canvas);
+}
+
+/* =========================== DASAR =========================== */
+html,
+body {
+  background: var(--d-canvas);
+  color: var(--d-ink);
+}
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.006em;
+}
+
+::selection {
+  background: var(--d-accent-wash);
+  color: var(--d-ink);
+}
+
+/* scrollbar ikut tema, bukan default terang */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--d-line-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--d-line-strong);
+  border-radius: var(--d-r-pill);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* ==================== TIPOGRAFI: hierarki tegas ==================== */
+/* slop = semua ukuran mirip + tracking default. DNA = skala jelas + tracking negatif */
+h1 {
+  letter-spacing: -0.028em;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+h2,
+h3 {
+  letter-spacing: -0.02em;
+  color: var(--d-ink);
+}
+h4,
+h5 {
+  letter-spacing: -0.012em;
+  color: var(--d-ink);
+}
+.sub,
+.help,
+.small,
+.muted,
+.hint {
+  color: var(--d-ink-3);
+  letter-spacing: 0;
+}
+.verTag {
+  background: var(--d-s3);
+  border: 1px solid var(--d-line-strong);
+  color: var(--d-ink-3);
+  border-radius: var(--d-r-pill);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* slop = paragraf rata tengah di mana-mana. DNA = rata kiri */
+.modal p,
+.modal .help,
+.drawer p,
+.recSub,
+.recEmpty,
+.dangerText,
+.field label {
+  text-align: left;
+}
+
+/* label kecil bergaya teknis */
+.field label,
+.ytPitchLbl {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--d-ink-3);
+}
+
+/* ==================== PERMUKAAN ==================== */
+.sheet,
+.folderCard,
+.reminderCard,
+.bankItem,
+.pendingBanner {
+  background: var(--d-s1);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-lg);
+  box-shadow: none;
+}
+.modal,
+.drawer {
+  background: var(--d-s2);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-lg);
+  box-shadow: var(--d-e3);
+}
+.modalBackdrop {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* ==================== TOMBOL ==================== */
+/* slop = tiap tombol warna berbeda + gradien + bayangan tebal.
+   DNA = satu aksen solid, sisanya netral berbingkai. */
+.actionBtn {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line-strong);
+  border-radius: var(--d-r-md);
+  font-weight: 550;
+  letter-spacing: -0.006em;
+  box-shadow: none;
+  background-image: none;
+}
+.actionBtn:hover {
+  background: var(--d-s4);
+  border-color: #3d3d47;
+  transform: none;
+  box-shadow: none;
+}
+.actionBtn:active {
+  transform: scale(0.985);
+}
+.actionBtn.primary {
+  background: var(--d-accent);
+  color: var(--d-accent-ink);
+  border-color: var(--d-accent);
+  font-weight: 650;
+}
+.actionBtn.primary:hover {
+  background: var(--d-accent-hi);
+  border-color: var(--d-accent-hi);
+}
+.actionBtn.secondary {
+  background: transparent;
+  color: var(--d-ink-2);
+  border: 1px solid var(--d-line-strong);
+}
+.actionBtn.secondary:hover {
+  background: var(--d-s3);
+  color: var(--d-ink);
+}
+.actionBtn.danger {
+  background: transparent;
+  color: var(--d-danger);
+  border: 1px solid rgba(240, 97, 109, 0.35);
+}
+.actionBtn.danger:hover {
+  background: var(--d-danger-wash);
+  border-color: var(--d-danger);
+}
+
+.menuBtn,
+.xBtn,
+.dragHandle {
+  background: transparent;
+  color: var(--d-ink-2);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+  box-shadow: none;
+}
+.menuBtn:hover,
+.xBtn:hover,
+.dragHandle:hover {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border-color: var(--d-line-strong);
+}
+
+/* daftar lagu: baris tenang */
+.songBtn {
+  background: var(--d-s1);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+  box-shadow: none;
+  text-align: left;
+}
+.songBtn:hover {
+  background: var(--d-s3);
+  border-color: var(--d-line-strong);
+}
+.songBtn.active,
+.songRow.active .songBtn {
+  background: var(--d-accent-wash);
+  border-color: rgba(76, 157, 247, 0.4);
+  color: var(--d-ink);
+}
+
+/* pemilih nada: grid rapat, bukan tombol warna-warni */
+.keyBtn {
+  background: var(--d-s2);
+  color: var(--d-ink-2);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-sm);
+  font-family: var(--font-chord);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+}
+.keyBtn:hover {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border-color: var(--d-line-strong);
+}
+.keyBtn.active {
+  background: var(--d-accent);
+  color: var(--d-accent-ink);
+  border-color: var(--d-accent);
+  font-weight: 700;
+}
+
+.pill {
+  background: var(--d-s3);
+  color: var(--d-ink-2);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-pill);
+  font-size: 12px;
+  font-weight: 550;
+  box-shadow: none;
+}
+
+/* ==================== INPUT ==================== */
+.field input,
+.field textarea,
+.field select,
+.modal input,
+.modal textarea,
+.modal select,
+#editLines,
+.bankFind input {
+  background: var(--d-s2);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line-strong);
+  border-radius: var(--d-r-md);
+  box-shadow: none;
+}
+.field input::placeholder,
+.field textarea::placeholder,
+.modal input::placeholder,
+.modal textarea::placeholder,
+#editLines::placeholder {
+  color: var(--d-ink-3);
+}
+.field input:focus,
+.field textarea:focus,
+.modal input:focus,
+.modal textarea:focus,
+#editLines:focus,
+.bankFind input:focus {
+  outline: none;
+  border-color: var(--d-accent);
+  box-shadow: var(--ring);
+}
+#editLines {
+  font-family: var(--font-chord);
+  line-height: 1.7;
+}
+
+/* ==================== LEMBAR CHORD ==================== */
+.chord,
+.ic-ch {
+  color: var(--d-chord);
+  font-family: var(--font-chord);
+  font-weight: 700;
+}
+.line {
+  color: var(--d-ink);
+}
+.line.section {
+  color: var(--d-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+/* ==================== HEADER / FOOTER ==================== */
+.footer {
+  color: var(--d-ink-3);
+  border-top: 1px solid var(--d-line);
+  font-size: 12px;
+  text-align: left;
+  letter-spacing: 0;
+}
+
+/* ==================== BAR YOUTUBE + NADA ==================== */
+.ytBar,
+.ytPitch {
+  background: var(--d-s2);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-lg);
+  box-shadow: none;
+  color: var(--d-ink);
+}
+.ytTrack {
+  background: var(--d-s4);
+  border-radius: var(--d-r-pill);
+}
+.ytFill {
+  background: var(--d-accent);
+  border-radius: var(--d-r-pill);
+}
+.ytDot {
+  background: var(--d-ink);
+  box-shadow: none;
+}
+.ytTime,
+.semiVal,
+#ytRateVal {
+  font-family: var(--font-chord);
+  font-variant-numeric: tabular-nums;
+  color: var(--d-ink-2);
+}
+.semiBtn {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line-strong);
+  border-radius: var(--d-r-sm);
+  box-shadow: none;
+}
+.semiBtn:hover {
+  background: var(--d-s4);
+}
+
+/* ==================== DOK REKAMAN (di bawah pemutar) ==================== */
+.recDock {
+  margin: 12px 0 4px;
+  background: var(--d-s1);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-lg);
+  overflow: hidden;
+}
+.recDock:empty {
+  display: none;
+}
+.recDockHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.recDockBtn {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: var(--d-r-pill);
+  border: 1px solid var(--d-line-strong);
+  background: var(--d-s3);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background var(--dur-quick) var(--ease-out),
+    border-color var(--dur-quick) var(--ease-out);
+}
+.recDockBtn .recDotIn {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--d-r-pill);
+  background: var(--d-danger);
+  display: block;
+  transition:
+    width var(--dur-quick) var(--ease-out),
+    height var(--dur-quick) var(--ease-out),
+    border-radius var(--dur-quick) var(--ease-out);
+}
+.recDockBtn:hover {
+  border-color: var(--d-danger);
+}
+.recDockBtn.isRec {
+  border-color: var(--d-danger);
+  background: var(--d-danger-wash);
+}
+.recDockBtn.isRec .recDotIn {
+  border-radius: 2px;
+  width: 11px;
+  height: 11px;
+}
+.recDockLbl {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.recDockLbl > span:first-child {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--d-ink);
+  letter-spacing: -0.01em;
+}
+.recDockCount {
+  font-size: 11px;
+  color: var(--d-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.recDockTime {
+  font-family: var(--font-chord);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--d-ink-3);
+}
+.recDockTime.isRec {
+  color: var(--d-danger);
+}
+.recDockMore {
+  background: transparent;
+  border: 1px solid var(--d-line-strong);
+  color: var(--d-ink-2);
+  border-radius: var(--d-r-sm);
+  font-size: 12px;
+  font-weight: 550;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.recDockMore:hover {
+  background: var(--d-s3);
+  color: var(--d-ink);
+}
+.recDockList {
+  border-top: 1px solid var(--d-line);
+  max-height: 216px;
+  overflow-y: auto;
+}
+.recDockList:empty {
+  display: none;
+}
+
+/* ==================== PANEL REKAMAN ==================== */
+.recModal {
+  background: var(--d-s2);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-lg);
+  color: var(--d-ink);
+}
+.recHead {
+  border-bottom: 1px solid var(--d-line);
+}
+.recTitle {
+  color: var(--d-ink);
+  letter-spacing: -0.02em;
+  font-weight: 650;
+}
+.recSub {
+  color: var(--d-ink-3);
+  font-size: 12px;
+}
+.recStage {
+  border-bottom: 1px solid var(--d-line);
+}
+.recMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.recList {
+  scrollbar-width: thin;
+}
+.recDot {
+  background: var(--d-s3);
+  border: 1px solid var(--d-line-strong);
+  box-shadow: none;
+}
+.recBack.isRec .recDot {
+  border-color: var(--d-danger);
+  background: var(--d-danger-wash);
+}
+.recTime {
+  font-family: var(--font-chord);
+  font-variant-numeric: tabular-nums;
+  color: var(--d-ink);
+}
+.recHint {
+  color: var(--d-ink-3);
+}
+.recItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--d-line-soft);
+  background: transparent;
+  border-radius: 0;
+}
+.recItem:last-child {
+  border-bottom: none;
+}
+.recItem:hover {
+  background: var(--d-s2);
+}
+.recItem.playing {
+  background: var(--d-accent-wash);
+}
+.recPlay {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: var(--d-r-pill);
+  border: 1px solid var(--d-line-strong);
+  background: var(--d-s3);
+  cursor: pointer;
+  position: relative;
+  padding: 0;
+}
+.recPlay::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 52%;
+  transform: translate(-50%, -50%);
+  border-left: 8px solid var(--d-ink);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+.recItem.playing .recPlay {
+  border-color: var(--d-accent);
+}
+.recItem.playing .recPlay::before {
+  border: none;
+  width: 8px;
+  height: 8px;
+  background: var(--d-accent);
+  border-radius: 1px;
+  left: 50%;
+}
+.recInfo {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recName {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  color: var(--d-ink);
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recName:hover {
+  color: var(--d-accent);
+}
+.recItemMeta {
+  font-size: 11px;
+  color: var(--d-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.recTag {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: var(--d-r-pill);
+  border: 1px solid var(--d-line-strong);
+  color: var(--d-ink-3);
+  flex: 0 0 auto;
+}
+.recTag.isOnline {
+  color: var(--d-ok);
+  border-color: rgba(62, 207, 142, 0.35);
+  background: var(--d-ok-wash);
+}
+.recMini {
+  background: transparent;
+  border: 1px solid var(--d-line-strong);
+  color: var(--d-ink-2);
+  border-radius: var(--d-r-sm);
+  font-size: 11px;
+  font-weight: 550;
+  padding: 5px 9px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.recMini:hover {
+  background: var(--d-s3);
+  color: var(--d-ink);
+}
+.recMini.danger {
+  color: var(--d-danger);
+  border-color: rgba(240, 97, 109, 0.3);
+}
+.recMini.danger:hover {
+  background: var(--d-danger-wash);
+  border-color: var(--d-danger);
+}
+.recEmpty {
+  color: var(--d-ink-3);
+  font-size: 12px;
+  padding: 16px 14px;
+  margin: 0;
+}
+.recFoot {
+  border-top: 1px solid var(--d-line);
+}
+.recNote {
+  color: var(--d-ink-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.recBadge {
+  color: var(--d-ok);
+  font-size: 10px;
+  font-weight: 600;
+}
+.recWave i {
+  background: var(--d-danger);
+}
+
+/* ==================== TOMBOL BANTU (assistive touch) ==================== */
+#atBtn {
+  background: var(--d-s3);
+  border: 1px solid var(--d-line-strong);
+  box-shadow: var(--d-e2);
+  color: var(--d-ink);
+}
+.atHub,
+.atItem {
+  background: var(--d-s2);
+  border: 1px solid var(--d-line);
+  color: var(--d-ink);
+  box-shadow: none;
+}
+.atLbl,
+.atHubSub {
+  color: var(--d-ink-3);
+}
+
+/* ==================== TOAST & BANNER ==================== */
+#toastWrap .toast {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line-strong);
+  border-radius: var(--d-r-md);
+  box-shadow: var(--d-e2);
+  font-size: 13px;
+}
+#toastWrap .toast.success {
+  border-color: rgba(62, 207, 142, 0.4);
+}
+#toastWrap .toast.error {
+  border-color: rgba(240, 97, 109, 0.4);
+}
+.pendingBanner {
+  background: var(--d-accent-wash);
+  border-color: rgba(76, 157, 247, 0.3);
+  color: var(--d-ink);
+}
+
+/* ==================== AKSESIBILITAS MOTION ==================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==================== CETAK: hitam di atas putih ==================== */
+@media print {
+  html,
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .line,
+  .chord,
+  .ic-ch {
+    color: #000 !important;
+  }
+  .recDock,
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* =========================================================================
+   TIPOGRAFI v65 - Geist Sans untuk semua teks, JetBrains Mono BOLD untuk TITLE
+   ========================================================================= */
+body,
+button,
+input,
+select,
+textarea,
+.btn,
+.chip,
+.pill {
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* JUDUL & SUBJUDUL -> diatur oleh kategori (lihat "PANEL KONTROL FONT" di atas) */
+h1,
+h2,
+#songTitle,
+#editTitle,
+#dispTitle,
+.brand,
+.dispBrand {
+  font-family: var(--font-judul);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--d-ink);
+}
+h3,
+h4 {
+  font-family: var(--font-subjudul);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--d-ink);
+}
+
+/* angka & akor tetap monospace agar kolom tidak bergeser */
+.line.chord,
+.ic-ch,
+.dispKey,
+#keyLine,
+.recDockTime,
+#recDockTime {
+  font-family: var(--font-chord);
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================================
+   3D - TATA LETAK: hilangkan tombol dempet, ritme vertikal konsisten
+   ========================================================================= */
+.drawer .menuSec {
+  padding: 18px 0;
+  margin: 0;
+  border-top: 1px solid var(--d-line-soft);
+}
+.drawer .menuSec:first-of-type {
+  border-top: 0;
+  padding-top: 6px;
+}
+.drawer .menuSec > .label {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--d-ink-3);
+}
+/* target sentuh layak untuk semua kontrol di drawer */
+.drawer .actionBtn,
+.drawer .touchBtn,
+.drawer select,
+.drawer input {
+  min-height: 44px;
+}
+.drawer .menuSec > .actionBtn + .actionBtn {
+  margin-top: 10px;
+}
+
+/* pencarian lagu: input & dropdown diberi jarak */
+.bankFind {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+/* PERBAIKAN: "Pilih lagu..." tadinya putih di atas putih */
+select,
+.bankFind select,
+.drawer select {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+  padding: 0 12px;
+  width: 100%;
+}
+select option {
+  background: var(--d-s2);
+  color: var(--d-ink);
+}
+
+/* metronome: baris tidak lagi menempel */
+.metroRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.metroRow + .metroRow {
+  margin-top: 10px;
+}
+.metroBpm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.metroBpm .mBtn {
+  min-width: 40px;
+  min-height: 40px;
+}
+.stepRow .stepBtn {
+  min-width: 44px;
+  min-height: 36px;
+}
+
+/* PERBAIKAN: label "Mulai" metronome tadinya tak terlihat */
+.metroToggle {
+  background: var(--d-accent);
+  color: var(--d-accent-ink);
+  font-weight: 600;
+  border: 1px solid var(--d-accent);
+  min-width: 96px;
+}
+.metroToggle.on {
+  background: var(--d-danger);
+  border-color: var(--d-danger);
+  color: #260e10;
+}
+
+/* PERBAIKAN: tombol oranye & hijau berkontras jelek -> gaya wash */
+.actionBtn.orange {
+  background: var(--d-warn-wash);
+  color: var(--d-warn);
+  border: 1px solid rgba(251, 191, 36, 0.38);
+}
+.actionBtn.green {
+  background: var(--d-ok-wash);
+  color: var(--d-ok);
+  border: 1px solid rgba(52, 211, 153, 0.38);
+}
+.actionBtn.orange:hover,
+.actionBtn.green:hover {
+  border-color: currentColor;
+}
+
+/* baris aksi utama: jarak seragam, tidak saling menempel */
+.actions,
+.actionRow,
+.btnRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* baris NADA/TEMPO: tombol acuan diberi kontras */
+.ytPitch button,
+.semiRow button {
+  min-height: 40px;
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line-strong);
+}
+
+/* teks kosong rekaman tadinya terlalu redup */
+.recEmpty,
+#recList:empty::before {
+  color: var(--d-ink-2);
+}
+
+/* =========================================================================
+   3B - CETAK: bersih, rapi, profesional (hitam di atas putih)
+   ========================================================================= */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm 13mm;
+  }
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print,
+  .drawer,
+  .drawerBackdrop,
+  .modalBackdrop,
+  .topbar,
+  .actions,
+  #ytHost,
+  #recDock,
+  #toastWrap,
+  #atBtn,
+  #atOverlay,
+  .fab {
+    display: none !important;
+  }
+  #content,
+  .sheet {
+    background: #ffffff !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  /* judul lagu sebagai kepala dokumen */
+  #songTitle {
+    font-size: 20pt !important;
+    color: #000 !important;
+    margin: 0 0 2mm !important;
+    padding-bottom: 2mm;
+    border-bottom: 1.5pt solid #000;
+  }
+  #keyLine,
+  #sourceLine {
+    color: #333 !important;
+    font-size: 9.5pt !important;
+    margin: 0 0 1mm !important;
+  }
+  /* akor tegas tanpa warna */
+  .line.chord,
+  .ic-ch {
+    color: #000 !important;
+    font-weight: 700 !important;
+  }
+  .line.section {
+    color: #000 !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 4mm !important;
+  }
+  /* jangan potong pasangan akor-lirik di antara halaman */
+  .line,
+  .ic,
+  .verse,
+  .section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  #songTitle,
+  .line.section {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}
+
+/* =========================================================================
+   3C - BUKU PANDUAN (PDF diunggah admin, dibaca semua pengguna)
+   ========================================================================= */
+.modal.guideModal {
+  width: min(920px, 94vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.guideHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.guideHead h2 {
+  margin: 0;
+}
+.guideBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: auto;
+  min-height: 200px;
+}
+.guideDocHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--d-line);
+}
+.guideDocName {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: var(--d-ink);
+}
+.guideDocMeta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--d-ink-2);
+}
+.guideDocActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.guideDocActions .actionBtn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+}
+.guideViewer {
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+  overflow: hidden;
+  background: var(--d-s1);
+  min-height: 52vh;
+}
+.guideViewer iframe {
+  display: block;
+  width: 100%;
+  height: 52vh;
+  border: 0;
+  background: var(--d-s1);
+}
+.guideEmpty {
+  padding: 28px 18px;
+  text-align: left;
+  border: 1px dashed var(--d-line-strong);
+  border-radius: var(--d-r-md);
+  background: var(--d-s1);
+}
+.guideEmptyTitle {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: var(--d-ink);
+}
+.guideEmptyNote {
+  margin: 0;
+  font-size: 13px;
+  color: var(--d-ink-2);
+}
+.guideUp {
+  padding-top: 14px;
+  border-top: 1px solid var(--d-line);
+}
+.guideUp input[type="file"] {
+  width: 100%;
+  color: var(--d-ink-2);
+  font-size: 13px;
+  padding: 10px;
+  background: var(--d-s3);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+}
+.guideHint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--d-ink-3);
+}
+.actionBtn.danger.guideDel {
+  background: var(--d-danger-wash);
+  color: var(--d-danger);
+  border: 1px solid rgba(248, 113, 113, 0.38);
+  align-self: flex-start;
+}
+
+/* =========================================================================
+   3E - PROYEKTOR, MODE PERSIAPAN: tata letak 3 panel ala presenter
+   ========================================================================= */
+.projPage {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: var(--d-canvas);
+  display: none;
+  flex-direction: column;
+}
+.projPage.open {
+  display: flex;
+}
+body.projOpen {
+  overflow: hidden;
+}
+.projTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--d-line);
+  background: var(--d-s2);
+  flex: 0 0 auto;
+}
+.projTopL {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.projBrand {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--d-ink);
+}
+.projBadge {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: var(--d-r-pill);
+  background: var(--d-accent-wash);
+  color: var(--d-accent);
+  border: 1px solid rgba(59, 158, 255, 0.34);
+}
+.projDev {
+  font-size: 11px;
+  color: var(--d-ink-3);
+}
+
+/* grid 3 panel */
+.projGrid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(320px, 1fr) minmax(
+      260px,
+      330px
+    );
+  gap: 1px;
+  background: var(--d-line);
+}
+.projPane {
+  background: var(--d-canvas);
+  padding: 14px;
+  overflow: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.projPaneHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.projPaneHead h3 {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--d-ink-2);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.projPaneOps {
+  display: flex;
+  gap: 8px;
+}
+.projMiniBtn {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: var(--d-r-sm);
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line-strong);
+  cursor: pointer;
+}
+.projMiniBtn:hover {
+  border-color: var(--d-accent);
+}
+.projMiniBtn.primary {
+  background: var(--d-accent);
+  color: var(--d-accent-ink);
+  border-color: var(--d-accent);
+}
+.projRowBtns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.projEmpty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--d-ink-3);
+  padding: 14px;
+  border: 1px dashed var(--d-line-strong);
+  border-radius: var(--d-r-md);
+}
+
+/* panel kiri: rencana ibadah */
+.projPlanList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.projPlanItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+  cursor: pointer;
+  transition: border-color var(--dur-quick) var(--ease-out);
+}
+.projPlanItem:hover {
+  border-color: var(--d-line-strong);
+}
+.projPlanItem.isActive {
+  border-color: var(--d-accent);
+  background: var(--d-accent-wash);
+}
+.projPlanNo {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--d-ink-3);
+  min-width: 18px;
+}
+.projPlanBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.projPlanTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--d-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.projPlanKind {
+  font-size: 11px;
+  color: var(--d-ink-2);
+}
+.projPlanOps {
+  display: flex;
+  gap: 2px;
+}
+.projIconBtn {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  border-radius: var(--d-r-sm);
+  background: transparent;
+  color: var(--d-ink-3);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.projIconBtn:hover {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border-color: var(--d-line);
+}
+
+/* panel tengah: katalog bertab */
+.projTabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--d-line);
+  flex-wrap: wrap;
+}
+.projTab {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--d-ink-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.projTab:hover {
+  color: var(--d-ink);
+}
+.projTab.on {
+  color: var(--d-accent);
+  border-bottom-color: var(--d-accent);
+}
+.projSearchRow input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+}
+.projFilters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.projChip {
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--d-r-pill);
+  background: var(--d-s2);
+  color: var(--d-ink-2);
+  border: 1px solid var(--d-line);
+  cursor: pointer;
+}
+.projChip.on {
+  background: var(--d-accent-wash);
+  color: var(--d-accent);
+  border-color: rgba(59, 158, 255, 0.34);
+}
+.projCatalogList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  align-content: start;
+}
+.projCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  text-align: left;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+  cursor: pointer;
+  transition: border-color var(--dur-quick) var(--ease-out);
+}
+.projCard:hover {
+  border-color: var(--d-accent);
+}
+.projCardTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--d-ink);
+}
+.projCardMeta {
+  font-size: 11.5px;
+  color: var(--d-ink-2);
+}
+.projSoon {
+  padding: 22px 16px;
+  border: 1px dashed var(--d-line-strong);
+  border-radius: var(--d-r-md);
+  background: var(--d-s1);
+}
+.projSoonTitle {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: var(--d-ink);
+}
+.projSoonNote {
+  margin: 0;
+  font-size: 13px;
+  color: var(--d-ink-2);
+}
+
+/* panel kanan: item aktif + pengaturan */
+.projLive {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 3px 7px;
+  border-radius: var(--d-r-sm);
+  background: var(--d-danger-wash);
+  color: var(--d-danger);
+  border: 1px solid rgba(248, 113, 113, 0.38);
+}
+.projActiveBody {
+  padding: 12px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+}
+.projActiveTitle {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: var(--d-ink);
+}
+.projActiveKind {
+  margin: 0;
+  font-size: 12px;
+  color: var(--d-ink-2);
+}
+.projField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.projField > label {
+  font-size: 12px;
+  color: var(--d-ink-2);
+}
+.projField select {
+  min-height: 38px;
+}
+.projField input[type="range"] {
+  width: 100%;
+  accent-color: var(--d-accent);
+}
+.projSeg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--d-r-sm);
+  background: var(--d-s2);
+  border: 1px solid var(--d-line);
+}
+.projSeg button {
+  flex: 1;
+  min-height: 32px;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--d-ink-3);
+  border: 0;
+  border-radius: var(--d-r-sm);
+  cursor: pointer;
+}
+.projSeg button.on {
+  background: var(--d-accent);
+  color: var(--d-accent-ink);
+}
+.projSub {
+  margin: 0;
+  font-size: 11px;
+  color: var(--d-ink-3);
+}
+.projSolids {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+.projSwatch {
+  aspect-ratio: 1;
+  border-radius: var(--d-r-sm);
+  border: 1px solid var(--d-line-strong);
+  cursor: pointer;
+}
+.projSwatch.on {
+  outline: 2px solid var(--d-accent);
+  outline-offset: 1px;
+}
+.projPresets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.projPreset {
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+  cursor: pointer;
+}
+.projPreset.on {
+  border-color: var(--d-accent);
+}
+.projPreset img {
+  display: block;
+  width: 100%;
+  height: 54px;
+  object-fit: cover;
+}
+.projPreset span {
+  display: block;
+  padding: 5px 7px;
+  font-size: 11px;
+  color: var(--d-ink-2);
+}
+.projPreview {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  min-height: 96px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+}
+.projPreview span {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* responsif: panel menumpuk di layar kecil */
+@media (max-width: 1024px) {
+  .projGrid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(200px, auto);
+    overflow: auto;
+  }
+  .projPane {
+    overflow: visible;
+  }
+}
+
+/* =========================================================================
+   v66 - WARNA CHORD MAYOR/MINOR + LAYOUT 2 KOLOM + MODE PANGGUNG
+   ========================================================================= */
+
+/* --- Warna chord: mayor = biru lembut, minor = merah lembut (tidak silau) --- */
+:root {
+  --d-chord-maj: #1282A2; /* mayor: biru lembut, terbaca di gelap */
+  --d-chord-min: #B23A2E; /* minor: merah/terakota lembut */
+}
+.sheet .line.chord .chord-maj,
+#editPreviewBody .chord-maj,
+.ic-ch.chord-maj {
+  color: var(--d-chord-maj);
+}
+.sheet .line.chord .chord-min,
+#editPreviewBody .chord-min,
+.ic-ch.chord-min {
+  color: var(--d-chord-min);
+}
+
+/* --- Layout 2 kolom di layar lebar: segmen terbagi kiri & kanan --- */
+@media (min-width: 900px) {
+  .sheet #content {
+    column-count: 2;
+    column-gap: 24px;
+  }
+  .sheet #content .secBlock {
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    margin-top: 0;
+  }
+}
+
+/* --- Cetak juga 2 kolom supaya padat & profesional --- */
+@media print {
+  .sheet #content,
+  #content {
+    column-count: 2;
+    column-gap: 16px;
+  }
+  .secBlock {
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+  }
+  /* chord berwarna tetap terbaca di atas kertas putih */
+  .chord-maj {
+    color: #1a4d8f !important;
+  }
+  .chord-min {
+    color: #a33327 !important;
+  }
+}
+
+/* =========================================================================
+   MODE PANGGUNG (pengganti "Mode gelap") - teks besar & kontras maksimal
+   untuk dibaca dari jarak jauh saat pelayanan di ruangan gelap.
+   ========================================================================= */
+body.stage {
+  --d-canvas: #000000;
+  --sheetSize: 23px;
+  background: #000;
+}
+body.stage .sheet,
+body.stage .secBlock {
+  background: #000;
+}
+body.stage .line {
+  color: #ffffff;
+}
+body.stage .line.section {
+  color: #7dd3fc;
+  letter-spacing: 0.02em;
+}
+body.stage .chord-maj {
+  color: #8fc1ff;
+}
+body.stage .chord-min {
+  color: #ff9a86;
+}
+/* di mode panggung, 1 kolom penuh lebih mudah diikuti */
+body.stage .sheet #content {
+  column-count: 1;
+}
+
+/* =========================================================================
+   v67 - MENU: kontras ikon, hierarki tombol, judul section di tengah
+   + FORM EDIT REKAMAN (judul & keterangan)
+   File ini terhubung: index.html (drawer & #recDock) dan js/recorder.js
+   (class .recEdit*, .recItemNote dibuat di sana).
+   ========================================================================= */
+
+/* --- Judul section menu: ke tengah dengan garis rambut di kiri-kanan --- */
+.drawer .menuSec .label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--d-ink);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.drawer .menuSec .label::before,
+.drawer .menuSec .label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--d-line);
+}
+
+/* --- Hierarki tombol di menu drawer --- */
+/* tombol navigasi lebar penuh (Buka Song Bank, Penjadwal, Proyektor, dll) */
+.drawer .menuSec > .actionBtn {
+  position: relative;
+  background: var(--d-s3);
+  border: 1px solid var(--d-line);
+  color: var(--d-ink);
+  padding-left: 16px;
+}
+.drawer .menuSec > .actionBtn::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--d-accent);
+}
+.drawer .menuSec > .actionBtn:hover {
+  background: var(--d-s4);
+  border-color: var(--d-line-strong);
+}
+/* tombol toggle kecil (Mode panggung, Eye saver, dll) tetap netral */
+.drawer .rowBtns .actionBtn {
+  background: var(--d-s2);
+  border: 1px solid var(--d-line);
+  color: var(--d-ink-2);
+}
+.drawer .rowBtns .actionBtn:hover {
+  color: var(--d-ink);
+  border-color: var(--d-line-strong);
+}
+.drawer .rowBtns .actionBtn.active {
+  background: var(--d-accent-wash);
+  border-color: var(--d-accent);
+  color: var(--d-accent-hi);
+}
+
+/* --- Ikon animasi Lottie: chip aksen supaya kontras terhadap latar --- */
+.drawer .actionBtn .lottieIco,
+.drawer .actionBtn .actionIco {
+  background: var(--d-accent-wash);
+  border-radius: 7px;
+  padding: 3px;
+  box-sizing: content-box;
+}
+
+/* --- Form edit rekaman (judul + keterangan) --- */
+.recItem {
+  flex-wrap: wrap;
+}
+.recItem.editing {
+  display: block;
+}
+.recEdit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.recEditInput {
+  width: 100%;
+  background: var(--d-s1);
+  border: 1px solid var(--d-line);
+  color: var(--d-ink);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13.5px;
+  font-family: var(--font-sans);
+}
+.recEditInput:focus {
+  outline: none;
+  border-color: var(--d-accent);
+}
+.recEditActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.recMini.primary {
+  background: var(--d-accent);
+  border-color: var(--d-accent);
+  color: var(--d-accent-ink);
+  font-weight: 700;
+}
+.recItemNote {
+  display: block;
+  font-size: 12px;
+  color: var(--d-ink-2);
+  margin-top: 2px;
+  font-style: italic;
+}
+
+/* ============================================================
+   MENU v4.6 - kartu vertikal modern (Light Mode)
+   Ditambahkan di akhir design.css (menimpa gaya drawer lama).
+   ============================================================ */
+.drawer {
+  width: min(384px, 92vw);
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+  background: var(--d-s1);
+}
+.drawer .drawerHead {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--d-line-soft);
+  gap: 10px;
+}
+.drawer .drawerHead b {
+  font-family: var(--font-head);
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  margin-right: auto;
+  color: var(--d-ink);
+}
+.menuVer {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--d-accent-deep);
+  background: var(--d-accent-wash);
+  border: 1px solid var(--d-accent);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+.menuScroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 16px 32px;
+}
+
+.menuGroupLabel {
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--d-ink-3);
+  margin: 22px 4px 9px;
+}
+
+/* --- Pencarian --- */
+.menuSearch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--d-s3);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+  padding: 0 12px;
+  height: 46px;
+}
+.menuSearch:focus-within {
+  border-color: var(--d-accent);
+  box-shadow: var(--ring);
+}
+.menuSearch .lottieIco {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+.drawer .menuSearch input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font: inherit;
+  color: var(--d-ink);
+  min-height: 44px;
+  padding: 0;
+}
+.drawer select.menuJump {
+  margin-top: 10px;
+  height: 46px;
+}
+.drawer .searchResults:not(:empty) {
+  margin-top: 10px;
+}
+
+/* --- Kartu + baris --- */
+.menuCard {
+  background: var(--d-s1);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-lg);
+  box-shadow: var(--d-e1);
+  overflow: hidden;
+}
+.menuCardPad {
+  padding: 14px;
+}
+.menuRow {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  min-height: 62px;
+  padding: 12px 14px;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--d-line-soft);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--d-ink);
+}
+.menuCard > .menuRow:first-child,
+.menuCard > .menuRowWrap:first-child .menuRow {
+  border-top: 0;
+}
+.menuRow:hover {
+  background: var(--d-accent-wash);
+}
+.menuRow:active {
+  background: var(--d-s3);
+}
+.menuRowIco {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--d-accent-wash);
+  border-radius: 11px;
+}
+.menuRowIco .lottieIco {
+  width: 24px;
+  height: 24px;
+}
+.menuRowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.menuRowTitle {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--d-ink);
+}
+.menuRowDesc {
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--d-ink-3);
+}
+.menuRowGo {
+  flex: 0 0 auto;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--d-ink-3);
+}
+
+/* --- Toggle pills (Tampilan) --- */
+.menuToggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.menuToggle {
+  min-height: 48px;
+  padding: 8px 10px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s3);
+  color: var(--d-ink-2);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.25;
+  cursor: pointer;
+  text-align: center;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+.menuToggle:hover {
+  border-color: var(--d-line-strong);
+  color: var(--d-ink);
+}
+.menuToggle.active {
+  background: var(--d-accent-wash);
+  border-color: var(--d-accent);
+  color: var(--d-accent-deep);
+  font-weight: 700;
+}
+
+/* --- Sub-baris (label + kontrol) --- */
+.menuSub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+.menuSubLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--d-ink-2);
+}
+
+/* --- Stepper ukuran huruf --- */
+.segStepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--d-s3);
+  border: 1px solid var(--d-line);
+  border-radius: 999px;
+  padding: 3px;
+}
+.segStepper .segBtn {
+  min-width: 40px;
+  height: 34px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: var(--d-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.segStepper .segBtn:hover {
+  background: var(--d-s1);
+}
+.segVal {
+  min-width: 64px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--d-ink-2);
+}
+
+/* --- Segmented (posisi judul + langkah) --- */
+.segGroup {
+  display: inline-flex;
+  gap: 6px;
+}
+.drawer .secAlignBtn,
+.drawer .segGroup .stepBtn {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s3);
+  color: var(--d-ink-2);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+.drawer .secAlignBtn:hover,
+.drawer .segGroup .stepBtn:hover {
+  color: var(--d-ink);
+  border-color: var(--d-line-strong);
+}
+.drawer .secAlignBtn.isOn,
+.drawer .segGroup .stepBtn.on {
+  background: var(--d-accent);
+  border-color: var(--d-accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* --- Metronome --- */
+.metroTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.metroBpmBox {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--d-s3);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+  padding: 6px;
+}
+.drawer .metroBpmBox .mBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+  color: var(--d-ink);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.drawer .metroBpmBox .mBtn:hover {
+  background: var(--d-accent-wash);
+  border-color: var(--d-accent);
+}
+.metroBpmVal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+.metroBpmVal #bpmVal {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+.metroBpmVal small {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--d-ink-3);
+  margin-top: 3px;
+}
+.drawer .metroStartBtn {
+  flex: 0 0 auto;
+  min-width: 92px;
+  height: 52px;
+  padding: 0 18px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-accent);
+  background: var(--d-accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.drawer .metroStartBtn:hover {
+  background: var(--d-accent-hi);
+  border-color: var(--d-accent-hi);
+}
+.drawer .metroStartBtn.active {
+  background: var(--d-danger);
+  border-color: var(--d-danger);
+}
+.metroBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.segGroupSm {
+  align-items: center;
+  gap: 8px;
+}
+.drawer .tapBtn {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s3);
+  color: var(--d-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.drawer .tapBtn:hover {
+  background: var(--d-accent-wash);
+  border-color: var(--d-accent);
+}
+
+/* --- Admin --- */
+.drawer .adminPrimaryBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  border-radius: var(--d-r-md);
+  border: 1px solid #001f54;
+  background: #001f54;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+.drawer .adminPrimaryBtn:hover {
+  background: #0a1128;
+}
+.drawer .adminPrimaryBtn .lottieIco {
+  width: 22px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 7px;
+  padding: 3px;
+  box-sizing: content-box;
+}
+#adminPanel {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#adminPanel .lockRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--d-ink);
+}
+
+
+/* === CastFlow Beta v75 === */
+.youthViewsPage .projBrand{font-family:var(--font-judul,"Satoshi",Inter,sans-serif);font-size:22px;letter-spacing:.02em;background:linear-gradient(90deg,#7fe0ff,#b08cff,#ffb86b);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.youthViewsPage .projDev{border-color:rgba(127,224,255,.28);color:#7fe0ff;background:rgba(127,224,255,.08);}
+.yvEmpty{padding:18px;border:1px dashed rgba(127,224,255,.25);border-radius:18px;color:#7b8ea8;background:rgba(10,17,40,.04);}
+.yvPlanItem,.yvCatalogCard{width:100%;border:1px solid rgba(10,17,40,.12);border-radius:18px;background:linear-gradient(180deg,#fff,rgba(245,249,255,.92));box-shadow:0 8px 24px rgba(10,17,40,.06);}
+.yvPlanItem{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px;margin-bottom:8px;cursor:pointer;color:#0A1128;}
+.yvPlanItem small,.yvCatalogCard small,.yvActivePreview+small{color:#5c6d82;}
+.yvCatalogCard{padding:14px;margin-bottom:12px;}
+.yvCardTop{display:flex;justify-content:space-between;gap:12px;align-items:center;}
+.yvCardTop span{font-size:12px;font-weight:800;color:#0e89a8;background:rgba(127,224,255,.18);border:1px solid rgba(14,137,168,.22);border-radius:999px;padding:4px 8px;white-space:nowrap;}
+.yvSlideBtns{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0;}
+.yvSlideBtns button,.yvCardOps button,.yvComposerOps button,.projBgPreset{border:1px solid rgba(10,17,40,.12);background:#fff;color:#0A1128;border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer;}
+.yvSlideBtns button:hover,.yvCardOps button:hover,.yvComposerOps button:hover,.projBgPreset:hover{border-color:#1282A2;box-shadow:0 6px 18px rgba(18,130,162,.16);}
+.yvCardOps,.yvComposerOps{display:flex;gap:8px;flex-wrap:wrap;}
+.yvCardOps button[data-act="live"],.yvComposerOps button:nth-child(1),#yvLiveActive{background:linear-gradient(90deg,#1282A2,#7fe0ff);color:#fff;border-color:transparent;}
+.yvComposer{border-radius:22px;border:1px solid rgba(10,17,40,.10);background:linear-gradient(180deg,#fff,#f6fbff);padding:18px;box-shadow:0 12px 35px rgba(10,17,40,.07);}
+.yvComposer h3{margin:0 0 6px;color:#0A1128;}
+.yvComposer p,.yvComposer li{color:#506178;line-height:1.55;}
+.yvComposer textarea,.yvComposer input,.projBgUrl{width:100%;box-sizing:border-box;border-radius:16px;border:1px solid rgba(10,17,40,.14);padding:12px 14px;font:inherit;margin:8px 0 10px;background:#fff;color:#0A1128;}
+.yvActivePreview{margin-top:10px;padding:14px;border-radius:18px;background:#0b1020;color:#f4f8ff;font-size:18px;line-height:1.45;min-height:80px;}
+.projBgPreset.on{background:#0A1128;color:#fff;border-color:#7fe0ff;}
+.yvPreview[data-bg="aurora"],.dispBg.on[data-bg="aurora"]{background:radial-gradient(circle at 20% 25%,rgba(127,224,255,.55),transparent 32%),radial-gradient(circle at 80% 15%,rgba(176,140,255,.42),transparent 36%),linear-gradient(135deg,#07111f,#1c2048 55%,#061b2a);animation:yvDrift 12s ease-in-out infinite alternate;}
+.yvPreview[data-bg="waves"],.dispBg.on[data-bg="waves"]{background:linear-gradient(120deg,#062033,#0d566a,#101a3d);background-size:220% 220%;animation:yvWaves 9s ease-in-out infinite;}
+.yvPreview[data-bg="fire"],.dispBg.on[data-bg="fire"]{background:radial-gradient(circle at 35% 90%,rgba(255,184,107,.62),transparent 34%),radial-gradient(circle at 70% 75%,rgba(255,84,84,.40),transparent 38%),linear-gradient(160deg,#16060a,#2a1233 50%,#07111f);animation:yvDrift 10s ease-in-out infinite alternate;}
+.yvPreview[data-bg="space"],.dispBg.on[data-bg="space"]{background:radial-gradient(circle at 50% 50%,rgba(127,224,255,.18),transparent 30%),radial-gradient(circle at 20% 30%,rgba(255,255,255,.18),1px,transparent 2px),linear-gradient(160deg,#02040c,#0b1020 55%,#1b1230);background-size:auto,80px 80px,auto;animation:yvWaves 16s linear infinite;}
+.yvPreview[data-bg="deep"],.dispBg.on[data-bg="deep"]{background:linear-gradient(135deg,#050816,#101a3d);}
+.yvPreview[data-bg="cerulean"],.dispBg.on[data-bg="cerulean"]{background:linear-gradient(135deg,#07384a,#1282A2,#07111f);}
+.yvPreview[data-bg="purple"],.dispBg.on[data-bg="purple"]{background:linear-gradient(135deg,#1e1238,#5a3fb5,#07111f);}
+@keyframes yvDrift{from{filter:hue-rotate(0deg) saturate(1);transform:scale(1)}to{filter:hue-rotate(18deg) saturate(1.25);transform:scale(1.04)}}
+@keyframes yvWaves{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+#displayScreen{--yv-font:Inter;--yv-size:56px;--yv-align:center;}
+#displayScreen .dispContent,#displayScreen .dispTextBlock,#displayScreen .dispVerseBlock{font-family:var(--yv-font),Inter,sans-serif;text-align:var(--yv-align);}
+#displayScreen .dispContent .line{font-size:clamp(24px,calc(var(--yv-size) * .92),88px);font-weight:800;letter-spacing:-.02em;}
+#displayScreen.yvSlideMode .dispStage{display:flex;flex-direction:column;justify-content:center;}
+#displayScreen.yvSlideMode .dispContent .secBlock{margin-bottom:0;}
+#displayScreen.yvShadowSoft .dispContent,#displayScreen.yvShadowSoft .dispTextLine,#displayScreen.yvShadowSoft .dispVerseRef{text-shadow:0 2px 10px rgba(0,0,0,.45);}
+#displayScreen.yvShadowStrong .dispContent,#displayScreen.yvShadowStrong .dispTextLine,#displayScreen.yvShadowStrong .dispVerseRef{text-shadow:0 4px 18px rgba(0,0,0,.82),0 1px 3px rgba(0,0,0,.92);}
+#displayScreen.yvShadowNone .dispContent,#displayScreen.yvShadowNone .dispTextLine,#displayScreen.yvShadowNone .dispVerseRef{text-shadow:none!important;}
+@media (max-width:900px){.youthViewsPage .projGrid{grid-template-columns:1fr!important}.youthViewsPage .projPane{min-height:auto!important}.yvCardTop{align-items:flex-start;flex-direction:column}}
+
+/* === CastFlow output title readability v75 === */
+#displayScreen .dispStage h2{color:#eaf7ff;text-shadow:0 4px 18px rgba(0,0,0,.78),0 1px 3px rgba(0,0,0,.92);}
+#displayScreen .dispKey{color:#cfe8f5;text-shadow:0 2px 10px rgba(0,0,0,.55);}
+
+
+/* ========================================================================
+   CastFlow v5.4 — output presenter (1 halaman, lirik bertahap)
+   ======================================================================== */
+.dispVideo {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.dispVideo.on { opacity: 1; }
+#dispBg[data-bg="video"] { background: transparent !important; }
+#dispBg[data-bg="video"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 9, 16, 0.55);
+}
+
+/* mode slide: satu halaman, lirik saja, terpusat */
+#displayScreen.yvSlideMode .dispStage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 8vh 4vw;
+}
+#displayScreen.yvSlideMode #dispTitle {
+  position: absolute;
+  top: 3vh;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-size: clamp(11px, 1.5vh, 18px);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(240, 248, 255, 0.55);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+#displayScreen.yvSlideMode #dispKey {
+  position: absolute;
+  bottom: 3vh;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: clamp(10px, 1.3vh, 15px);
+  letter-spacing: 0.1em;
+  color: rgba(219, 230, 245, 0.42);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+#displayScreen.yvSlideMode #dispContent {
+  width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: none !important;
+}
+#displayScreen.yvSlideMode .line.chord,
+#displayScreen.yvSlideMode .line.section { display: none !important; }
+
+.yvSlide {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28em;
+  width: 100%;
+}
+.yvSlideLabel {
+  font-size: clamp(11px, 1.4vh, 16px);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(124, 140, 255, 0.85);
+  text-align: var(--yv-align, center);
+  margin-bottom: 0.6em;
+}
+.yvLine {
+  font-family: var(--yv-font, "Montserrat"), "Inter", system-ui, sans-serif;
+  font-size: var(--yv-fit, 56px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-align: var(--yv-align, center);
+  color: #ffffff;
+  opacity: 0;
+  transform: translateY(20px) scale(0.99);
+  animation: yvLineIn 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  text-wrap: balance;
+}
+@keyframes yvLineIn {
+  to { opacity: 1; transform: none; }
+}
+#displayScreen.yvShadowStrong .yvLine { text-shadow: 0 4px 22px rgba(0, 0, 0, 0.92), 0 1px 3px rgba(0, 0, 0, 0.9); }
+#displayScreen.yvShadowSoft .yvLine { text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7); }
+#displayScreen.yvShadowNone .yvLine { text-shadow: none; }
+
+/* latar animasi tambahan */
+#dispBg[data-bg="glow"],
+.projPreview[data-bg="glow"],
+.projMotionThumb[data-bg="glow"] {
+  background:
+    radial-gradient(60% 60% at 50% 40%, rgba(255, 226, 168, 0.42), transparent 70%),
+    linear-gradient(180deg, #0b1020, #05070f);
+  animation: yvDrift 22s ease-in-out infinite alternate;
+}
+#dispBg[data-bg="rays"],
+.projPreview[data-bg="rays"],
+.projMotionThumb[data-bg="rays"] {
+  background:
+    repeating-conic-gradient(from 210deg at 50% -10%, rgba(255, 255, 255, 0.09) 0deg 4deg, transparent 4deg 12deg),
+    linear-gradient(180deg, #0a1226, #04060d);
+  animation: yvDrift 30s linear infinite alternate;
+}
+#dispBg[data-bg="bokeh"],
+.projPreview[data-bg="bokeh"],
+.projMotionThumb[data-bg="bokeh"] {
+  background:
+    radial-gradient(12% 12% at 20% 30%, rgba(255, 214, 165, 0.5), transparent 70%),
+    radial-gradient(10% 10% at 70% 25%, rgba(168, 214, 255, 0.42), transparent 70%),
+    radial-gradient(14% 14% at 45% 75%, rgba(255, 178, 214, 0.36), transparent 70%),
+    linear-gradient(180deg, #0a0f1e, #05070f);
+  animation: yvDrift 26s ease-in-out infinite alternate;
+}
+
+/* ===================== panel CastFlow ===================== */
+.projCard2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  margin-bottom: 8px;
+}
+.projCard2:hover { border-color: rgba(124, 140, 255, 0.45); background: rgba(124, 140, 255, 0.07); }
+.projCard2Main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.projCard2Main b { font-size: 13.5px; font-weight: 700; }
+.projCard2Main small { font-size: 11.5px; opacity: 0.6; }
+.projCard2Ops { display: flex; gap: 6px; flex: 0 0 auto; }
+
+.projSlideGrid { display: block; }
+.projDeckHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 4px 2px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 10px;
+}
+.projDeckHead b { font-size: 14px; }
+.projDeckHead span { font-size: 11.5px; opacity: 0.6; }
+.projDeckGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.projSlideCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 92px;
+  padding: 22px 10px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(12, 16, 28, 0.95), rgba(8, 10, 18, 0.95));
+  color: #eaf1ff;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.projSlideCard:hover { transform: translateY(-2px); border-color: rgba(124, 140, 255, 0.6); }
+.projSlideCard.on { border-color: #7c8cff; box-shadow: 0 0 0 2px rgba(124, 140, 255, 0.35); }
+.projSlideNo {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+.projSlideBody { font-size: 11.5px; line-height: 1.45; font-weight: 600; }
+
+.projBgTabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.projBgTab {
+  padding: 5px 10px;
+  font-size: 11.5px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.projBgTab.on { background: #7c8cff; border-color: #7c8cff; color: #060913; font-weight: 700; }
+.projMotion {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 10.5px;
+}
+.projMotion span:last-child { padding: 0 6px 6px; opacity: 0.75; }
+.projMotion.on { border-color: #7c8cff; box-shadow: 0 0 0 2px rgba(124, 140, 255, 0.3); }
+.projMotionThumb { display: block; height: 44px; background: #0b0e14; }
+#projPresets { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+
+.projBgApi { display: flex; flex-direction: column; gap: 8px; }
+.projBgApiRow { display: flex; gap: 6px; }
+.projBgApiRow > select,
+.projBgApiRow > input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 9px;
+  font-size: 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+}
+.projBgApiRow > button { flex: 0 0 auto; }
+.projBgChips { display: flex; flex-wrap: wrap; gap: 5px; }
+.projBgChips .projChip { font-size: 10.5px; padding: 4px 8px; }
+.projBgResults {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 6px;
+}
+.projBgThumb {
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0b0e14;
+  cursor: pointer;
+  aspect-ratio: 16 / 9;
+}
+.projBgThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.projComposer { display: flex; flex-direction: column; gap: 10px; }
+.projComposer h3 { margin: 0; font-size: 15px; }
+.projComposer p, .projComposer li { font-size: 12.5px; opacity: 0.72; line-height: 1.55; margin: 0; }
+.projComposer ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.projComposer textarea,
+.projComposer input {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  resize: vertical;
+}
+.projComposerOps { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.projAuditOut { display: flex; flex-direction: column; gap: 8px; }
+.projAuditList { display: flex; flex-direction: column; gap: 6px; }
+.projAuditRow {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 12.5px;
+}
+.projAuditRow > span { font-weight: 800; text-align: center; }
+.projAuditRow.ok > span { color: #4ade80; }
+.projAuditRow.bad > span { color: #fbbf24; }
+.projAuditRow.bad { border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.07); }
+.projAuditRow small { opacity: 0.6; font-size: 11.5px; }
+.projAuditLog {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  line-height: 1.6;
+  opacity: 0.7;
+  max-height: 120px;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.projActiveTitle { margin: 0; font-size: 14px; font-weight: 700; }
+.projActiveKind { margin: 2px 0 8px; font-size: 11.5px; opacity: 0.6; }
+.projActiveLines {
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(124, 140, 255, 0.28);
+  background: rgba(124, 140, 255, 0.08);
+}
+.projNextLbl {
+  margin: 10px 0 4px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+.projNextLines {
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.62;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+}
+.projPlanItem.isActive { border-color: #7c8cff; background: rgba(124, 140, 255, 0.12); }
+
+
+/* ============ CastFlow v5.5 - Studio animasi & media ============ */
+.dispMotion{position:absolute;inset:0;width:100%;height:100%;display:none;z-index:0;pointer-events:none}
+.dispMotion.on{display:block}
+.dispLottie{position:absolute;inset:0;display:none;z-index:0;pointer-events:none;overflow:hidden}
+.dispLottie.on{display:block}
+.dispLottie svg{width:100%!important;height:100%!important;object-fit:cover}
+#dispBg[data-bg="studio"],#dispBg[data-bg="lottie"]{background:#04060f}
+
+.projStudio{display:flex;flex-direction:column;gap:10px;padding:4px 0}
+.projStudioCv{width:100%;height:132px;border-radius:12px;display:block;background:#04060f;border:1px solid rgba(255,255,255,.08)}
+.projChips{display:flex;flex-wrap:wrap;gap:6px}
+.projChipWrap{display:inline-flex;align-items:center;gap:2px}
+.projChipX{border:none;background:transparent;color:var(--d-ink-3);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;border-radius:6px}
+.projChipX:hover{background:rgba(255,80,80,.14);color:var(--d-danger)}
+.projField{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--d-ink-3)}
+.projField>span{display:flex;justify-content:space-between;align-items:center}
+.projField b{color:var(--d-ink-2);font-weight:600}
+.projField input[type=range]{width:100%}
+.projField input[type=color]{width:100%;height:30px;padding:0;border:1px solid rgba(0,0,0,.12);border-radius:8px;background:none;cursor:pointer}
+.projColors{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.projStudioOps{display:flex;gap:8px}
+.projStudioOps .projBtn{flex:1}
+
+.projMediaLib{display:flex;flex-direction:column;gap:10px;padding:4px 0}
+.projMediaLib input[type=file]{font-size:11.5px;color:var(--d-ink-3)}
+.projMediaGrid{display:flex;flex-direction:column;gap:8px}
+.projMediaItem{border:1px solid rgba(0,0,0,.1);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.projMediaItem b{font-size:12px;color:var(--d-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.projMediaItem span{font-size:11px;color:var(--d-ink-3)}
+.projMediaOps{display:flex;gap:6px;margin-top:2px}
+.projMediaOps .projBtn{flex:1;padding:5px 8px;font-size:11.5px}
+
+
+/* ================= v5.6 - Rapikan UI & responsif menyeluruh ================= */
+/* 1. cegah geser horizontal & teks meluber di semua halaman */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, video, canvas, svg { max-width: 100%; }
+
+/* 2. tinggi layar penuh yang benar di iOS (bar URL Safari bikin teks meleset) */
+.projPage { height: 100vh; height: 100dvh; }
+#displayScreen { height: 100vh; height: 100dvh; }
+
+/* 3. hormati poni / sudut melengkung iPhone */
+.projTop { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); padding-top: max(10px, env(safe-area-inset-top)); }
+.dispBar { padding-top: max(6px, env(safe-area-inset-top)); }
+#displayScreen .dispStage { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+
+/* 4. panel CastFlow: pane tidak boleh saling menumpuk */
+.projGrid > * { min-width: 0; min-height: 0; }
+.projPane { overscroll-behavior: contain; }
+
+/* 5. TABLET / PC kecil & jendela di-minimize */
+@media (max-width: 1200px) and (min-width: 901px) {
+  .youthViewsPage .projGrid { grid-template-columns: 240px 1fr 300px !important; }
+  .projPane { padding: 11px; }
+}
+
+/* 6. HP: semua pane menumpuk vertikal, halaman yang menggulir */
+@media (max-width: 900px) {
+  .youthViewsPage { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .youthViewsPage .projGrid {
+    display: flex !important;
+    flex-direction: column;
+    grid-template-columns: none !important;
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+  .youthViewsPage .projPane {
+    overflow: visible;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    border-left: 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.09);
+  }
+  .youthViewsPage .projPaneHead { position: sticky; top: 0; z-index: 3; background: var(--d-canvas); }
+  #projCatalogList { grid-template-columns: 1fr !important; }
+  .projCard2 { flex-direction: column; align-items: stretch; }
+  .projCard2Ops .projBtn { flex: 1; }
+  .projTabs, .projBgTabs, .projChips { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .projTabs::-webkit-scrollbar, .projBgTabs::-webkit-scrollbar { display: none; }
+  .projTabs > *, .projBgTabs > * { flex: 0 0 auto; }
+  .projColors { grid-template-columns: 1fr 1fr 1fr; }
+  .projStudioCv { height: 108px; }
+  .projBtn, .projTab, .projBgTab { min-height: 38px; }
+  input[type="range"] { height: 26px; }
+  .projGoLiveRow, .projStudioOps, .projMediaOps { flex-wrap: wrap; }
+}
+
+/* 7. HP kecil (<=380px) */
+@media (max-width: 380px) {
+  .projPane { padding: 10px; }
+  .projBrand { font-size: 17px; }
+  .projColors { grid-template-columns: 1fr 1fr; }
+}
+
+/* 8. HP mendatar (landscape) - output tetap presisi */
+@media (max-height: 480px) and (orientation: landscape) {
+  .dispBar { padding: 2px 10px; font-size: 10px; }
+  #dispTitle { font-size: 11px; }
+  #dispKey { font-size: 10px; }
+}
+
+/* 9. hormati pengguna yang mematikan animasi */
+@media (prefers-reduced-motion: reduce) {
+  .yvLine { animation: none !important; opacity: 1 !important; }
+}
+
+
+/* ================= v5.7 - kartu terbaca + navigasi per kolom ================= */
+/* A. hanya anak langsung grid yang boleh menyusut (bukan semua turunan) */
+.projGrid > * { min-width: 0; min-height: 0; }
+.projPlanItem, .projActiveTitle { overflow-wrap: break-word; }
+
+/* B. KARTU LAGU - judul wajib mendatar & terbaca */
+#projCatalogList { display: block; }
+#projCatalogList .projCard2 {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 8px;
+  width: auto;
+  min-width: 0;
+  padding: 11px 13px;
+  margin-bottom: 8px;
+}
+#projCatalogList .projCard2Main { display: block; min-width: 0; }
+#projCatalogList .projCard2Main b {
+  display: block;
+  font-size: 13.5px;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+}
+#projCatalogList .projCard2Main small { display: block; margin-top: 3px; }
+#projCatalogList .projCard2Ops { display: flex; flex-wrap: wrap; gap: 6px; }
+#projCatalogList .projCard2Ops .projMiniBtn { flex: 0 0 auto; }
+
+/* C. hasil pencarian latar: video tidak boleh dimuat sebagai gambar */
+.projBgThumb { position: relative; overflow: hidden; }
+.projBgThumb.noThumb {
+  background: linear-gradient(135deg, #14204a, #2b1840);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.projBgThumb.noThumb::after {
+  content: "\25B6";
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 15px;
+}
+.projBgVid {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 8.5px;
+  letter-spacing: 0.07em;
+  padding: 2px 5px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+.projPvVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.projPreview { position: relative; overflow: hidden; }
+
+/* D. RAIL - satu kolom navigasi, tiap fitur punya tempatnya sendiri */
+.projRail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 8px;
+  background: var(--d-canvas);
+  border-right: 1px solid rgba(0, 0, 0, 0.09);
+  overflow: auto;
+}
+.projRailTitle {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  padding: 8px 8px 3px;
+}
+.projRailBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  min-height: 38px;
+}
+.projRailBtn span.ic { font-size: 14px; width: 17px; text-align: center; flex: 0 0 auto; }
+.projRailBtn:hover { background: rgba(124, 140, 255, 0.1); }
+.projRailBtn.on {
+  background: rgba(20, 130, 160, 0.14);
+  border-color: rgba(20, 130, 160, 0.5);
+  font-weight: 700;
+}
+
+/* E. empat kolom di layar lebar (selector disamakan agar menang cascade) */
+.youthViewsPage .projGrid { grid-template-columns: 148px 224px minmax(0, 1fr) 336px !important; }
+@media (max-width: 1200px) and (min-width: 901px) {
+  .youthViewsPage .projGrid { grid-template-columns: 124px 186px minmax(0, 1fr) 296px !important; }
+}
+@media (max-width: 900px) {
+  .youthViewsPage .projRail { display: none; }
+}

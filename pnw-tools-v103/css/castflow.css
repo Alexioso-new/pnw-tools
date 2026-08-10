@@ -1,0 +1,756 @@
+/* PNW-FILE-GUIDE
+   css/castflow.css — tema CastFlow (v7.7): WORKSPACE 2D ala mockup pengguna.
+   Susunan:  [MENU | PREVIEW | DESIGN]
+             [PLAYLIST | LYRIC/TIMELINE | (design penuh)]
+   Semua celah = splitter resizable (flexible workspace). Logo hero 200px di
+   panel MENU. Tema abu #262626 + hitam #141414, TikTok Sans, sudut membulat.
+   HANYA dimuat di castflow.html, PALING AKHIR (menang cascade).
+*/
+
+/* ---------- token + tipografi ---------- */
+body.yvStandalone {
+  --cf-bg: #262626;
+  --cf-panel: #232326;
+  --cf-well: #1e1e21;
+  --cf-raised: #323236;
+  --cf-line: #3a3a40;
+  --cf-line2: #4a4a52;
+  --cf-accent: #1282a2;
+  --cf-accent-hi: #1b9ec7;
+  --cf-on-accent: #eaf7fb;
+  --cf-text: #eceef2;
+  --cf-dim: #a8adb8;
+  --cf-dim2: #7d8494;
+  --cf-danger: #e05d5d;
+  /* var lama yang sempat bikin putih/terang — dioverride gelap */
+  --d-line: #141414;
+  --d-canvas: #141414;
+  /* ═══ UBAH UKURAN LOGO CASTFLOW DI SINI (px) ═══ */
+  --cf-logo-h: 200px;
+  background-color: #262626 !important;
+  background-image: linear-gradient(165deg, #232326 0%, #262626 45%, #2a2a2e 100%) !important;
+  background-attachment: fixed;
+  color: #eceef2;
+  color-scheme: dark;
+  font-family: "TikTok Sans", "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-size: 10.5px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+body.yvStandalone button,
+body.yvStandalone input,
+body.yvStandalone select,
+body.yvStandalone textarea {
+  font-family: inherit;
+}
+body.yvStandalone .projPage,
+body.yvStandalone .tlDrawer,
+body.yvStandalone .yvBar {
+  font-size: 10.5px;
+}
+
+/* ---------- bar atas (kontrol ramping; logo pindah ke panel MENU) ---------- */
+body.yvStandalone .yvBar {
+  background: #232326;
+  border-bottom: 1px solid #3a3a40;
+  color: #eceef2;
+  position: relative;
+}
+body.yvStandalone .yvBarBtn {
+  background: #1e1e21;
+  border: 1px solid #3a3a40;
+  color: #e8eaef;
+  font-size: 9.5px;
+  border-radius: 8px;
+}
+body.yvStandalone .yvBarBtn:hover {
+  background: #323236;
+  border-color: #1282a2;
+}
+body.yvStandalone .yvBarNote { color: #a8adb8; font-size: 9.5px; }
+body.yvStandalone .projTop { display: none !important; }
+
+/* segmented EN/ID */
+.cfLangSeg {
+  display: inline-flex;
+  border: 1px solid #3a3a40;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.cfLangSeg button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #a8adb8;
+  font: 700 8.5px/1 inherit;
+  letter-spacing: 0.5px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.cfLangSeg button.on {
+  background: #1282a2;
+  color: #eaf7fb;
+}
+
+/* ---------- kerangka halaman ---------- */
+body.yvStandalone .projPage.open {
+  display: flex;
+  flex-direction: column;
+  background: #262626 !important;
+}
+
+/* ============================================================
+   WORKSPACE 2D (mockup): grid 3 kolom × 2 baris + splitter
+   kolom: [kiri] 7px [tengah] 7px [kanan]
+   baris : [atas] 7px [bawah]
+   ============================================================ */
+body.yvStandalone .projGrid.cfWork {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  padding: 8px;
+  gap: 0;
+  /* kolom & baris diisi inline oleh JS (tersimpan) — nilai bawaan di bawah */
+  grid-template-columns: 300px 7px minmax(0, 1fr) 7px 330px;
+  grid-template-rows: minmax(150px, 46%) 7px minmax(0, 1fr);
+}
+body.yvStandalone .projGrid.cfWork.cfSmooth {
+  transition: grid-template-columns 0.18s ease, grid-template-rows 0.18s ease;
+}
+
+/* sel panel */
+.cfCell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: #232326;
+  border: 1px solid #2e2e33;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.cfC-menu    { grid-column: 1; grid-row: 1; }
+.cfC-playlist{ grid-column: 1; grid-row: 3; }
+.cfC-preview { grid-column: 3; grid-row: 1; background: #141414; }
+.cfC-lyric   { grid-column: 3; grid-row: 3; }
+.cfC-design  { grid-column: 5; grid-row: 1 / 4; }
+
+/* label judul kecil tiap sel (ala mockup) */
+.cfCell > .cfCellHead {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid #3a3a40;
+  color: #a8adb8;
+  font: 800 9px/1 inherit;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.cfCell > .cfCellBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- sel MENU: logo hero + navigasi ---------- */
+.cfC-menu .cfCellBody { align-items: center; padding: 10px; gap: 10px; }
+.cfHeroLogo {
+  display: block;
+  height: var(--cf-logo-h, 200px);
+  max-height: 100%;
+  max-width: 100%;
+  width: auto;
+  object-fit: contain;
+}
+.cfC-menu .projRail {
+  border: 0;
+  background: transparent;
+  width: 100%;
+  overflow: auto;
+}
+
+/* ---------- sel PREVIEW ---------- */
+.cfC-preview .cfPrevHead {
+  flex: 0 0 auto;
+  margin: 0;
+  max-width: none;
+  flex-wrap: wrap;
+}
+.cfC-preview .cfPrevStage {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto !important; /* mengisi sel; tinggi diatur splitter baris */
+  max-width: none;
+  margin: 8px;
+  border-radius: 10px;
+}
+/* placeholder saat pratinjau melayang */
+.cfPrevEmpty {
+  flex: 1 1 auto;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: #7d8494;
+  font-size: 10px;
+  text-align: center;
+  padding: 12px;
+}
+.cfC-preview.popped .cfPrevStage { display: none; }
+.cfC-preview.popped .cfPrevEmpty { display: flex; }
+
+/* ---------- sel LYRIC / TIMELINE + toggle ---------- */
+.cfC-lyric .projPaneC { border: 0; border-radius: 0; background: transparent; flex: 1 1 auto; min-height: 0; }
+.cfC-lyric.showTl .projPaneC { display: none !important; }
+.cfViewToggle {
+  margin-left: auto;
+  display: inline-flex;
+  border: 1px solid #3a3a40;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.cfViewToggle button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #a8adb8;
+  font: 700 9px/1 inherit;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.cfViewToggle button.on {
+  background: #1282a2;
+  color: #eaf7fb;
+}
+
+/* timeline didock inline ke dalam sel lyric */
+.cfTlInline {
+  position: relative !important;
+  inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  height: 100% !important;
+  z-index: 1 !important;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+.cfTlInline.on { display: flex !important; }
+.cfTlInline .cfTlResizer { display: none !important; }
+
+/* ---------- sel DESIGN (kanan, penuh) ---------- */
+.cfC-design .projPaneR { border: 0; border-radius: 0; background: transparent; flex: 1 1 auto; min-height: 0; }
+
+/* ---------- SPLITTER (tak terlihat; celah = tanda bisa resize) ---------- */
+.cfSp {
+  background: transparent;
+  z-index: 15;
+  touch-action: none;
+  position: relative;
+}
+.cfSpV { cursor: col-resize; }
+.cfSpH { cursor: row-resize; }
+.cfSp::after {
+  content: "";
+  position: absolute;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+.cfSpV::after { top: 12%; bottom: 12%; left: 3px; width: 1px; }
+.cfSpH::after { left: 12%; right: 12%; top: 3px; height: 1px; }
+.cfSp:hover::after, .cfSp.dragging::after { background: #1282a2; }
+.cfSpV:hover::after, .cfSpV.dragging::after { left: 2px; width: 3px; }
+.cfSpH:hover::after, .cfSpH.dragging::after { top: 2px; height: 3px; }
+body.cfColResize, body.cfColResize * { cursor: col-resize !important; }
+body.cfRowResize, body.cfRowResize * { cursor: row-resize !important; }
+body.cfColResize, body.cfRowResize { user-select: none; }
+
+/* ---------- strip lama disembunyikan (kontennya dipindah ke sel) ---------- */
+#cfPrevWrap { display: none !important; }
+
+/* ---------- kontrol pratinjau (dipakai di sel preview) ---------- */
+.cfPrevHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+}
+.cfPrevTitle {
+  font: 800 9px/1 inherit;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #a8adb8;
+}
+.cfPrevHint { font-size: 9px; color: #7d8494; }
+.cfPrevSpacer { flex: 1 1 auto; }
+.cfPrevSize {
+  appearance: none;
+  border: 1px solid #3a3a40;
+  background: #1e1e21;
+  color: #a8adb8;
+  border-radius: 6px;
+  min-width: 24px;
+  padding: 3px 0;
+  font: 700 9px/1 inherit;
+  cursor: pointer;
+}
+.cfPrevSize.on { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
+.cfPrevRatio {
+  background: #1e1e21;
+  border: 1px solid #3a3a40;
+  color: #e8eaef;
+  border-radius: 6px;
+  font-size: 9.5px;
+  padding: 3px 6px;
+  max-width: 160px;
+}
+.cfPrevStage {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #3a3a40;
+  background: #141414;
+}
+body.yvStandalone .cfPrevStage .projPreview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+.cfPrevDrop {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 20, 20, 0.85);
+  border: 2px dashed #1282a2;
+  border-radius: 10px;
+  color: #7fd4e8;
+  font: 700 11px/1.4 inherit;
+  z-index: 5;
+  pointer-events: none;
+}
+.cfPrevStage.drag .cfPrevDrop { display: flex; }
+.cfPrevResizer { display: none; } /* diganti splitter baris */
+
+/* papan catur */
+body.yvStandalone .projPreview[data-bg="none"] {
+  background-color: #101010 !important;
+  background-image: conic-gradient(#1c1c1e 0 25%, #2a2a2c 0 50%, #1c1c1e 0 75%, #2a2a2c 0) !important;
+  background-size: 26px 26px !important;
+}
+body.yvStandalone .cfSwatchNone {
+  background: conic-gradient(#2a2a2a 0 25%, #3a3a3a 0 50%, #2a2a2a 0 75%, #3a3a3a 0) !important;
+  background-size: 12px 12px !important;
+  position: relative;
+}
+
+/* ---------- panel & kartu ---------- */
+body.yvStandalone .projPane {
+  background: #232326;
+  border: 1px solid #2e2e33;
+  border-radius: 10px;
+  color: #eceef2;
+  overflow: auto;
+}
+body.yvStandalone .projPaneHead { border-bottom: 1px solid #3a3a40; color: #eceef2; }
+body.yvStandalone .projPaneHead h3 { color: #eceef2; font-size: 10.5px; }
+body.yvStandalone .projRailTitle { color: #7d8494; letter-spacing: 1px; font-size: 8.5px; }
+body.yvStandalone .projRailBtn {
+  color: #a8adb8; background: transparent; font-size: 9.5px; border-radius: 7px;
+}
+body.yvStandalone .projRailBtn:hover { background: #323236; color: #eceef2; }
+body.yvStandalone .projRailBtn.on {
+  background: #323236; color: #7fd4e8; box-shadow: inset 3px 0 0 #1282a2;
+}
+
+/* ---------- tab & chip ---------- */
+body.yvStandalone .projTab {
+  background: transparent; color: #a8adb8; border-bottom: 2px solid transparent; font-size: 9.5px;
+}
+body.yvStandalone .projTab.on { color: #7fd4e8; border-bottom-color: #1282a2; }
+body.yvStandalone .projChip {
+  background: #1e1e21; border: 1px solid #3a3a40; color: #a8adb8; font-size: 9px; border-radius: 999px;
+}
+body.yvStandalone .projChip.on, body.yvStandalone .projChip:hover {
+  background: #323236; color: #eceef2; border-color: #1282a2;
+}
+body.yvStandalone .projBgTab {
+  background: #1e1e21; border: 1px solid #3a3a40; color: #a8adb8; font-size: 9px;
+}
+body.yvStandalone .projBgTab.on { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
+
+/* ---------- tombol ---------- */
+body.yvStandalone .projMiniBtn {
+  background: #323236; border: 1px solid #3a3a40; color: #e8eaef; font-size: 9.5px; border-radius: 7px;
+}
+body.yvStandalone .projMiniBtn:hover { background: #3a3a40; border-color: #1282a2; }
+body.yvStandalone .projMiniBtn.primary, body.yvStandalone #projGoLive {
+  background: #1282a2; border-color: #1282a2; color: #eaf7fb;
+}
+body.yvStandalone .projMiniBtn.primary:hover, body.yvStandalone #projGoLive:hover {
+  background: #1b9ec7; border-color: #1b9ec7;
+}
+body.yvStandalone .projBtn {
+  background: #323236; border: 1px solid #3a3a40; color: #e8eaef; font-size: 9.5px; border-radius: 7px;
+}
+body.yvStandalone .projBtn:hover { background: #3a3a40; }
+
+/* ---------- input ---------- */
+body.yvStandalone .projPage input[type="text"],
+body.yvStandalone .projPage input[type="search"],
+body.yvStandalone .projPage input[type="url"],
+body.yvStandalone .projPage input[type="password"],
+body.yvStandalone .projPage input[type="number"],
+body.yvStandalone .projPage textarea,
+body.yvStandalone .projPage select,
+body.yvStandalone .yvBar input,
+body.yvStandalone .yvBar select {
+  background: #1e1e21; border: 1px solid #3a3a40; color: #eceef2; border-radius: 7px; font-size: 10px;
+}
+body.yvStandalone .projPage input::placeholder,
+body.yvStandalone .projPage textarea::placeholder { color: #6b7280; }
+body.yvStandalone .projPage input:focus,
+body.yvStandalone .projPage textarea:focus,
+body.yvStandalone .projPage select:focus {
+  border-color: #1282a2; outline: none; box-shadow: 0 0 0 2px rgba(18, 130, 162, 0.25);
+}
+body.yvStandalone .projPage select option,
+body.yvStandalone .projPage select optgroup { background: #232326; color: #eceef2; }
+body.yvStandalone .projPage input[type="range"] { accent-color: #1282a2; background: transparent; border: 0; }
+
+/* ---------- label kecil ---------- */
+body.yvStandalone .projPage .label, body.yvStandalone .projPage label { color: #a8adb8; font-size: 9px; }
+body.yvStandalone .projPage .small, body.yvStandalone .projPage p.small { color: #7d8494; font-size: 9px; }
+
+/* ---------- kartu lagu / slide ---------- */
+body.yvStandalone .projCard2, body.yvStandalone .projCard, body.yvStandalone .projPlanItem,
+body.yvStandalone .projSlideCard, body.yvStandalone .projMediaItem {
+  background: #1e1e21; border: 1px solid #2e2e33; border-radius: 8px; color: #eceef2;
+}
+body.yvStandalone .projCard2:hover, body.yvStandalone .projPlanItem:hover,
+body.yvStandalone .projSlideCard:hover { border-color: #1282a2; background: #232326; }
+body.yvStandalone .projCardTitle, body.yvStandalone .projPlanTitle, body.yvStandalone .projActiveTitle {
+  color: #f4f6fb; font-size: 10.5px;
+}
+body.yvStandalone .projCardMeta, body.yvStandalone .projPlanKind, body.yvStandalone .projActiveKind,
+body.yvStandalone .projActiveLines { color: #7d8494; font-size: 9px; }
+body.yvStandalone .projEmpty { color: #7d8494; }
+body.yvStandalone .projLive {
+  background: rgba(224, 93, 93, 0.16); color: #ff9d9d; border: 1px solid rgba(224, 93, 93, 0.4);
+}
+body.yvStandalone .projLive.on { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
+
+/* ---------- area kosong / audit / composer ---------- */
+body.yvStandalone .projSoon, body.yvStandalone .projComposer, body.yvStandalone .projAuditLog {
+  background: #1e1e21; border: 1px dashed #3a3a40; border-radius: 8px; color: #a8adb8;
+}
+body.yvStandalone .projAuditOut {
+  background: #232326; border: 1px solid #3a3a40; border-radius: 8px; color: #a8adb8;
+}
+
+/* ---------- timeline drawer (mode overlay mengambang — bila tidak didock) ---------- */
+body.yvStandalone .tlDrawer {
+  background: #232326; border: 1px solid #3a3a40; border-radius: 12px;
+  left: 8px; right: 8px; bottom: 8px; color: #eceef2; overflow: hidden;
+}
+body.yvStandalone .tlBar { background: #232326; border-bottom: 1px solid #3a3a40; }
+body.yvStandalone .tlBtn {
+  background: #323236; border: 1px solid #3a3a40; color: #e8eaef; font-size: 9.5px; border-radius: 7px;
+}
+body.yvStandalone .tlBtn:hover { background: #3a3a40; border-color: #1282a2; }
+body.yvStandalone .tlBtn.on { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
+body.yvStandalone .tlBtn.primary { background: #1282a2; border-color: #1282a2; color: #eaf7fb; }
+body.yvStandalone .tlBtn.danger { color: #ff9d9d; }
+body.yvStandalone .tlTime, body.yvStandalone .tlSelInfo { color: #a8adb8; font-size: 9px; }
+body.yvStandalone .tlLive { background: rgba(224, 93, 93, 0.16); color: #ff9d9d; }
+body.yvStandalone .tlLive.on { background: #c0392b; color: #fff; }
+body.yvStandalone .tlTrackHead {
+  background: #26262a; border-bottom: 1px solid #3a3a40; color: #e8eaef; font-size: 9.5px;
+}
+body.yvStandalone .tlTrackHead span { color: #7d8494; }
+body.yvStandalone .tlTrack { background: #1e1e21; border-bottom: 1px solid #3a3a40; }
+body.yvStandalone .tlRuler { background: #232326; border-bottom: 1px solid #3a3a40; }
+body.yvStandalone .tlTick { color: #7d8494; border-color: #3a3a40; }
+body.yvStandalone .tlPlayhead { background: #1282a2; }
+body.yvStandalone .tlClip {
+  background: #323236; border: 1px solid #3a3a40; border-radius: 6px; color: #eceef2; font-size: 9px;
+}
+body.yvStandalone .tlClip.sel { border-color: #1282a2; box-shadow: 0 0 0 1px #1282a2; }
+body.yvStandalone .tlZoom input[type="range"] { accent-color: #1282a2; }
+body.yvStandalone .tlDrawer select { background: #1e1e21; border: 1px solid #3a3a40; color: #eceef2; }
+
+.cfTlResizer {
+  position: absolute; top: -5px; left: 0; right: 0; height: 9px; cursor: ns-resize; z-index: 45;
+  display: flex; align-items: center; justify-content: center; touch-action: none;
+}
+.cfTlResizer span { width: 40px; height: 3px; border-radius: 999px; background: #3a3a40; }
+.cfTlResizer:hover span { background: #1282a2; }
+
+.tlTrackOps { display: inline-flex; gap: 4px; margin-left: auto; }
+.tlTOp {
+  appearance: none; border: 1px solid transparent; background: transparent; color: #7d8494;
+  border-radius: 6px; padding: 1px 5px; font-size: 9px; cursor: pointer; opacity: 0.45;
+}
+.tlTOp:hover { opacity: 1; background: #323236; }
+.tlTOp.on { opacity: 1; color: #7fd4e8; border-color: #1282a2; background: #323236; }
+.tlMarker {
+  position: absolute; top: 0; transform: translateX(-50%); color: #f5c542; font-size: 9px;
+  z-index: 6; cursor: pointer; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* ---------- sisa permukaan putih lama -> gelap ---------- */
+body.yvStandalone .yvPlanItem, body.yvStandalone .yvCatalogCard {
+  background: #141414 !important; border: 1px solid #2e2e33 !important; border-radius: 8px !important;
+  box-shadow: none !important; color: #eceef2;
+}
+body.yvStandalone .yvSlideBtns button, body.yvStandalone .yvCardOps button,
+body.yvStandalone .yvComposerOps button, body.yvStandalone .projBgPreset {
+  background: #1e1e21 !important; border: 1px solid #3a3a40 !important; color: #eceef2 !important;
+}
+body.yvStandalone .yvComposer {
+  background: #141414 !important; border: 1px solid #2e2e33 !important; border-radius: 10px !important;
+  box-shadow: none !important;
+}
+body.yvStandalone .yvComposer textarea, body.yvStandalone .yvComposer input, body.yvStandalone .projBgUrl {
+  background: #1e1e21 !important; border: 1px solid #3a3a40 !important; color: #eceef2 !important;
+  border-radius: 8px !important;
+}
+body.yvStandalone .projPreview { background-color: #141414; }
+
+/* ---------- pop-out & resolusi kustom ---------- */
+.cfPopBtn {
+  appearance: none; border: 1px solid #3a3a40; background: #1e1e21; color: #a8adb8;
+  border-radius: 6px; padding: 3px 9px; font-size: 11px; cursor: pointer;
+}
+.cfPopBtn:hover { border-color: #1282a2; color: #7fd4e8; }
+.cfCustomRes { display: inline-flex; align-items: center; gap: 4px; color: #7d8494; font-size: 9.5px; }
+.cfCustomRes[hidden] { display: none !important; }
+.cfCustomRes input {
+  width: 58px; background: #1e1e21; border: 1px solid #3a3a40; color: #eceef2;
+  border-radius: 6px; padding: 3px 5px; font-size: 9.5px;
+}
+.cfCustomRes button {
+  background: #1282a2; border: 1px solid #1282a2; color: #eaf7fb; border-radius: 6px;
+  padding: 3px 8px; font-size: 9.5px; cursor: pointer;
+}
+
+/* jendela pratinjau melayang */
+.cfFloatWin {
+  position: fixed;
+  z-index: 1500; /* di atas .projPage (120) */
+  min-width: 240px; min-height: 150px;
+  background: #232326; border: 1px solid #3a3a40; border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55); overflow: hidden; display: flex; flex-direction: column;
+}
+.cfFloatWin[hidden] { display: none !important; }
+.cfFloatBar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 5px 10px;
+  background: #1e1e21; border-bottom: 1px solid #3a3a40; cursor: move; user-select: none; touch-action: none;
+}
+.cfFloatBar .t { font: 800 9px/1 inherit; letter-spacing: 1px; text-transform: uppercase; color: #a8adb8; }
+.cfFloatBar .sp { flex: 1 1 auto; }
+.cfFloatBar button {
+  appearance: none; border: 1px solid #3a3a40; background: #323236; color: #e8eaef;
+  border-radius: 6px; padding: 2px 8px; font-size: 9.5px; cursor: pointer;
+}
+.cfFloatBar button:hover { border-color: #1282a2; }
+.cfFloatBody { flex: 1 1 auto; position: relative; min-height: 0; background: #141414; }
+.cfFloatBody .cfPrevStage { max-width: none; margin: 0; height: 100%; border: 0; border-radius: 0; }
+.cfFloatResize {
+  position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; touch-action: none;
+}
+.cfFloatResize::after {
+  content: ""; position: absolute; right: 4px; bottom: 4px; width: 8px; height: 8px;
+  border-right: 2px solid #4a4a52; border-bottom: 2px solid #4a4a52; border-radius: 0 0 3px 0;
+}
+.cfFloatResize:hover::after { border-color: #1282a2; }
+
+/* ---------- penyesuaian kecil ---------- */
+body.yvStandalone ::-webkit-scrollbar { width: 8px; height: 8px; }
+body.yvStandalone ::-webkit-scrollbar-thumb {
+  background: #3a3a40; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box;
+}
+body.yvStandalone ::-webkit-scrollbar-thumb:hover { background: #1282a2; background-clip: padding-box; }
+body.yvStandalone ::-webkit-scrollbar-track { background: transparent; }
+body.yvStandalone ::selection { background: rgba(18, 130, 162, 0.4); color: #eaf7fb; }
+
+/* responsif */
+@media (max-width: 900px) {
+  .cfSp { display: none; }
+  body.yvStandalone .projGrid.cfWork {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto auto;
+  }
+  .cfC-menu, .cfC-playlist, .cfC-preview, .cfC-lyric, .cfC-design { grid-column: 1; grid-row: auto; }
+  .cfPrevHint { display: none; }
+}
+
+/* ============================================================
+   v7.8 — font TikTok Sans menyeluruh + chip warna section
+   ============================================================ */
+body.yvStandalone {
+  --font-sans: "TikTok Sans", "Plus Jakarta Sans", Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "TikTok Sans", "Plus Jakarta Sans", Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-judul: "TikTok Sans", "Plus Jakarta Sans", Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+body.yvStandalone h1, body.yvStandalone h2, body.yvStandalone h3, body.yvStandalone h4,
+body.yvStandalone .projPaneHead, body.yvStandalone .projPaneHead h3,
+body.yvStandalone .projField > .label, body.yvStandalone .projLabel,
+body.yvStandalone label, body.yvStandalone .label, body.yvStandalone strong, body.yvStandalone code {
+  font-family: "TikTok Sans", "Plus Jakarta Sans", Inter, "Segoe UI", system-ui, -apple-system, sans-serif !important;
+}
+
+/* header sel Lyric/Timeline PERMANEN (perbaikan bug "stuck") */
+.cfLyricHead { display:flex; align-items:center; gap:8px; }
+.cfC-lyric.showTl .cfLyricHead { display:flex; }
+.cfLyricTitle { font:800 9px/1 inherit; letter-spacing:1px; text-transform:uppercase; color:#a8adb8; }
+.tlDrawer.cfTlInline { flex:1 1 auto; height:auto !important; min-height:0; }
+
+/* chip warna penanda section */
+.projSlideCard .projSlideNo { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+.cfSlideNum { color:#8a8f99; font-weight:700; }
+.cfSecChip { display:inline-block; padding:2px 7px; border-radius:4px; font-size:8.5px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:#fff; line-height:1.4; }
+.cfSecChip[data-sec="verse"] { background:#2f6fb2; }
+.cfSecChip[data-sec="chorus"] { background:#2e9e6b; }
+.cfSecChip[data-sec="pre-chorus"] { background:#8b5cf6; }
+.cfSecChip[data-sec="interlude"] { background:#64748b; }
+.cfSecChip[data-sec="coda"] { background:#e0653a; }
+
+/* ============================================================
+   v7.9 — HIERARKI TIPOGRAFI (template pengguna)
+   Judul = 500 putih · Subjudul = 400 · Teks = 300 · TikTok Sans only
+   (pratinjau/output lirik tetap memakai font yang dipilih pengguna)
+   ============================================================ */
+body.yvStandalone { font-weight: 300; }
+
+/* JUDUL — 500, putih */
+body.yvStandalone h1, body.yvStandalone h2, body.yvStandalone h3, body.yvStandalone h4,
+body.yvStandalone .projPaneHead h3, body.yvStandalone .cfCellHead, body.yvStandalone .cfLyricTitle,
+body.yvStandalone .yvBarBrand, body.yvStandalone .cfPrevHead .t,
+body.yvStandalone .projActiveBody h3, body.yvStandalone .projActiveBody h4 {
+  font-weight: 500 !important;
+  color: #ffffff;
+}
+
+/* SUBJUDUL / LABEL / TOMBOL — 400 */
+body.yvStandalone .label, body.yvStandalone .projField > .label, body.yvStandalone .projLabel,
+body.yvStandalone .projTabs button, body.yvStandalone .cfViewToggle button,
+body.yvStandalone .yvRailBtn, body.yvStandalone button, body.yvStandalone .cfSecChip {
+  font-weight: 400 !important;
+}
+
+/* TEKS / ISI — 300 */
+body.yvStandalone input, body.yvStandalone select, body.yvStandalone textarea,
+body.yvStandalone .projPlanItem, body.yvStandalone .projCard2, body.yvStandalone .projCatalogCard,
+body.yvStandalone .yvCatalogCard, body.yvStandalone .yvPlanItem, body.yvStandalone .projSlideBody,
+body.yvStandalone p {
+  font-weight: 300 !important;
+}
+
+/* ============================================================
+   v8.0 — Panel revisi A–E
+   ============================================================ */
+/* A1: indikator offline elegan */
+body.yvStandalone #yvStatus .cfNetChip { display:inline-flex; align-items:center; gap:5px; background:#3a2a12; border:1px solid #6b4d1f; color:#f4c05a; padding:2px 9px; border-radius:99px; font-size:9px; font-weight:400; letter-spacing:.3px; }
+body.yvStandalone #yvStatus .cfNetDot { width:6px; height:6px; border-radius:50%; background:#f4c05a; }
+
+/* A2: view-only — kunci aksi saat belum login */
+body.yvStandalone.cfViewOnly #projGoLive,
+body.yvStandalone.cfViewOnly #projClear,
+body.yvStandalone.cfViewOnly #projNextSlide,
+body.yvStandalone.cfViewOnly #projPrevSlide,
+body.yvStandalone.cfViewOnly .projBgPreset,
+body.yvStandalone.cfViewOnly .projApplyBg { opacity:.4; pointer-events:none; filter:grayscale(.4); }
+
+/* A3: tombol bar pindah ke menu avatar */
+body.yvStandalone .cfMovedToMenu { display:none !important; }
+body.yvStandalone .cfAvatarBtn { font-size:13px; line-height:1; }
+.cfUserMenu { position:fixed; z-index:2600; min-width:200px; background:#1e1e21; border:1px solid #343439; border-radius:12px; box-shadow:0 12px 32px rgba(0,0,0,.5); padding:6px; color:#eceef2; }
+.cfUserWho { padding:8px 10px; font-size:10.5px; color:#a8adb8; border-bottom:1px solid #2c2c30; margin-bottom:4px; }
+.cfUserItem { display:block; width:100%; text-align:left; background:transparent; border:0; color:#eceef2; padding:8px 10px; border-radius:8px; font-size:10.5px; cursor:pointer; font-family:inherit; }
+.cfUserItem:hover { background:#2a2a2f; }
+.cfUserLang { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.cfSeg { display:inline-flex; background:#26262b; border:1px solid #3a3a40; border-radius:8px; overflow:hidden; }
+.cfSeg button { background:transparent; border:0; color:#a8adb8; padding:4px 10px; font-size:9px; cursor:pointer; font-family:inherit; }
+.cfSeg button.on { background:#1282a2; color:#eaf7fb; }
+
+/* tombol ikon kecil (⚙ / ?) */
+body.yvStandalone .cfIconBtn { background:#1e1e21; border:1px solid #3a3a40; color:#a8adb8; border-radius:7px; width:22px; height:22px; font-size:11px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0; }
+body.yvStandalone .cfIconBtn:hover { color:#eceef2; border-color:#1282a2; }
+
+/* C1: popover settings preview */
+.cfPrevSettings { position:fixed; z-index:2600; background:#1e1e21; border:1px solid #343439; border-radius:12px; box-shadow:0 12px 32px rgba(0,0,0,.5); padding:10px; color:#eceef2; display:flex; flex-direction:column; gap:8px; min-width:210px; }
+.cfPrevSettingsTitle { font-size:9px; font-weight:400; letter-spacing:1px; text-transform:uppercase; color:#a8adb8; }
+
+/* D2: kartu bantuan hotkey */
+.cfHkCard { position:fixed; z-index:2600; background:#1e1e21; border:1px solid #343439; border-radius:12px; box-shadow:0 12px 32px rgba(0,0,0,.5); padding:12px; color:#eceef2; min-width:220px; }
+.cfHkCard .t { font-size:9px; font-weight:400; letter-spacing:1px; text-transform:uppercase; color:#a8adb8; margin-bottom:8px; }
+.cfHkCard .row { display:flex; align-items:center; gap:10px; padding:3px 0; font-size:10px; }
+.cfHkCard .k { background:#26262b; border:1px solid #3a3a40; border-radius:5px; padding:1px 7px; font-size:9px; color:#7fd4e8; min-width:64px; text-align:center; }
+.cfHkCard .d { color:#c6cbd4; }
+
+/* E1: global search */
+.cfGSWrap { position:relative; display:flex; align-items:center; gap:7px; padding:8px 11px; border-bottom:1px solid #2c2c30; }
+.cfGSIcon { color:#7d8494; font-size:11px; }
+.cfGSWrap input { flex:1; background:#1e1e21; border:1px solid #3a3a40; color:#eceef2; border-radius:8px; padding:7px 10px; font-size:10.5px; font-family:inherit; }
+.cfGSWrap input:focus { outline:none; border-color:#1282a2; }
+.cfGSResults { position:absolute; top:100%; left:8px; right:8px; z-index:2500; background:#1e1e21; border:1px solid #343439; border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.5); max-height:280px; overflow:auto; padding:4px; }
+.cfGSItem { display:flex; align-items:center; gap:8px; width:100%; text-align:left; background:transparent; border:0; color:#eceef2; padding:7px 9px; border-radius:7px; font-size:10.5px; cursor:pointer; font-family:inherit; }
+.cfGSItem:hover { background:#2a2a2f; }
+.cfGSTag { font-size:8px; color:#7fd4e8; background:#16303a; border-radius:4px; padding:1px 6px; flex:0 0 auto; }
+.cfGSEmpty { padding:10px; color:#7d8494; font-size:10px; text-align:center; }
+
+/* E2: versi alkitab */
+.cfBibleVer { background:#1e1e21; border:1px solid #3a3a40; color:#eceef2; border-radius:7px; padding:5px 8px; font-size:10px; margin:0 11px 6px; font-family:inherit; }
+
+/* B1: hint idle di output */
+.cfIdleHint { display:block; margin-top:10px; font-size:.5em; color:#8a8f99; font-weight:300; }
+
+/* ============================================================
+   v8.1 — Roadmap lanjutan
+   ============================================================ */
+.cfAfOverlay { position:fixed; inset:0; z-index:2700; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:20px; }
+.cfAfModal { background:#1e1e21; border:1px solid #343439; border-radius:14px; box-shadow:0 20px 50px rgba(0,0,0,.6); width:100%; max-width:520px; padding:14px; color:#eceef2; display:flex; flex-direction:column; gap:10px; }
+.cfAfHead { display:flex; align-items:center; justify-content:space-between; font-size:12px; font-weight:500; color:#fff; }
+.cfAfX { background:#26262b; border:1px solid #3a3a40; color:#a8adb8; border-radius:7px; width:22px; height:22px; cursor:pointer; }
+.cfAfModal textarea { background:#141414; border:1px solid #3a3a40; color:#eceef2; border-radius:9px; padding:9px; font-size:11px; font-family:inherit; font-weight:300; resize:vertical; }
+.cfAfOps { display:flex; gap:7px; flex-wrap:wrap; }
+.cfAfPreview { max-height:200px; overflow:auto; border-top:1px solid #2c2c30; padding-top:8px; display:flex; flex-direction:column; gap:6px; }
+.cfAfSec { font-size:10.5px; color:#c6cbd4; line-height:1.5; }
+
+/* Next Slide Thumbnail */
+.cfNextThumb { background:#1a1a1d; border:1px solid #2e2e33; border-radius:10px; padding:8px 11px; margin:0 0 8px; }
+.cfNextThumb .t { font-size:8.5px; font-weight:500; letter-spacing:1px; text-transform:uppercase; color:#7fd4e8; margin-bottom:3px; }
+.cfNextThumb .b { font-size:10.5px; color:#eceef2; font-weight:300; line-height:1.4; }
+
+/* Media tagging */
+.cfMediaFilter { width:100%; box-sizing:border-box; background:#1e1e21; border:1px solid #3a3a40; color:#eceef2; border-radius:8px; padding:6px 10px; font-size:10.5px; margin-bottom:7px; font-family:inherit; }
+.cfMediaTag { background:#141414; border:1px solid #343439; color:#7fd4e8; border-radius:5px; padding:2px 7px; font-size:9px; margin-top:5px; width:100%; box-sizing:border-box; font-family:inherit; }
+
+/* Stage Display (monitor panggung) */
+#displayScreen.stageMonitor { background:#000 !important; }
+#displayScreen.stageMonitor .dispBg, #displayScreen.stageMonitor .dispVideo, #displayScreen.stageMonitor .dispMotion, #displayScreen.stageMonitor .dispLottie { display:none !important; }
+#displayScreen.stageMonitor .dispStage { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:6vh 6vw; }
+#displayScreen.stageMonitor #dispTitle { font-size:2.2vw; color:#8a8f99; font-weight:500; margin:0 0 3vh; }
+#displayScreen.stageMonitor .smCur { font-size:4.6vw; line-height:1.3; color:#ffffff; font-weight:500; }
+#displayScreen.stageMonitor .smNext { margin-top:5vh; font-size:1.7vw; color:#6b7280; font-weight:300; line-height:1.4; }
+#displayScreen.stageMonitor .smNext span { display:block; font-size:1.1vw; text-transform:uppercase; letter-spacing:2px; color:#1282a2; margin-bottom:1vh; }
+#displayScreen.stageMonitor .smCount { font-size:14vw; text-align:center; color:#fff; font-variant-numeric:tabular-nums; }
+
+/* v8.2: hidden modal harus benar-benar tertutup */
+.cfAfOverlay[hidden] { display:none !important; }
+
+/* v8.2: hapus popover Resolution lama; pakai kontrol Resolution di Preview saja */
+#cfPrevSettings, #cfPrevSettingsBtn { display:none !important; }

@@ -1,0 +1,37 @@
+CASTFLOW v103 (label v9.3) — SPRINT 4: TOAST SYSTEM + WORKSPACE + DIAGNOSTICS
+=============================================================================
+
+Melanjutkan v102 — Sprint 4 dari dokumen rencana (UI System & Workspace
+Foundation). Isi:
+
+- TOAST SYSTEM TERPUSAT — semua notifikasi kini lewat satu sistem (antrian
+  maksimal 3, auto-dismiss, klik untuk tutup, ARIA). Toast lama otomatis
+  ikut lewat jembatan di projector.js — call site lama tidak diubah.
+- WORKSPACE MANAGER (fondasi) — menu Avatar: preset layout (Default,
+  Wide Preview, Focus Design, Focus Lyric), Reset Layout, dan Save Layout
+  Snapshot. Preset ditulis dalam format grid legacy yang sama lalu reload —
+  tidak ada format baru yang dikarang.
+- DIAGNOSTICS — menu Avatar -> "Diagnostics": status app, output (live),
+  preflight terakhir + tombol Run, media hilang + tombol Scan, error terbaru,
+  dan jumlah key storage. Semua dibaca dari store — panel tidak menyimpan
+  state sendiri.
+
+REORGANISASI PAKET (permintaan pengguna):
+- Semua catatan/dokumen pindah ke folder `_CATATAN/` (CATATAN, CARA-PASANG,
+  database.rules.json, arsitektur.md) agar tidak bercampur dengan file aplikasi.
+- ZIP kini berisi SATU folder `pnw-tools-v103/` — ekstrak di mana saja hanya
+  memunculkan satu folder rapi, tidak berceceran menutupi layar.
+- `.assetsignore` kini mengecualikan `_CATATAN` dari penyajian publik.
+
+BERKAS BARU: js/cf-toast.js, js/cf-workspace.js, js/cf-diag.js, css/cf-v103.css
+DIPATCH: js/projector.js (bridge toast), castflow.html, sw.js, .assetsignore,
+         label versi v9.3, cache pnw-tools-v103.
+
+URUTAN DEPLOY (rules v101 sudah dipublish — tidak perlu diulang):
+1. Ekstrak ZIP -> buka folder `pnw-tools-v103` -> salin SEMUA isinya ->
+   timpa ke `C:\pnw-tools` (folder .git Anda tetap utuh).
+2. git add -A && git commit -m "v103" && git push
+3. Ctrl+Shift+R -> label v9.3.
+4. Uji: klik Go Live (toast baru muncul dari kanan bawah); Avatar ->
+   Layout -> Wide Preview (halaman reload dengan tata letak baru);
+   Avatar -> Diagnostics menampilkan Output: connected.

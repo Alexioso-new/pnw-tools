@@ -1,0 +1,213 @@
+/* PNW-FILE-GUIDE
+   css/cf-v103.css — KOMPONEN v103 (toast system + workspace menu + diagnostics).
+   Memakai token dari cf-tokens.css, prefix cf-, TANPA !important baru.
+*/
+
+/* ---------- toast system (S4-05) ---------- */
+.cfToastHost {
+  position: fixed;
+  right: var(--cf-space-4);
+  bottom: var(--cf-space-4);
+  z-index: var(--cf-z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-2);
+  max-width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+  font-family: var(--cf-font-ui);
+}
+.cfToast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cf-space-2);
+  padding: 10px 12px;
+  border-radius: var(--cf-radius-md);
+  border: 1px solid var(--cf-color-border);
+  background: var(--cf-color-surface);
+  color: var(--cf-color-text);
+  font-size: 11px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  animation: cfToastIn var(--cf-motion-med) var(--cf-ease-standard);
+}
+.cfToast.out {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity var(--cf-motion-fast), transform var(--cf-motion-fast);
+}
+.cfToastKind {
+  flex: none;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  background: var(--cf-color-hover);
+  color: var(--cf-color-text-muted);
+}
+.cfToast-success .cfToastKind {
+  background: rgba(46, 158, 107, 0.18);
+  color: var(--cf-color-success);
+}
+.cfToast-warn .cfToastKind {
+  background: rgba(217, 161, 59, 0.18);
+  color: var(--cf-color-warning);
+}
+.cfToast-error .cfToastKind {
+  background: rgba(224, 92, 92, 0.18);
+  color: var(--cf-color-danger);
+}
+.cfToast-info .cfToastKind {
+  background: rgba(18, 130, 162, 0.18);
+  color: var(--cf-color-primary-hover);
+}
+.cfToastMsg {
+  font-weight: var(--cf-weight-text);
+  line-height: 1.45;
+}
+@keyframes cfToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- workspace preset select (menu Avatar) ---------- */
+.cfWsPresetSel {
+  margin-left: auto;
+  background: var(--cf-color-sunken);
+  border: 1px solid var(--cf-color-border);
+  color: var(--cf-color-text);
+  border-radius: var(--cf-radius-sm);
+  font: 400 10px/1.4 var(--cf-font-ui);
+  padding: 3px 6px;
+  max-width: 130px;
+}
+
+/* ---------- diagnostics panel (S4-06) ---------- */
+.cfDiagOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--cf-z-modal);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  font-family: var(--cf-font-ui);
+}
+.cfDiagOverlay.on {
+  display: flex;
+}
+.cfDiagPanel {
+  width: min(560px, calc(100vw - 48px));
+  max-height: min(70vh, 640px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-2);
+  padding: var(--cf-space-4);
+  border-radius: var(--cf-radius-lg);
+  border: 1px solid var(--cf-color-border);
+  background: var(--cf-color-surface);
+  color: var(--cf-color-text);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
+}
+.cfDiagHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cfDiagHead h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: var(--cf-weight-heading);
+  letter-spacing: 0.04em;
+}
+.cfDiagX {
+  border: 0;
+  background: transparent;
+  color: var(--cf-color-text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: var(--cf-space-1) var(--cf-space-2);
+  border-radius: var(--cf-radius-sm);
+}
+.cfDiagX:hover {
+  background: var(--cf-color-hover);
+  color: var(--cf-color-text);
+}
+.cfDiagBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-1);
+  overflow: auto;
+}
+.cfDiagRow {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  align-items: center;
+  gap: var(--cf-space-2);
+  padding: 6px var(--cf-space-2);
+  border-radius: var(--cf-radius-sm);
+  background: var(--cf-color-sunken);
+  font-size: 10.5px;
+  border-left: 3px solid var(--cf-color-border);
+}
+.cfDiagRow b {
+  font-weight: var(--cf-weight-heading);
+  letter-spacing: 0.03em;
+}
+.cfDiagRow span {
+  font-weight: var(--cf-weight-text);
+  color: var(--cf-color-text-muted);
+}
+.cfDiagRow[data-status="connected"],
+.cfDiagRow[data-status="pass"] {
+  border-left-color: var(--cf-color-success);
+}
+.cfDiagRow[data-status="stale"],
+.cfDiagRow[data-status="warn"] {
+  border-left-color: var(--cf-color-warning);
+}
+.cfDiagRow[data-status="disconnected"],
+.cfDiagRow[data-status="fail"] {
+  border-left-color: var(--cf-color-danger);
+}
+.cfDiagErrs {
+  padding: 4px var(--cf-space-2) 4px calc(84px + var(--cf-space-2) * 2);
+  font-size: 9.5px;
+  color: var(--cf-color-warning);
+  font-weight: var(--cf-weight-text);
+}
+.cfDiagBtn {
+  padding: 3px 10px;
+  border-radius: var(--cf-radius-sm);
+  border: 1px solid var(--cf-color-border);
+  background: var(--cf-color-hover);
+  color: var(--cf-color-text);
+  font: 400 9.5px/1.4 var(--cf-font-ui);
+  cursor: pointer;
+}
+.cfDiagBtn.primary {
+  background: var(--cf-color-primary);
+  border-color: var(--cf-color-primary);
+}
+.cfDiagBtn.primary:hover {
+  background: var(--cf-color-primary-hover);
+}
+.cfDiagFoot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cfToast {
+    animation: none;
+  }
+  .cfToast.out {
+    transition: none;
+  }
+}

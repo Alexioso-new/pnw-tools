@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="id">
+  <!-- PNW-FILE-GUIDE
+       youthviews.html — STUB PENGALIH (v7.0). Halaman CastFlow pindah ke
+       castflow.html. Berkas ini hanya mengalihkan bookmark/URL lama sambil
+       meneruskan query string (?mode=display dsb) dan hash.
+       JANGAN dihapus — URL lama masih dipakai pengguna & service worker. -->
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CastFlow</title>
+    <link rel="icon" type="image/png" href="./castflow-favicon.png" />
+  </head>
+  <body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#101010;color:#e8eef8;font:500 14px/1.6 Inter,system-ui,sans-serif">
+    <p>CastFlow pindah ke halaman baru&hellip; <a href="./castflow.html" style="color:#1282a2">buka manual</a></p>
+    <script>
+      location.replace("./castflow.html" + location.search + location.hash);
+    </script>
+  </body>
+</html>

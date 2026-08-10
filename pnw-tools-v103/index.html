@@ -1,0 +1,997 @@
+<!doctype html>
+
+<!-- PNW-FILE-GUIDE
+  index.html — markup utama PNW TOOLS.
+  Memuat CSS berurutan: css/styles.css lalu css/design.css (design.css MENIMPA styles.css).
+  Memuat JS lewat <script defer> di bagian bawah: logger -> firebase -> gsap -> motion -> recorder -> app -> guide -> hosana-flame-data -> logo-anim.
+  v6.0: CastFlow TIDAK lagi dimuat di sini. Halaman terpisah: youthviews.html.
+  js/yv-motion.js TETAP dimuat karena app.js memakainya untuk latar output.
+  Font: Google Fonts (Inter + JetBrains Mono) + Fontshare (Satoshi). Ikon: dimuat malas (lazy) dari js/animations.js.
+  PERHATIAN: mengubah id/class elemen di sini berpengaruh ke js/app.js (getElementById) dan css/design.css — cek keduanya.
+-->
+<!--
+  Chord Pujian Youth Hosana
+  Aplikasi transpose chord untuk tim pujian (satu berkas, tanpa framework).
+
+  Teknologi:
+    - HTML + CSS + JavaScript murni (vanilla), tanpa build tool.
+    - Firebase Realtime Database untuk sinkronisasi online real-time,
+      dengan fallback ke localStorage saat konfigurasi kosong/offline.
+
+  Susunan berkas:
+    1) <style>  : seluruh tampilan (layout, tombol, gaya cetak).
+    2) <body>   : kerangka antarmuka (daftar lagu, pemilih nada, editor).
+    3) <script> : data lagu + logika transpose + editor + sinkronisasi.
+
+  Cara transpose: setiap chord digeser sejumlah semitone yang sama sesuai
+  selisih nada dasar tujuan dengan nada dasar asli lagu.
+-->
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>HOSANA YOUTH TOOLS</title>
+    <meta
+      name="description"
+      content="PNW TOOLS - alat transpose chord untuk tim pujian. Pilih lagu dan nada dasar, chord langsung menyesuaikan."
+    />
+    <meta name="theme-color" content="#FEFCFB" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="PNW TOOLS" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- FONT: mau pakai font BARU? Muat <link>-nya di sini, lalu set kategori di css/design.css -> "PANEL KONTROL FONT". -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://api.fontshare.com/v2/css?f[]=satoshi@500,700,900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/styles.css" />
+    <link rel="stylesheet" href="./css/design.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/uicons-solid-rounded/css/uicons-solid-rounded.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn-uicons.flaticon.com/uicons-solid-straight/css/uicons-solid-straight.css"
+    />
+    <script defer src="./js/logger.js"></script>
+  </head>
+  <body>
+    <div id="toastWrap" aria-live="polite"></div>
+    <div id="pendingBanner" class="pendingBanner" hidden>
+      Akun kamu menunggu persetujuan pemilik.
+      <a href="#" id="pendingLogout">Keluar</a>
+    </div>
+    <div id="reminderCard" class="reminderCard" hidden>
+      <button
+        class="reminderX"
+        id="reminderClose"
+        type="button"
+        aria-label="Tutup"
+      >
+        &times;
+      </button>
+      <div class="reminderHead" id="reminderHead"></div>
+      <div class="reminderDate" id="reminderDate"></div>
+      <div class="reminderBody" id="reminderBody"></div>
+    </div>
+    <div id="displayScreen" class="displayScreen" hidden>
+      <div class="dispBg" id="dispBg" aria-hidden="true"></div>
+      <video
+        class="dispVideo"
+        id="dispVideo"
+        muted
+        loop
+        playsinline
+        aria-hidden="true"
+      ></video>
+      <canvas class="dispMotion" id="dispMotion" aria-hidden="true"></canvas>
+      <div class="dispLottie" id="dispLottie" aria-hidden="true"></div>
+      <div class="dispBar">
+        <span class="dispDot off" id="dispDot" title="Menyambung…"></span>
+        <span class="dispBrand">CastFlow — Live Output</span>
+      </div>
+      <div class="dispIdle" id="dispIdle">
+        <div class="dispIdleInner">
+          <div class="dispLogo" id="dispLogo"><div class="dispLogoAnim" id="dispLogoAnim" aria-hidden="true"></div><span class="dispLogoFallback">🎵</span></div>
+          <p id="dispWait">Menunggu live dimulai…</p>
+        </div>
+      </div>
+      <div class="dispStage" id="dispStage" hidden>
+        <h2 id="dispTitle"></h2>
+        <p id="dispKey" class="dispKey"></p>
+        <div id="dispContent" class="dispContent"></div>
+      </div>
+    </div>
+
+    <div class="app">
+      <header class="brand no-print">
+        <div class="brandMark" id="brandMark">
+          <span class="brandFlame" id="brandFlame" aria-hidden="true"></span>
+          <img
+            src="data:image/png;base64,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"
+            alt="Logo Youth Hosana Bandung"
+            width="74"
+            height="74"
+            id="brandLogo"
+            class="brandLogo"
+          />
+        </div>
+        <div>
+          <h1>PNW TOOLS</h1>
+          <p class="sub">
+            Let your worship speak louder than your worries
+            <span class="verTag" id="appVer">v9.3</span>
+          </p>
+        </div>
+        <button
+          class="menuBtn no-print"
+          id="menuBtn"
+          type="button"
+          aria-label="Menu"
+        >
+          <span class="menuDot" id="menuDot"></span>
+          <i class="fi fi-sr-settings-sliders"></i>
+        </button>
+      </header>
+      <div class="liveBanner no-print" id="liveBanner" hidden>
+        Mode spectate aktif
+      </div>
+      <section class="control no-print">
+        <p class="label labelRow">
+          Daftar lagu<button
+            class="infoI no-print"
+            id="dragInfoBtn"
+            type="button"
+            title="Cara mengubah urutan lagu"
+            aria-label="Cara mengubah urutan lagu"
+          >
+            <i class="fi fi-sr-info"></i>
+          </button>
+        </p>
+        <p class="dragTip no-print" id="dragTip" style="display: none">
+          Tahan ikon &#8942; di kiri sebuah lagu, lalu geser ke atas / bawah
+          untuk mengubah urutannya.
+        </p>
+        <div class="songGrid" id="songButtons"></div>
+      </section>
+      <section class="control no-print">
+        <p class="label">Nada dasar</p>
+        <div class="keyGrid" id="keyButtons"></div>
+      </section>
+      <div class="crumb no-print" id="statusCrumb">
+        <span class="crumbItem" id="currentSongPill">Lagu</span
+        ><span class="crumbSep">&rsaquo;</span
+        ><span class="crumbItem" id="currentKeyPill">Nada</span
+        ><span class="crumbSep">&rsaquo;</span
+        ><span class="crumbItem dim" id="cloudPill">Mode lokal</span
+        ><span class="pill green" id="savePill" style="display: none"></span>
+      </div>
+      <div class="actions no-print">
+        <button class="actionBtn" id="copyBtn" type="button">Salin</button
+        ><button class="actionBtn secondary" id="printBtn" type="button">
+          Cetak</button
+        ><button class="actionBtn green" id="editBtn" type="button">
+          Ubah lagu ini</button
+        ><button class="actionBtn green" id="addBtn" type="button">
+          Tambah lagu</button
+        ><button class="actionBtn orange" id="backupBtn" type="button">
+          Cadangkan</button
+        ><button class="actionBtn" id="recBtn" type="button">Rekaman</button>
+      </div>
+      <details class="help no-print">
+        <summary>Cara pakai</summary>
+        <ul>
+          <li>Pilih lagu, lalu pilih nada dasar.</li>
+          <li>Ubah urutan lagu: tahan ikon &#8942; lalu geser.</li>
+          <li>Miringkan HP untuk tampilan kolom bersebelahan.</li>
+          <li>Menu &#9776; di kanan atas: Song Bank &amp; pengaturan.</li>
+        </ul>
+      </details>
+      <section class="editor no-print" id="editor">
+        <p class="label">Ubah lagu ini</p>
+        <div class="field">
+          <label>Judul lagu</label><input id="editTitle" />
+        </div>
+        <div class="field">
+          <label>Nada dasar asli</label
+          ><input id="editOriginalKey" placeholder="Contoh: F / G / D" />
+        </div>
+        <div class="field">
+          <label>Sumber / catatan</label><input id="editSource" />
+        </div>
+        <div class="field">
+          <label>Link YouTube (opsional)</label
+          ><input id="editYoutube" placeholder="Tempel link YouTube lagu ini" />
+        </div>
+        <div class="field">
+          <label>Gambar latar proyektor (opsional)</label
+          ><input id="editBg" placeholder="Tempel URL gambar (jpg/png) untuk background proyektor" />
+        </div>
+        <div class="field">
+          <label>Chord &amp; lirik</label>
+          <div class="rowBtns" style="margin-bottom: 8px">
+            <button
+              class="actionBtn secondary"
+              id="autoFormatBtn"
+              type="button"
+            >
+              <span class="lottieIco btnIco" data-anim="rapikan"></span>Rapikan
+              otomatis</button
+            ><button
+              class="actionBtn secondary"
+              id="structToggleBtn"
+              type="button"
+            >
+              <span class="lottieIco btnIco" data-anim="struktur"></span
+              ><span id="structBtnLbl">Mode struktur</span>
+            </button>
+          </div>
+          <div class="afBar" id="afBar" hidden>
+            <span class="afMsg" id="afMsg"></span
+            ><button class="afUndo" id="afUndoBtn" type="button">
+              Urungkan
+            </button>
+          </div>
+          <textarea id="editLines" spellcheck="false"></textarea>
+          <div class="chordSuggest" id="chordSuggest" hidden></div>
+          <div class="structWrap" id="structWrap" hidden>
+            <p class="small">
+              Ketuk untuk menambah &middot; seret &#8942; untuk urutkan &middot;
+              &#9650;&#9660; modulasi.
+            </p>
+            <div class="structPalette" id="structPalette"></div>
+            <div class="structCanvas" id="structCanvas"></div>
+          </div>
+          <p class="small" id="editHint">
+            Chord dalam kurung siku sebelum suku kata &mdash;
+            <b>[G]Na-ma-Nya Tu[D]hanku</b>
+          </p>
+          <div class="editPreview" id="editPreview">
+            <div class="pvHead">Pratinjau</div>
+            <div id="editPreviewBody"></div>
+          </div>
+        </div>
+        <div class="editorActions">
+          <button class="actionBtn green" id="saveEditBtn">Simpan</button
+          ><button class="actionBtn secondary" id="cancelEditBtn">Tutup</button
+          ><button class="actionBtn orange" id="duplicateBtn">
+            Duplikat lagu
+          </button>
+        </div>
+        <div class="deleteRow">
+          <button class="actionBtn red" id="deleteSongBtn" style="width: 100%">
+            Hapus lagu ini
+          </button>
+        </div>
+      </section>
+      <main class="sheet" id="sheet">
+        <button
+          class="ytBtn no-print"
+          id="ytPlay"
+          type="button"
+          title="Putar lagu dari YouTube"
+          aria-label="Putar lagu dari YouTube"
+        >
+          &#9654; Putar
+        </button>
+        <h2 id="songTitle"></h2>
+        <p id="keyLine"></p>
+        <p id="sourceLine"></p>
+        <div class="ytBar no-print" id="ytBar">
+          <button
+            class="ytPP"
+            id="ytPP"
+            type="button"
+            aria-label="Putar atau jeda"
+          >
+            &#10074;&#10074;
+          </button>
+          <div class="ytTrack" id="ytTrack">
+            <div class="ytFill" id="ytFill"></div>
+            <div class="ytDot" id="ytDot"></div>
+          </div>
+          <span class="ytTime" id="ytTime">0:00</span>
+          <button
+            class="ytX"
+            id="ytStop"
+            type="button"
+            aria-label="Tutup pemutar"
+          >
+            &#10005;
+          </button>
+        </div>
+        <div class="ytPitch no-print" id="ytPitch">
+          <div class="ytPitchRow">
+            <span class="ytPitchLbl">Nada</span>
+            <button
+              class="semiBtn"
+              id="semiDown"
+              type="button"
+              title="Turunkan setengah nada"
+              aria-label="Turunkan setengah nada"
+            >
+              &minus;
+            </button>
+            <div class="semiInfo">
+              <span class="semiVal" id="semiVal">0</span>
+            </div>
+            <button
+              class="semiBtn"
+              id="semiUp"
+              type="button"
+              title="Naikkan setengah nada"
+              aria-label="Naikkan setengah nada"
+            >
+              +
+            </button>
+            <button class="semiReset" id="semiReset" type="button">Asli</button>
+            <button
+              class="semiTone"
+              id="semiTone"
+              type="button"
+              title="Bunyikan nada acuan"
+            >
+              &#9835; Nada acuan
+            </button>
+          </div>
+          <div class="ytPitchRow">
+            <span class="ytPitchLbl">Tempo</span>
+            <button
+              class="semiBtn"
+              id="ytRateDown"
+              type="button"
+              aria-label="Perlambat lagu"
+            >
+              &minus;
+            </button>
+            <div class="semiInfo">
+              <span class="semiVal" id="ytRateVal">1&times;</span>
+            </div>
+            <button
+              class="semiBtn"
+              id="ytRateUp"
+              type="button"
+              aria-label="Percepat lagu"
+            >
+              +
+            </button>
+          </div>
+        </div>
+        <div id="ytHost"></div>
+        <div class="recDock no-print" id="recDock"></div>
+        <div id="content"></div>
+      </main>
+      <div class="baitNav no-print" id="baitNav" hidden>
+        <button
+          class="baitNavBtn"
+          id="prevBaitBtn"
+          type="button"
+          aria-label="Bait sebelumnya"
+        >
+          &#9664; Bait
+        </button>
+        <span class="baitNavLbl">Navigasi bait</span>
+        <button
+          class="baitNavBtn"
+          id="nextBaitBtn"
+          type="button"
+          aria-label="Bait berikutnya"
+        >
+          Bait &#9654;
+        </button>
+      </div>
+      <footer class="footer">
+        &copy; 2026 <b>Alex</b> &mdash; Youth Hosana Bandung.
+      </footer>
+    </div>
+    <div class="modalBackdrop no-print" id="backupModal">
+      <div class="modal">
+        <h2>Cadangkan / Pindahkan Lagu</h2>
+        <textarea id="backupText" spellcheck="false"></textarea>
+        <div class="backupActions">
+          <button class="actionBtn green" id="copyBackupBtn">
+            Salin cadangan</button
+          ><button class="actionBtn orange" id="importBackupBtn">
+            Muat dari kotak</button
+          ><button class="actionBtn secondary" id="downloadBackupBtn">
+            Unduh JSON</button
+          ><button class="actionBtn red" id="closeBackupBtn">Tutup</button>
+        </div>
+        <p class="dangerText">Muat mengganti semua lagu di perangkat ini.</p>
+      </div>
+    </div>
+    <div class="modalBackdrop no-print" id="izinModal">
+      <div class="modal">
+        <h2>Form Izin</h2>
+        <div class="izinField">
+          <label for="izinNama">Nama</label>
+          <input id="izinNama" type="text" placeholder="Nama kamu" />
+        </div>
+        <div class="izinField">
+          <label>Izin minggu ke- (boleh pilih lebih dari satu)</label>
+          <div class="weekChips" id="izinWeeks">
+            <button type="button" class="weekChip" data-week="1">1</button>
+            <button type="button" class="weekChip" data-week="2">2</button>
+            <button type="button" class="weekChip" data-week="3">3</button>
+            <button type="button" class="weekChip" data-week="4">4</button>
+            <button type="button" class="weekChip" data-week="5">5</button>
+          </div>
+        </div>
+        <div class="izinField">
+          <label for="izinKet">Keterangan</label>
+          <textarea
+            id="izinKet"
+            spellcheck="false"
+            placeholder="Contoh: ada acara keluarga"
+          ></textarea>
+        </div>
+        <p class="small" id="izinStatus"></p>
+        <div class="backupActions">
+          <button class="actionBtn green" id="sendIzinBtn" type="button">
+            Kirim izin</button
+          ><button class="actionBtn secondary" id="closeIzinBtn" type="button">
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="bankPage no-print" id="bankPage">
+      <div class="bankPageInner">
+        <div class="bankPageHead">
+          <b>Song Bank</b>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <button id="onlineOpenBtn" type="button">
+              <span class="lottieIco btnIco" data-anim="search"></span>Cari
+              online
+            </button>
+            <button id="bankAddBtn" type="button">+ Daftarkan lagu</button>
+            <button class="xBtn" id="bankPageClose" type="button">
+              &#10005;
+            </button>
+          </div>
+        </div>
+        <input
+          class="bankSearch2"
+          id="bankPageSearch"
+          type="search"
+          placeholder="Cari di database lagu..."
+        />
+        <div class="bankGrid" id="bankPageList"></div>
+        <details class="bankPresets">
+          <summary>Tambah lagu dari koleksi populer</summary>
+          <div class="bankList" id="songBank" style="margin-top: 10px"></div>
+        </details>
+      </div>
+    </div>
+    <div class="bankPage no-print" id="onlinePage">
+      <div class="bankPageInner">
+        <div class="bankPageHead">
+          <b>Cari Lagu Online</b>
+          <button class="xBtn" id="onlineClose" type="button">&#10005;</button>
+        </div>
+        <div class="onlineSearchBar">
+          <input
+            class="bankSearch2"
+            id="onlineQuery"
+            type="search"
+            placeholder="Judul lagu / artis..."
+          />
+          <button class="scBtn primary" id="onlineGo" type="button">
+            Cari
+          </button>
+        </div>
+        <p class="small">
+          Chord dan nada dasar diisi manual setelah lagu ditambahkan.
+        </p>
+        <div class="bankGrid" id="onlineResults"></div>
+      </div>
+    </div>
+    <div class="modalBackdrop no-print" id="saranModal">
+      <div class="modal">
+        <h2>
+          <span
+            class="lottieIco lottieH2"
+            data-anim="chat"
+            data-seq="talking"
+          ></span
+          >Bantu saran
+        </h2>
+        <div class="izinField">
+          <label for="saranNama">Nama (opsional)</label>
+          <input id="saranNama" type="text" placeholder="Nama kamu" />
+        </div>
+        <div class="izinField">
+          <label for="saranTeks">Saran / masukan</label>
+          <textarea
+            id="saranTeks"
+            spellcheck="false"
+            placeholder="Contoh: tolong tambahkan pilihan transpose khusus untuk medley"
+          ></textarea>
+        </div>
+        <div class="izinField">
+          <label for="saranFoto">Lampirkan foto (opsional)</label>
+          <input id="saranFoto" type="file" accept="image/*" />
+          <div id="saranFotoPreview" class="saranFotoPreview"></div>
+        </div>
+        <p class="small" id="saranStatus"></p>
+        <div class="backupActions">
+          <button class="actionBtn green" id="sendSaranBtn" type="button">
+            Kirim saran</button
+          ><button class="actionBtn secondary" id="closeSaranBtn" type="button">
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="modalBackdrop no-print" id="infoModal">
+      <div class="modal">
+        <h2>Info &amp; pembaruan</h2>
+        <div id="infoList" class="infoList"></div>
+        <div class="backupActions">
+          <button
+            class="actionBtn secondary"
+            id="restoreNotesBtn"
+            type="button"
+            style="display: none"
+          >
+            Pulihkan bawaan
+          </button>
+          <button class="actionBtn secondary" id="closeInfoBtn" type="button">
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="loadOverlay no-print" id="loadOverlay">
+      <div class="loadBox">
+        <div class="loadAnim" id="loadAnim"></div>
+        <p class="loadMsg" id="loadMsg">Memuat...</p>
+      </div>
+    </div>
+    <div class="drawerBackdrop no-print" id="menuBackdrop">
+      <aside class="drawer">
+        <div class="drawerHead">
+          <b>Menu</b>
+          <span class="menuVer">v9.3</span>
+          <button class="xBtn" id="closeMenuBtn" type="button">&#10005;</button>
+        </div>
+        <div class="menuScroll">
+          <div class="menuSearch">
+            <span class="lottieIco menuSearchIco" data-anim="search"></span>
+            <input id="songSearch" type="search" placeholder="Cari lagu…" />
+          </div>
+          <select id="songJump" class="menuJump">
+            <option value="">Pilih lagu…</option>
+          </select>
+          <div class="searchResults" id="searchResults"></div>
+
+          <p class="menuGroupLabel">Navigasi</p>
+          <div class="menuCard">
+            <button class="menuRow" id="openBankBtn" type="button">
+              <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="songbank"></span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">Song Bank</span><span class="menuRowDesc">Cari, tambah &amp; atur daftar lagu</span></span>
+              <span class="menuRowGo" aria-hidden="true">›</span>
+            </button>
+            <a class="menuRow" id="openYvLink" href="./castflow.html" target="_blank" rel="noopener">
+              <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="layer"></span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">CastFlow</span><span class="menuRowDesc">Halaman mandiri · presenter, proyektor, teks &amp; ayat</span></span>
+              <span class="menuRowGo" aria-hidden="true">↗</span>
+            </a>
+            <button class="menuRow" id="openGuideBtn" type="button">
+              <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="struktur"></span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">Buku Panduan</span><span class="menuRowDesc">Cara pakai semua fitur</span></span>
+              <span class="menuRowGo" aria-hidden="true">›</span>
+            </button>
+            <div id="schedMenuSec" class="menuRowWrap">
+              <button class="menuRow" id="openSchedBtn" type="button">
+                <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="calendar"></span></span>
+                <span class="menuRowMain"><span class="menuRowTitle">Penjadwal Pelayanan</span><span class="menuRowDesc">Atur jadwal tim &amp; ibadah</span></span>
+                <span class="menuRowGo" aria-hidden="true">›</span>
+              </button>
+            </div>
+          </div>
+
+          <p class="menuGroupLabel">Aksi</p>
+          <div class="menuCard">
+            <button class="menuRow" id="openIzinBtn" type="button">
+              <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="pencil"></span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">Kirim Izin</span><span class="menuRowDesc">Ajukan izin tidak hadir</span></span>
+              <span class="menuRowGo" aria-hidden="true">›</span>
+            </button>
+            <button class="menuRow" id="openSaranBtn" type="button">
+              <span class="menuRowIco"><span class="lottieIco lottieBtn lottieLg" data-anim="talking" data-seq="talking"></span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">Beri Saran &amp; Lapor Bug</span><span class="menuRowDesc">Kirim masukan untuk tim</span></span>
+              <span class="menuRowGo" aria-hidden="true">›</span>
+            </button>
+            <button class="menuRow" id="openLogBtn" type="button">
+              <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="struktur"></span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">Log Error <span class="pnwLogBadge" id="logBadgeMain" hidden></span></span><span class="menuRowDesc">Catatan error &amp; diagnostik — bantu identifikasi bug</span></span>
+              <span class="menuRowGo" aria-hidden="true">›</span>
+            </button>
+            <button class="menuRow" id="openInfoBtn" type="button">
+              <span class="menuRowIco"><span class="lottieIco lottieBtn" data-anim="wheel"></span></span>
+              <span class="menuRowMain"><span class="menuRowTitle">Pembaruan</span><span class="menuRowDesc">Lihat catatan rilis terbaru</span></span>
+              <span class="menuRowGo" aria-hidden="true">›</span>
+            </button>
+          </div>
+
+          <p class="menuGroupLabel">Tampilan</p>
+          <div class="menuCard menuCardPad">
+            <div class="menuToggles">
+              <button class="menuToggle" id="darkToggle" type="button">Mode panggung</button>
+              <button class="menuToggle" id="eyeToggle" type="button">Eye saver</button>
+              <button class="menuToggle" id="numToggle" type="button">Chord jadi angka (1-7)</button>
+              <button class="menuToggle" id="compactToggle" type="button">Mode rapat</button>
+            </div>
+            <div class="menuSub">
+              <span class="menuSubLabel">Ukuran huruf</span>
+              <div class="segStepper">
+                <button class="segBtn" id="textSmaller" type="button">A&minus;</button>
+                <span class="segVal" id="textSizeLabel">Sedang</span>
+                <button class="segBtn" id="textBigger" type="button">A+</button>
+              </div>
+            </div>
+            <div class="menuSub">
+              <span class="menuSubLabel">Posisi judul bagian</span>
+              <div class="segGroup">
+                <button class="secAlignBtn" id="secAlignL" type="button">Kiri</button>
+                <button class="secAlignBtn" id="secAlignC" type="button">Tengah</button>
+                <button class="secAlignBtn" id="secAlignR" type="button">Kanan</button>
+              </div>
+            </div>
+          </div>
+
+          <p class="menuGroupLabel">Metronome</p>
+          <div class="menuCard menuCardPad">
+            <div class="metroTop">
+              <div class="metroBpmBox">
+                <button class="mBtn" id="bpmDown" type="button">&minus;</button>
+                <div class="metroBpmVal"><span id="bpmVal">80</span><small>BPM</small></div>
+                <button class="mBtn" id="bpmUp" type="button">+</button>
+              </div>
+              <button class="metroStartBtn" id="metroToggle" type="button">Mulai</button>
+            </div>
+            <div class="metroBottom">
+              <div class="segGroup segGroupSm">
+                <span class="menuSubLabel">Langkah &plusmn;</span>
+                <button class="stepBtn" id="step1" type="button">1</button>
+                <button class="stepBtn on" id="step5" type="button">5</button>
+              </div>
+              <button class="tapBtn" id="tapTempo" type="button">Ketuk tempo</button>
+            </div>
+          </div>
+
+          <p class="menuGroupLabel">Admin</p>
+          <div class="menuCard menuCardPad">
+            <button class="adminPrimaryBtn" id="adminLoginBtn" type="button"><span class="lottieIco lottieBtn" data-anim="adminlogin"></span>Login Admin</button>
+            <div id="adminPanel" hidden>
+            <label class="lockRow"
+              ><input type="checkbox" id="lockToggle" /> Kunci daftar
+              lagu</label
+            >
+            <label class="lockRow"
+              ><input type="checkbox" id="spectateToggle" /> Mode
+              spectate</label
+            >
+            <p class="small" id="spectateStatus"></p>
+            <button
+              class="actionBtn secondary"
+              id="openDisplayBtn"
+              type="button"
+              style="width: 100%"
+            >
+              Buka output CastFlow
+            </button>
+            <button
+              class="actionBtn secondary"
+              id="openStageBtn"
+              type="button"
+              style="width: 100%; margin-top: 6px"
+            >
+              Buka Stage Display (musisi)
+            </button>
+            <p class="menuGroupLabel" style="margin: 10px 0 4px">
+              CastFlow
+            </p>
+            <p class="small">
+              Kontrol Teks/Pengumuman dan Ayat Alkitab sekarang berada di modul
+              CastFlow supaya output proyektor berdiri independen.
+            </p>
+            <label class="lockRow"
+              ><input type="checkbox" id="liveChordsToggle" /> Tampilkan chord
+              di proyektor</label
+            >
+            <label class="lockRow"
+              ><input type="checkbox" id="izinOpenToggle" checked /> Buka form
+              izin</label
+            >
+            <button
+              class="actionBtn secondary"
+              id="addNoteBtn"
+              type="button"
+              style="width: 100%"
+            >
+              Tambah catatan rilis
+            </button>
+            <div class="field" style="margin-top: 8px">
+              <label>Tanggal ibadah Minggu 1</label
+              ><input type="date" id="schedStartDate" />
+            </div>
+            <section id="adminReqSec" class="adminReqSec" hidden>
+              <p class="label">Permintaan admin</p>
+              <div id="adminReqList"></div>
+            </section>
+            <button
+              class="actionBtn secondary"
+              id="adminLogoutBtn"
+              type="button"
+              style="width: 100%"
+            >
+              Keluar admin
+            </button>
+          </div>
+            <p class="small" id="lockStatus"></p>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <div class="modalBackdrop no-print" id="loginModal">
+      <div class="modal">
+        <h2>Login Admin</h2>
+        <div id="loginForms">
+          <div class="field">
+            <label>Username / Email</label
+            ><input
+              id="loginEmail"
+              type="text"
+              autocomplete="username"
+              placeholder="username atau email"
+            />
+          </div>
+          <div class="field">
+            <label>Password</label
+            ><input
+              id="loginPass"
+              type="password"
+              autocomplete="current-password"
+            />
+          </div>
+          <p class="small" id="loginMsg"></p>
+          <div class="rowBtns">
+            <button class="actionBtn" id="loginSubmit" type="button">
+              Masuk
+            </button>
+            <button class="actionBtn secondary" id="loginClose" type="button">
+              Batal
+            </button>
+          </div>
+          <div class="orSep">atau</div>
+          <button
+            class="actionBtn secondary"
+            id="googleLoginBtn"
+            type="button"
+            style="width: 100%"
+          >
+            <img
+              class="gIco"
+              src="./img/google.png"
+              alt=""
+              width="18"
+              height="18"
+            />
+            Masuk dengan Google
+          </button>
+          <p class="small" style="margin-top: 10px">
+            Belum jadi admin?
+            <a href="#" id="toSignupBtn">Daftar di sini</a>
+          </p>
+        </div>
+        <div id="signupForms" hidden>
+          <div class="field">
+            <label>Nama</label
+            ><input id="signupName" type="text" placeholder="nama lengkap" />
+          </div>
+          <div class="field">
+            <label>Email</label
+            ><input
+              id="signupEmail"
+              type="email"
+              autocomplete="email"
+              placeholder="email aktif"
+            />
+          </div>
+          <div class="field">
+            <label>Password</label
+            ><input
+              id="signupPass"
+              type="password"
+              autocomplete="new-password"
+              placeholder="minimal 6 karakter"
+            />
+          </div>
+          <p class="small" id="signupMsg"></p>
+          <div class="rowBtns">
+            <button class="actionBtn" id="signupSubmit" type="button">
+              Daftar
+            </button>
+            <button class="actionBtn secondary" id="toLoginBtn" type="button">
+              Kembali
+            </button>
+          </div>
+          <p class="small" style="margin-top: 8px">
+            Akun baru perlu disetujui pemilik.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="modalBackdrop no-print" id="noteModal">
+      <div class="modal">
+        <h2>Tambah catatan rilis</h2>
+        <div class="field">
+          <label>Versi</label><input id="noteVer" placeholder="mis. 1.4" />
+        </div>
+        <div class="field">
+          <label>Tanggal</label><input id="noteDate" type="date" />
+          <p class="small">Terbaru tampil paling atas.</p>
+        </div>
+        <div class="field">
+          <label>Perubahan (satu per baris)</label
+          ><textarea id="noteItems" spellcheck="false"></textarea>
+        </div>
+        <p class="small" id="noteMsg"></p>
+        <div class="rowBtns">
+          <button class="actionBtn" id="noteSubmit" type="button">
+            Publikasikan
+          </button>
+          <button class="actionBtn secondary" id="noteClose" type="button">
+            Batal
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="bankPage no-print" id="schedulePage">
+      <div class="bankPageInner">
+        <div class="bankPageHead">
+          <b>Penjadwal Pelayanan</b>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <label class="small"
+              >Minggu:
+              <select id="schedWeekCount">
+                <option>3</option>
+                <option>4</option>
+                <option selected>5</option>
+                <option>6</option>
+                <option>7</option>
+                <option>8</option>
+              </select>
+            </label>
+            <span class="pill green" id="schedSaveStatus"></span>
+            <button class="xBtn" id="schedClose" type="button">&#10005;</button>
+          </div>
+        </div>
+        <div class="schedTabs">
+          <button class="schedTabBtn on" id="schedTab_jadwal" type="button">
+            Jadwal
+          </button>
+          <button class="schedTabBtn" id="schedTab_pelayan" type="button">
+            Pelayan
+          </button>
+          <button class="schedTabBtn" id="schedTab_izin" type="button">
+            Izin
+          </button>
+        </div>
+        <div id="schedBody"></div>
+      </div>
+    </div>
+    <div class="modalBackdrop no-print" id="guideModal" aria-hidden="true">
+      <div class="modal guideModal">
+        <div class="guideHead">
+          <h2>Buku Panduan</h2>
+          <button class="xBtn" id="closeGuideBtn" type="button">
+            &#10005;
+          </button>
+        </div>
+        <div class="guideBody" id="guideBody"></div>
+      </div>
+    </div>
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"
+    ></script>
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"
+    ></script>
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"
+    ></script>
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"
+    ></script>
+    <script defer src="./js/gsap/gsap.min.js"></script>
+    <script defer src="./js/gsap/CustomEase.min.js"></script>
+    <script defer src="./js/motion.js"></script>
+    <script defer src="./js/recorder.js"></script>
+    <script defer src="./js/yv-motion.js"></script>
+    <script defer src="./js/app.js"></script>
+    <script defer src="./js/guide.js"></script>
+    <script defer src="./js/hosana-flame-data.js"></script>
+    <script defer src="./js/logo-anim.js"></script>
+    <script defer src="./js/presenter-logo-data.js"></script>
+    <script defer src="./js/presenter-logo.js"></script>
+    <script defer src="./js/stage-display.js"></script>
+    <script>
+      /* v66 perf: muat registri ikon (1,4 MB) + Lottie HANYA setelah render
+         pertama. Ikon berukuran tetap (btnIco/lottieBtn/lottieLg) jadi tidak
+         ada pergeseran layout saat ikon muncul belakangan. */
+      (function () {
+        function add(src, id, cb) {
+          if (id) {
+            var ex = document.getElementById(id);
+            if (ex) {
+              ex.addEventListener("load", cb);
+              return;
+            }
+          }
+          var s = document.createElement("script");
+          if (id) s.id = id;
+          s.src = src;
+          if (cb) s.onload = cb;
+          document.body.appendChild(s);
+        }
+        function loadAnims() {
+          add("./js/animations.js", null, function () {
+            try {
+              if (typeof window.__pnwInitIcons === "function")
+                window.__pnwInitIcons();
+            } catch (e) {}
+          });
+        }
+        function go() {
+          if (window.lottie && window.lottie.loadAnimation) loadAnims();
+          else add("./lottie.min.js", "lottieLib", loadAnims);
+        }
+        window.addEventListener("load", function () {
+          if ("requestIdleCallback" in window)
+            requestIdleCallback(go, { timeout: 1800 });
+          else setTimeout(go, 0);
+        });
+      })();
+    </script>
+    <!-- v60: tombol melayang ala AssistiveTouch + wheel menu -->
+    <button
+      id="atBtn"
+      type="button"
+      aria-label="Menu cepat"
+      title="Tahan lalu geser untuk memindahkan"
+    >
+      <span class="atDot"></span>
+    </button>
+    <div id="atOverlay" hidden>
+      <div id="atWheel" role="dialog" aria-label="Menu cepat">
+        <div class="atRing"></div>
+        <div class="atItems"></div>
+        <button class="atHub" type="button">
+          <span class="lottieIco atHubIco" data-anim="wheel"></span>
+          <span class="atHubLbl">Menu</span>
+        </button>
+      </div>
+    </div>
+  </body>
+</html>
