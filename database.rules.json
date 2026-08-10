@@ -1,5 +1,4 @@
 {
-  "_comment": "RTDB Rules v101 = rules v83 (WAJIB publish dulu bila belum) + node baru pujianYouth/youthviews/heartbeat untuk fitur Output Health Monitor v101. Publish: Firebase Console -> Realtime Database -> Rules -> paste -> Publish.",
   "rules": {
     "pujianYouth": {
       ".read": "auth != null",
