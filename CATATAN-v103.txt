@@ -16,22 +16,23 @@ Foundation). Isi:
   dan jumlah key storage. Semua dibaca dari store — panel tidak menyimpan
   state sendiri.
 
-REORGANISASI PAKET (permintaan pengguna):
-- Semua catatan/dokumen pindah ke folder `_CATATAN/` (CATATAN, CARA-PASANG,
-  database.rules.json, arsitektur.md) agar tidak bercampur dengan file aplikasi.
-- ZIP kini berisi SATU folder `pnw-tools-v103/` — ekstrak di mana saja hanya
-  memunculkan satu folder rapi, tidak berceceran menutupi layar.
-- `.assetsignore` kini mengecualikan `_CATATAN` dari penyajian publik.
+PERAPIKAN FILE CATATAN (permintaan pengguna):
+- Format ZIP TIDAK berubah — sama seperti v102 ke belakang (file di root).
+- Yang menumpuk di C:\pnw-tools adalah 18+ file CATATAN-v85.txt s/d v102.txt
+  (ZIP hanya menimpa, tidak pernah menghapus). Cara merapikan:
+  SETELAH menimpa C:\pnw-tools, dobel-klik BERSIHKAN-CATATAN.bat — semua
+  CATATAN-v*.txt + CARA-PASANG-*.txt + database.rules.json pindah ke satu
+  folder _CATATAN\ yang rapi. Aman dijalankan berkali-kali.
 
-BERKAS BARU: js/cf-toast.js, js/cf-workspace.js, js/cf-diag.js, css/cf-v103.css
+BERKAS BARU: js/cf-toast.js, js/cf-workspace.js, js/cf-diag.js, css/cf-v103.css,
+             BERSIHKAN-CATATAN.bat
 DIPATCH: js/projector.js (bridge toast), castflow.html, sw.js, .assetsignore,
          label versi v9.3, cache pnw-tools-v103.
 
 URUTAN DEPLOY (rules v101 sudah dipublish — tidak perlu diulang):
-1. Ekstrak ZIP -> buka folder `pnw-tools-v103` -> salin SEMUA isinya ->
-   timpa ke `C:\pnw-tools` (folder .git Anda tetap utuh).
-2. git add -A && git commit -m "v103" && git push
-3. Ctrl+Shift+R -> label v9.3.
-4. Uji: klik Go Live (toast baru muncul dari kanan bawah); Avatar ->
-   Layout -> Wide Preview (halaman reload dengan tata letak baru);
+1. Ekstrak ZIP -> salin SEMUA isinya -> timpa ke C:\pnw-tools (.git utuh).
+2. (Opsional) dobel-klik BERSIHKAN-CATATAN.bat untuk merapikan catatan lama.
+3. git add -A && git commit -m "v103" && git push
+4. Ctrl+Shift+R -> label v9.3.
+5. Uji: Go Live (toast kanan bawah); Avatar -> Layout -> Wide Preview;
    Avatar -> Diagnostics menampilkan Output: connected.

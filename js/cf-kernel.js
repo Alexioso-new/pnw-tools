@@ -1,8 +1,8 @@
 /* PNW-FILE-GUIDE
-   js/cf-kernel.js — KERNEL v102 (Sprint 1 + S3-06 storage registry).
+   js/cf-kernel.js — KERNEL v103 (Sprint 1 + S3-06 storage registry + S4 store).
    Satu sumber kebenaran untuk arsitektur baru CastFlow:
      • bus      : event bus (on/off/once/emit) — komunikasi antar modul.
-     • store    : state global per slice (app/connection/program/diagnostics).
+     • store    : state global per slice (app/connection/program/diagnostics/workspace).
      • storage  : persistence adapter, semua key BARU ber-namespace
                   castflow:v101: (namespace mengikuti SKEMA, bukan nomor rilis),
                   plus registry migrasi legacy (MIGRATIONS + migratedGet).
@@ -10,17 +10,17 @@
      • errors   : global error handler -> PNWLog + event app:error.
    ATURAN (04_AGENT_RULES): modul baru WAJIB lewat kernel ini; dilarang
    menulis localStorage langsung dan dilarang polling untuk berkomunikasi.
-   Dimuat SEBELUM cf-health.js / cf-preflight.js / cf-media.js / cf-package.js.
+   Dimuat SEBELUM semua modul cf-* lainnya.
  */
 (function () {
   "use strict";
   if (window.CastFlowKernel) return;
 
-  var VERSION = "v102";
-  var LABEL = "v9.2";
+  var VERSION = "v103";
+  var LABEL = "v9.3";
   var NS = "castflow:v101:"; /* namespace skema — JANGAN diganti per rilis */
 
-  /* Event catalog (02_TECH_SPEC §8 + tambahan v102) — daftar resmi. */
+  /* Event catalog (02_TECH_SPEC §8 + tambahan v102/v103) — daftar resmi. */
   var Events = {
     APP_INIT: "app:init",
     APP_READY: "app:ready",
@@ -40,6 +40,9 @@
     PROJECT_EXPORTED: "project:exported",
     PROJECT_IMPORTED: "project:imported",
     PROJECT_IMPORT_FAILED: "project:import-failed",
+    WORKSPACE_LAYOUT_CHANGED: "workspace:layout-changed",
+    WORKSPACE_LAYOUT_SAVED: "workspace:layout-saved",
+    WORKSPACE_LAYOUT_RESET: "workspace:layout-reset",
   };
 
   function logWarn(msg, meta) {
@@ -107,6 +110,7 @@
     },
     program: { lastSentSig: "", lastSentAt: 0, lastAckSig: "", ackAt: 0 },
     diagnostics: { preflight: null, errors: [] },
+    workspace: { preset: "custom", snapshotAt: 0 },
   };
   var subs = []; /* {slice, fn} — slice null = semua perubahan */
   var store = {
@@ -218,7 +222,7 @@
       }
     },
     /* Tulis key legacy — HANYA untuk interop masa transisi (mis. importer
-       menulis pnwCastflowVisualStyle.v2 yang masih dibaca modul v100). */
+       menulis pnwCastflowVisualStyle.v2, workspace menulis grid v94). */
     legacyWrite: function (legacyKey, value) {
       try {
         localStorage.setItem(legacyKey, JSON.stringify(value));

@@ -1,9 +1,0 @@
-{
-  "name": "hosana-youth-tools",
-  "private": true,
-  "version": "4.4.0",
-  "description": "PNW TOOLS - alat transpose chord & penjadwalan pelayanan Youth Hosana Bandung",
-  "scripts": {
-    "build": "echo \"situs statis PNW Tools - tidak perlu build\""
-  }
-}

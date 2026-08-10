@@ -99,6 +99,11 @@
     });
   }
   function notify(m, kind) {
+    /* v103: toast terpusat (S4-05) — delegasi ke kernel bila tersedia */
+    if (window.CastFlowKernel && CastFlowKernel.toast && CastFlowKernel.toast.show) {
+      CastFlowKernel.toast.show(m, kind || "info");
+      return;
+    }
     if (typeof window.toast === "function") window.toast(m, kind || "info");
   }
   function fb() {

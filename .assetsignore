@@ -12,3 +12,5 @@ MULAI-SERVER-LOKAL.bat
 *.py
 *.bak
 __*
+_CATATAN
+BERSIHKAN-CATATAN.bat
