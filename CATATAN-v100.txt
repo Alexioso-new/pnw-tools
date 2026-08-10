@@ -1,0 +1,60 @@
+============================================================
+PNW TOOLS v100 (label v9.0) — Features-first CastFlow Workspace
+============================================================
+
+PERUBAHAN UTAMA
+1. FEATURES MENJADI NAVIGATOR UTAMA
+   - Logo CastFlow dipindahkan dari panel Features ke tengah top bar.
+   - Bible, Text, dan Media hanya muncul sebagai pilihan di Features.
+   - Tab Bible/Text/Media yang duplikat di Flow disembunyikan.
+   - Shortcut Timeline duplikat di Features dihapus; Timeline cukup dari
+     tombol Lyric / Timeline di header Flow.
+
+2. FLOW PANEL DINAMIS + MINI PREVIEW
+   - Judul panel hanya menampilkan satu mode: LYRIC, TIMELINE, BIBLE EDIT,
+     TEXT, MEDIA, atau TEMPLATE.
+   - Memilih Bible/Text/Media dari Features mengganti isi Flow panel.
+   - Setiap kartu slide lirik memiliki mini preview 16:9.
+   - Slide kosong memakai pola checkerboard kecil; slide berisi teks/media
+     menampilkan font, latar, dan indikasi motion.
+   - Memilih kartu slide sekarang hanya menyiapkan Edit Preview; tidak langsung
+     mengubah layar Live. Gunakan Go Live / Enter saat sudah siap.
+   - Toast sukses berulang "Tayang di CastFlow" dihapus; error tetap tampil.
+
+3. DESIGN PANEL
+   - "Kontrol Panel" diganti menjadi DESIGN PANEL.
+   - Font picker visual menunjukkan bentuk asli setiap font + pencarian.
+   - Kontrol tipografi: warna, weight, letter spacing, line height, opacity,
+     text case, posisi, ukuran, alignment, shadow, dan lines per slide.
+   - 8 motion/transition: Cut, Fade, Rise, Slide, Zoom, Blur, Pop, Typewriter,
+     plus kontrol durasi dan tombol preview animation.
+   - Background / visual assets / API lama tetap tersedia dan lebih rapi.
+
+4. PREVIEW EDIT / LIVE / DUAL
+   - Edit: melihat pekerjaan yang sedang disiapkan.
+   - Live: melihat output yang sedang tampil di proyektor.
+   - Dual: membandingkan Edit dan Live berdampingan.
+   - Perubahan desain/background tidak otomatis menimpa Live.
+
+5. RESPONSIVE 100% ZOOM
+   - Grid tersimpan kini di-clamp ke lebar viewport aktual.
+   - Tinggi workspace menghitung top bar sehingga panel tidak tenggelam.
+   - Features dibuat compact agar semua pilihan terlihat pada layar rendah.
+   - Diverifikasi pada 1440x900 dan 1024x720 di zoom 100%.
+
+6. IKON
+   - Emoji non-Features di Lyric, Timeline, User, dan Search dihapus.
+   - Ikon representasi tetap dipakai hanya di panel Features.
+
+QA FINAL
+- 32/32 PASS pada 1440x900.
+- 32/32 PASS pada 1024x720.
+- 0 error sintaks JS.
+- 0 string toast sukses "Tayang di CastFlow" di projector.js.
+- Kartu slide tidak lagi memanggil Go Live otomatis.
+
+CARA PASANG
+1. Publish Firebase Rules v83 dulu bila belum pernah.
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v100" && git push
+4. Ctrl+Shift+R, lalu pastikan label aplikasi v9.0.

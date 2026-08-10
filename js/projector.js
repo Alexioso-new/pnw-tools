@@ -181,8 +181,10 @@
   /* ---------------- tayang ---------------- */
   function payload() {
     var s = settings();
-    var style = { font: s.font, size: s.size, align: s.align, shadow: s.shadow };
-    var base = { active: true, style: style, bg: s.bg, showTitle: s.showTitle, showMeta: s.showMeta };
+    var visual = {};
+    try { visual = JSON.parse(localStorage.getItem("pnwCastflowVisualStyle.v2") || "{}") || {}; } catch (e) {}
+    var style = Object.assign({ font: s.font, size: s.size, align: s.align, shadow: s.shadow }, visual);
+    var base = { active: true, style: style, transition: visual.transition || "fade", bg: s.bg, showTitle: s.showTitle, showMeta: s.showMeta };
     if (!_active) return null;
     if (_active.kind === "song") {
       var song = songById(_active.songId);
@@ -223,8 +225,7 @@
         notify("Pilih slide / isi konten dulu.", "info");
         return;
       }
-      if (e.broadcast(p)) notify("Tayang di CastFlow.", "success");
-      else notify("Gagal menayangkan.", "info");
+      if (!e.broadcast(p)) notify("Gagal menayangkan.", "info");
     });
   }
   function clearScreen() {
@@ -361,7 +362,7 @@
           _active = { kind: "song", songId: _deckSong.id, slideIndex: parseInt(b.getAttribute("data-i"), 10) || 0 };
           renderDeck();
           renderActive();
-          goLive();
+          renderPreview();
         };
       });
     });
@@ -998,7 +999,7 @@
     _set.bg = bg;
     saveSettings();
     renderBgControls();
-    if (_active) goLive();
+    renderPreview();
   }
 
   /* ---------------- API latar belakang ---------------- */
@@ -1388,7 +1389,6 @@
           if (e && e.ensureFont) e.ensureFont(_set.font);
           saveSettings();
           renderPreview();
-          if (_active) goLive();
         };
       var sz = el("projSize");
       if (sz)
@@ -1400,7 +1400,7 @@
           saveSettings();
           renderPreview();
         };
-      if (sz) sz.onchange = function () { if (_active) goLive(); };
+      if (sz) sz.onchange = function () { renderPreview(); };
       var ml = el("projMaxLines");
       if (ml)
         ml.oninput = function () {
@@ -1415,7 +1415,7 @@
           if (_active && _active.kind === "song") _active.slideIndex = 0;
           renderDeck();
           renderActive();
-          if (_active) goLive();
+          renderPreview();
         };
       var sh = el("projShadow");
       if (sh)
@@ -1424,7 +1424,6 @@
           _set.shadow = sh.value;
           saveSettings();
           renderPreview();
-          if (_active) goLive();
         };
       document.querySelectorAll("#projAlign [data-align]").forEach(function (b) {
         b.onclick = function () {
@@ -1432,7 +1431,7 @@
           _set.align = b.getAttribute("data-align");
           saveSettings();
           renderSettings();
-          if (_active) goLive();
+          renderPreview();
         };
       });
       var bs = el("projBgSearch");

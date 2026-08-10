@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v8.2-standalone";
+  var VERSION = "v9.0-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";
@@ -406,6 +406,12 @@
     if (st.font) ensureFont(st.font);
     // v84: gaya per-clip dari timeline (warna teks + posisi vertikal).
     screen.style.setProperty("--yv-color", st.color || "#f4f8ff");
+    screen.style.setProperty("--yv-weight", String(parseInt(st.weight, 10) || 500));
+    screen.style.setProperty("--yv-spacing", (parseFloat(st.spacing) || 0) + "px");
+    screen.style.setProperty("--yv-line-height", String(parseFloat(st.lineHeight) || 1.2));
+    screen.style.setProperty("--yv-opacity", String(st.opacity == null ? 1 : st.opacity));
+    screen.style.setProperty("--yv-transform", st.transform || "none");
+    screen.style.setProperty("--yv-motion-duration", (parseFloat(st.duration) || 0.55) + "s");
     screen.classList.toggle("yvPosTop", st.pos === "top");
     screen.classList.toggle("yvPosBottom", st.pos === "bottom");
   }
@@ -721,7 +727,7 @@
   function smEsc(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
-  /* v8.2: Stage Display — monitor panggung (lirik kini + berikutnya + countdown, tanpa latar visual) */
+  /* v9.0: Stage Display — monitor panggung (lirik kini + berikutnya + countdown, tanpa latar visual) */
   function renderStage(v) {
     var scr = document.getElementById("displayScreen");
     var idle = document.getElementById("dispIdle");
