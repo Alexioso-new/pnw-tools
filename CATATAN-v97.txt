@@ -1,0 +1,29 @@
+============================================================
+PNW TOOLS v97 (label v8.0) — Revisi Panel A–E (dari revisi-castflow.md)
+============================================================
+
+ISI RILIS
+A. TOP NAV
+ 1. Status offline kini jadi chip elegan (☁ Offline Mode), bukan teks debug.
+ 2. Mode view-only: saat belum login, tombol Go Live / navigasi / latar
+    otomatis abu-abu (terkunci) agar tidak membingungkan.
+ 3. Sign in + Bahasa (EN/ID) + Error Log digabung jadi satu menu Avatar (👤)
+    di pojok kanan atas — bar lebih bersih.
+B. OUTPUT & LIVE
+ 1. Layar idle kini menampilkan petunjuk: "Pilih slide, lalu Enter" + hint hotkey.
+ 2. Hotkey presenter: **B** = layar hitam (Black), **L** = Logo, **Enter** =
+    Tayangkan, **Esc** = Bersihkan, **Spasi/Panah** = geser slide.
+C. PREVIEW — kontrol rasio/resolusi pindah ke tombol ⚙ (popover Settings),
+    sehingga panel Preview fokus pada visual slide.
+D. LYRIC/TIMELINE — tombol **?** membuka kartu "Keyboard Shortcuts"; timeline
+    tetap di balik toggle (mode advanced).
+E. CONTENT LIBRARY
+ 1. **Global Search** di paling atas library — cari judul/isi lagu real-time.
+ 2. **Pilih versi Alkitab** (TB / BIS / NIV / ESV) pada tab Alkitab.
+
+CARA PASANG (urutan WAJIB)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah.
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v97" && git push
+4. Ctrl+Shift+R -> menu -> CastFlow -> label v8.0. Coba: avatar menu, hotkey
+   B/L/Enter, tombol ⚙ di preview, global search di library.

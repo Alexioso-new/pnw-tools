@@ -658,3 +658,62 @@ body.yvStandalone .yvCatalogCard, body.yvStandalone .yvPlanItem, body.yvStandalo
 body.yvStandalone p {
   font-weight: 300 !important;
 }
+
+/* ============================================================
+   v8.0 — Panel revisi A–E
+   ============================================================ */
+/* A1: indikator offline elegan */
+body.yvStandalone #yvStatus .cfNetChip { display:inline-flex; align-items:center; gap:5px; background:#3a2a12; border:1px solid #6b4d1f; color:#f4c05a; padding:2px 9px; border-radius:99px; font-size:9px; font-weight:400; letter-spacing:.3px; }
+body.yvStandalone #yvStatus .cfNetDot { width:6px; height:6px; border-radius:50%; background:#f4c05a; }
+
+/* A2: view-only — kunci aksi saat belum login */
+body.yvStandalone.cfViewOnly #projGoLive,
+body.yvStandalone.cfViewOnly #projClear,
+body.yvStandalone.cfViewOnly #projNextSlide,
+body.yvStandalone.cfViewOnly #projPrevSlide,
+body.yvStandalone.cfViewOnly .projBgPreset,
+body.yvStandalone.cfViewOnly .projApplyBg { opacity:.4; pointer-events:none; filter:grayscale(.4); }
+
+/* A3: tombol bar pindah ke menu avatar */
+body.yvStandalone .cfMovedToMenu { display:none !important; }
+body.yvStandalone .cfAvatarBtn { font-size:13px; line-height:1; }
+.cfUserMenu { position:fixed; z-index:2600; min-width:200px; background:#1e1e21; border:1px solid #343439; border-radius:12px; box-shadow:0 12px 32px rgba(0,0,0,.5); padding:6px; color:#eceef2; }
+.cfUserWho { padding:8px 10px; font-size:10.5px; color:#a8adb8; border-bottom:1px solid #2c2c30; margin-bottom:4px; }
+.cfUserItem { display:block; width:100%; text-align:left; background:transparent; border:0; color:#eceef2; padding:8px 10px; border-radius:8px; font-size:10.5px; cursor:pointer; font-family:inherit; }
+.cfUserItem:hover { background:#2a2a2f; }
+.cfUserLang { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.cfSeg { display:inline-flex; background:#26262b; border:1px solid #3a3a40; border-radius:8px; overflow:hidden; }
+.cfSeg button { background:transparent; border:0; color:#a8adb8; padding:4px 10px; font-size:9px; cursor:pointer; font-family:inherit; }
+.cfSeg button.on { background:#1282a2; color:#eaf7fb; }
+
+/* tombol ikon kecil (⚙ / ?) */
+body.yvStandalone .cfIconBtn { background:#1e1e21; border:1px solid #3a3a40; color:#a8adb8; border-radius:7px; width:22px; height:22px; font-size:11px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0; }
+body.yvStandalone .cfIconBtn:hover { color:#eceef2; border-color:#1282a2; }
+
+/* C1: popover settings preview */
+.cfPrevSettings { position:fixed; z-index:2600; background:#1e1e21; border:1px solid #343439; border-radius:12px; box-shadow:0 12px 32px rgba(0,0,0,.5); padding:10px; color:#eceef2; display:flex; flex-direction:column; gap:8px; min-width:210px; }
+.cfPrevSettingsTitle { font-size:9px; font-weight:400; letter-spacing:1px; text-transform:uppercase; color:#a8adb8; }
+
+/* D2: kartu bantuan hotkey */
+.cfHkCard { position:fixed; z-index:2600; background:#1e1e21; border:1px solid #343439; border-radius:12px; box-shadow:0 12px 32px rgba(0,0,0,.5); padding:12px; color:#eceef2; min-width:220px; }
+.cfHkCard .t { font-size:9px; font-weight:400; letter-spacing:1px; text-transform:uppercase; color:#a8adb8; margin-bottom:8px; }
+.cfHkCard .row { display:flex; align-items:center; gap:10px; padding:3px 0; font-size:10px; }
+.cfHkCard .k { background:#26262b; border:1px solid #3a3a40; border-radius:5px; padding:1px 7px; font-size:9px; color:#7fd4e8; min-width:64px; text-align:center; }
+.cfHkCard .d { color:#c6cbd4; }
+
+/* E1: global search */
+.cfGSWrap { position:relative; display:flex; align-items:center; gap:7px; padding:8px 11px; border-bottom:1px solid #2c2c30; }
+.cfGSIcon { color:#7d8494; font-size:11px; }
+.cfGSWrap input { flex:1; background:#1e1e21; border:1px solid #3a3a40; color:#eceef2; border-radius:8px; padding:7px 10px; font-size:10.5px; font-family:inherit; }
+.cfGSWrap input:focus { outline:none; border-color:#1282a2; }
+.cfGSResults { position:absolute; top:100%; left:8px; right:8px; z-index:2500; background:#1e1e21; border:1px solid #343439; border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.5); max-height:280px; overflow:auto; padding:4px; }
+.cfGSItem { display:flex; align-items:center; gap:8px; width:100%; text-align:left; background:transparent; border:0; color:#eceef2; padding:7px 9px; border-radius:7px; font-size:10.5px; cursor:pointer; font-family:inherit; }
+.cfGSItem:hover { background:#2a2a2f; }
+.cfGSTag { font-size:8px; color:#7fd4e8; background:#16303a; border-radius:4px; padding:1px 6px; flex:0 0 auto; }
+.cfGSEmpty { padding:10px; color:#7d8494; font-size:10px; text-align:center; }
+
+/* E2: versi alkitab */
+.cfBibleVer { background:#1e1e21; border:1px solid #3a3a40; color:#eceef2; border-radius:7px; padding:5px 8px; font-size:10px; margin:0 11px 6px; font-family:inherit; }
+
+/* B1: hint idle di output */
+.cfIdleHint { display:block; margin-top:10px; font-size:.5em; color:#8a8f99; font-weight:300; }

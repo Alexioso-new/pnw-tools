@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v7.9-standalone";
+  var VERSION = "v8.0-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";
@@ -558,7 +558,7 @@
         if (keyEl) keyEl.textContent = "";
         if (stage) stage.hidden = true;
         if (idle) idle.hidden = false;
-        if (wait) wait.textContent = "Menunggu live dimulai\u2026";
+        if (wait) wait.innerHTML = "Menunggu live dimulai\u2026<br><span class=\"cfIdleHint\">Pilih slide, lalu tekan Enter untuk tayang \u00b7 B = layar hitam \u00b7 L = logo</span>";
         return;
       }
 

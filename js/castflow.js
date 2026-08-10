@@ -15,7 +15,7 @@
 (function () {
   "use strict";
 
-  var CF_VERSION = "v7.8";
+  var CF_VERSION = "v8.0";
   var LANG_KEY = "pnwCastflowLang";
   var FONTS_KEY = "pnwCastflowFonts.v1";
   var GRID_KEY = "pnwCastflowGrid.v1";
@@ -1044,6 +1044,314 @@
     }, 400);
   }
 
+  /* ================= 7. PANEL REVISI A–E (v8.0) ================= */
+  /* ---- A1. indikator status offline yang elegan ---- */
+  function paintNetStatus() {
+    var el = document.getElementById("yvStatus");
+    if (!el) return;
+    var txt = (el.textContent || "").trim();
+    var offline = /tidak terbaca|unreadable|permission_denied|offline|tidak ada koneksi|no connection/i.test(txt);
+    if (offline) {
+      if (!el.__cfOff) {
+        el.__cfOff = true;
+        el.__cfOrig = txt;
+        el.innerHTML = '<span class="cfNetChip off"><span class="cfNetDot"></span>Offline Mode</span>';
+      }
+    } else if (el.__cfOff) {
+      el.__cfOff = false;
+      el.textContent = el.__cfOrig || txt;
+    }
+  }
+
+  /* ---- A2. view-only: kunci aksi saat belum login ---- */
+  function applyViewOnly() {
+    var login = document.getElementById("yvLoginBtn");
+    var who = document.getElementById("yvWho");
+    var loggedOut = false;
+    if (login && (login.textContent || "").trim()) {
+      /* "Masuk dengan Google"/"Sign in" => belum login; "Keluar"/"Sign out" => sudah */
+      loggedOut = /masuk|sign in|log ?in/i.test(login.textContent);
+    } else if (who) {
+      loggedOut = /belum masuk|not signed in|view only|hanya bisa melihat/i.test(who.textContent || "");
+    }
+    document.body.classList.toggle("cfViewOnly", !!loggedOut);
+  }
+
+  /* ---- A3. menu Avatar/Profile (gabung Sign in + Bahasa + Error Log) ---- */
+  function buildUserMenu() {
+    var bar = document.getElementById("yvBar");
+    if (!bar || document.getElementById("cfAvatarBtn")) return;
+    var login = document.getElementById("yvLoginBtn");
+    var log = document.getElementById("yvLogBtn");
+    var lang = document.getElementById("cfLangSeg");
+    [login, log, lang].forEach(function (x) { if (x) x.classList.add("cfMovedToMenu"); });
+    var av = document.createElement("button");
+    av.type = "button";
+    av.id = "cfAvatarBtn";
+    av.className = "yvBarBtn cfAvatarBtn";
+    av.title = "Account / Settings";
+    av.textContent = "\uD83D\uDC64";
+    var menu = document.createElement("div");
+    menu.id = "cfUserMenu";
+    menu.className = "cfUserMenu";
+    menu.hidden = true;
+    menu.innerHTML =
+      '<div class="cfUserWho" id="cfUserWho">—</div>' +
+      '<button type="button" class="cfUserItem" id="cfUserLogin">Sign in</button>' +
+      '<div class="cfUserItem cfUserLang"><span>Language</span>' +
+      '<span class="cfSeg"><button type="button" data-cflang2="en">EN</button><button type="button" data-cflang2="id">ID</button></span></div>' +
+      '<button type="button" class="cfUserItem" id="cfUserLog">Error Log</button>';
+    bar.appendChild(av);
+    document.body.appendChild(menu);
+    function syncMenu() {
+      var who = document.getElementById("yvWho");
+      var lw = document.getElementById("cfUserWho");
+      if (lw && who) lw.textContent = who.textContent || "—";
+      var lb = document.getElementById("cfUserLogin");
+      if (lb && login) lb.textContent = login.textContent || "Sign in";
+      qa("[data-cflang2]", menu).forEach(function (b) {
+        b.classList.toggle("on", b.getAttribute("data-cflang2") === lang());
+      });
+    }
+    var menuOpen = false;
+    function setMenu(o) {
+      menuOpen = o;
+      menu.hidden = !o;
+      if (o) {
+        syncMenu();
+        var r = av.getBoundingClientRect();
+        menu.style.top = r.bottom + 6 + "px";
+        menu.style.right = Math.max(8, window.innerWidth - r.right) + "px";
+      }
+    }
+    av.addEventListener("click", function (e) {
+      e.stopPropagation();
+      setMenu(!menuOpen);
+    });
+    document.addEventListener("click", function (e) {
+      if (menuOpen && !menu.contains(e.target) && e.target !== av) setMenu(false);
+    });
+    document.getElementById("cfUserLogin").onclick = function () { if (login) login.click(); menu.hidden = true; };
+    document.getElementById("cfUserLog").onclick = function () { if (log) log.click(); menu.hidden = true; };
+    qa("[data-cflang2]", menu).forEach(function (b) {
+      b.onclick = function () {
+        var real = document.querySelector('#cfLangSeg [data-cflang="' + b.getAttribute("data-cflang2") + '"]');
+        if (real) real.click();
+        syncMenu();
+      };
+    });
+  }
+
+  /* ---- B2. hotkeys presenter (B=Black, L=Logo, Enter=Live, Esc=Clear, panah=nav) ---- */
+  var _cfBlack = false;
+  var _cfLogo = false;
+  function liveBlank(extra) {
+    var YV = window.PNWYouthViews;
+    if (!YV || !YV.broadcast) return;
+    var p = { active: true, kind: "blank", bg: { kind: "color", value: "#000000" }, showTitle: false, showMeta: false };
+    if (extra) for (var k in extra) p[k] = extra[k];
+    try { YV.broadcast(p); } catch (e) {}
+  }
+  function cfClearLive() {
+    var YV = window.PNWYouthViews;
+    if (YV && YV.clear) { try { YV.clear(); } catch (e) {} }
+  }
+  function toggleBlack() {
+    _cfBlack = !_cfBlack;
+    if (_cfBlack) { _cfLogo = false; liveBlank(); } else cfClearLive();
+  }
+  function toggleLogo() {
+    _cfLogo = !_cfLogo;
+    if (_cfLogo) { _cfBlack = false; liveBlank({ overlay: { kind: "image", value: "./castflow-logo-light.svg", pos: "center" } }); }
+    else cfClearLive();
+  }
+  function initHotkeys() {
+    document.addEventListener("keydown", function (e) {
+      var t = e.target;
+      var tag = ((t && t.tagName) || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select" || (t && t.isContentEditable)) return;
+      var tld = document.getElementById("tlDrawer");
+      var tlOpen = !!(tld && tld.classList.contains("on"));
+      function click(id) { var b = document.getElementById(id); if (b) b.click(); }
+      var k = e.key;
+      if (k === "b" || k === "B") { toggleBlack(); e.preventDefault(); }
+      else if (k === "l" || k === "L") { toggleLogo(); e.preventDefault(); }
+      else if (k === "Enter") { click("projGoLive"); e.preventDefault(); }
+      else if (k === "Escape") { click("projClear"); e.preventDefault(); }
+      else if (!tlOpen && (k === " " || k === "ArrowRight" || k === "ArrowDown" || k === "PageDown")) { click("projNextSlide"); e.preventDefault(); }
+      else if (!tlOpen && (k === "ArrowLeft" || k === "ArrowUp" || k === "PageUp")) { click("projPrevSlide"); e.preventDefault(); }
+    });
+  }
+
+  /* ---- C1. pindahkan kontrol rasio ke popover Settings (⚙) ---- */
+  function buildPrevSettings() {
+    var head = document.querySelector(".cfPrevHead");
+    var ratio = document.getElementById("cfPrevRatio");
+    if (!head || !ratio || document.getElementById("cfPrevSettingsBtn")) return;
+    var custom = document.getElementById("cfCustomRes");
+    var pop = document.createElement("div");
+    pop.className = "cfPrevSettings";
+    pop.id = "cfPrevSettings";
+    pop.hidden = true;
+    var lab = document.createElement("div");
+    lab.className = "cfPrevSettingsTitle";
+    lab.textContent = "Resolution";
+    pop.appendChild(lab);
+    pop.appendChild(ratio);
+    if (custom) pop.appendChild(custom);
+    document.body.appendChild(pop);
+    var gear = document.createElement("button");
+    gear.type = "button";
+    gear.id = "cfPrevSettingsBtn";
+    gear.className = "cfIconBtn";
+    gear.title = "Preview settings";
+    gear.textContent = "\u2699";
+    head.insertBefore(gear, document.getElementById("cfPopBtn") || null);
+    gear.onclick = function (e) {
+      e.stopPropagation();
+      pop.hidden = !pop.hidden;
+      if (!pop.hidden) {
+        var r = gear.getBoundingClientRect();
+        pop.style.top = r.bottom + 6 + "px";
+        pop.style.right = Math.max(8, window.innerWidth - r.right) + "px";
+      }
+    };
+    document.addEventListener("click", function (e) {
+      if (!pop.hidden && !pop.contains(e.target) && e.target !== gear) pop.hidden = true;
+    });
+  }
+
+  /* ---- D2. kartu bantuan hotkey ---- */
+  function buildHotkeyHint() {
+    var cell = document.querySelector(".cfC-lyric");
+    var head = cell ? cell.querySelector(".cfLyricHead") : null;
+    if (!head || document.getElementById("cfHkBtn")) return;
+    function hk(k, d) { return '<div class="row"><span class="k">' + k + '</span><span class="d">' + d + "</span></div>"; }
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "cfHkBtn";
+    btn.className = "cfIconBtn";
+    btn.title = "Keyboard shortcuts";
+    btn.textContent = "?";
+    head.appendChild(btn);
+    var card = document.createElement("div");
+    card.className = "cfHkCard";
+    card.id = "cfHkCard";
+    card.hidden = true;
+    card.innerHTML =
+      '<div class="t">Keyboard Shortcuts</div>' +
+      hk("Spasi / \u2192 / \u2193", "Slide berikutnya") +
+      hk("\u2190 / \u2191", "Slide sebelumnya") +
+      hk("Enter", "Tayangkan (Go Live)") +
+      hk("B", "Layar hitam (Black)") +
+      hk("L", "Logo") +
+      hk("Esc", "Bersihkan layar");
+    document.body.appendChild(card);
+    btn.onclick = function (e) {
+      e.stopPropagation();
+      card.hidden = !card.hidden;
+      if (!card.hidden) {
+        var r = btn.getBoundingClientRect();
+        card.style.bottom = window.innerHeight - r.top + 6 + "px";
+        card.style.left = Math.max(8, r.left - 170) + "px";
+      }
+    };
+    document.addEventListener("click", function (e) {
+      if (!card.hidden && !card.contains(e.target) && e.target !== btn) card.hidden = true;
+    });
+  }
+
+  /* ---- E1. Global Search (lagu: judul + lirik) ---- */
+  function buildGlobalSearch() {
+    var paneC = document.querySelector(".projPaneC");
+    var tabs = document.getElementById("projTabs");
+    if (!paneC || !tabs || document.getElementById("cfGlobalSearch")) return;
+    var box = document.createElement("div");
+    box.className = "cfGSWrap";
+    box.innerHTML = '<span class="cfGSIcon">\uD83D\uDD0E</span><input type="search" id="cfGlobalSearch" placeholder="Search songs, verses, media\u2026" autocomplete="off">';
+    paneC.insertBefore(box, tabs);
+    var inp = box.querySelector("#cfGlobalSearch");
+    var res = document.createElement("div");
+    res.className = "cfGSResults";
+    res.hidden = true;
+    box.appendChild(res);
+    inp.addEventListener("input", function () {
+      var q = (inp.value || "").trim().toLowerCase();
+      res.innerHTML = "";
+      if (!q) { res.hidden = true; return; }
+      var hits = [];
+      try {
+        var songs = (window.PNWYouthViews && PNWYouthViews.getSongs) ? PNWYouthViews.getSongs() : [];
+        (songs || []).forEach(function (s) {
+          var lyrics = Array.isArray(s.lines) ? s.lines.join(" ") : (s.lyrics || s.text || "");
+          var hay = ((s.title || "") + " " + lyrics).toLowerCase();
+          if (hay.indexOf(q) >= 0) hits.push({ title: s.title || "?", id: s.id });
+        });
+      } catch (e) {}
+      hits = hits.slice(0, 12);
+      if (!hits.length) {
+        res.innerHTML = '<div class="cfGSEmpty">Tidak ada hasil</div>';
+      } else {
+        hits.forEach(function (h) {
+          var it = document.createElement("button");
+          it.type = "button";
+          it.className = "cfGSItem";
+          it.innerHTML = '<span class="cfGSTag">\uD83C\uDFB5 Lagu</span><span>' + h.title + "</span>";
+          it.onclick = function () {
+            inp.value = "";
+            res.hidden = true;
+            var real = document.getElementById("projSearch");
+            if (real) { real.value = h.title; real.dispatchEvent(new Event("input", { bubbles: true })); }
+          };
+          res.appendChild(it);
+        });
+      }
+      res.hidden = false;
+    });
+    document.addEventListener("click", function (e) { if (!box.contains(e.target)) res.hidden = true; });
+  }
+
+  /* ---- E2. pilih versi Alkitab ---- */
+  var BIBLE_VER_KEY = "pnwCastflowBibleVer";
+  function buildBibleVersion() {
+    var tabs = document.getElementById("projTabs");
+    if (!tabs || document.getElementById("cfBibleVer")) return;
+    var sel = document.createElement("select");
+    sel.id = "cfBibleVer";
+    sel.className = "cfBibleVer";
+    sel.title = "Bible version";
+    ["TB", "BIS", "NIV", "ESV"].forEach(function (v) {
+      var o = document.createElement("option");
+      o.value = v;
+      o.textContent = v;
+      sel.appendChild(o);
+    });
+    try { sel.value = localStorage.getItem(BIBLE_VER_KEY) || "TB"; } catch (e) {}
+    sel.onchange = function () { try { localStorage.setItem(BIBLE_VER_KEY, sel.value); } catch (e) {} };
+    tabs.parentNode.insertBefore(sel, tabs.nextSibling);
+    function sync() {
+      var act = tabs.querySelector('[data-tab].on') || tabs.querySelector('[data-tab][aria-selected="true"]');
+      sel.style.display = act && act.getAttribute("data-tab") === "alkitab" ? "" : "none";
+    }
+    tabs.addEventListener("click", function () { setTimeout(sync, 30); });
+    setInterval(sync, 700);
+    sync();
+  }
+
+  /* pemanggil panel (idempoten, polling sampai DOM siap) */
+  function initPanels() {
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      safe("userMenu", buildUserMenu);
+      safe("prevSettings", buildPrevSettings);
+      safe("hkHint", buildHotkeyHint);
+      safe("globalSearch", buildGlobalSearch);
+      safe("bibleVer", buildBibleVersion);
+      if (tries > 80) clearInterval(iv);
+    }, 300);
+  }
+
   /* ================= boot ================= */
   function boot() {
     safe("fonts", extendFonts);
@@ -1058,6 +1366,13 @@
     safe("workspace", buildWorkspace);
     safe("float", initFloat);
     safe("tlResizer", initTlResizer);
+    /* panel revisi A–E (v8.0) */
+    safe("panels", initPanels);
+    safe("hotkeys", initHotkeys);
+    setInterval(function () {
+      safe("net", paintNetStatus);
+      safe("viewOnly", applyViewOnly);
+    }, 1200);
   }
   window.CastFlow = {
     version: CF_VERSION,
@@ -1088,6 +1403,8 @@
       applyGrid(def, true);
       saveGrid(def);
     },
+    paintNetStatus: paintNetStatus,
+    applyViewOnly: applyViewOnly,
   };
   if (document.readyState === "loading")
     document.addEventListener("DOMContentLoaded", boot);
