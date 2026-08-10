@@ -627,3 +627,34 @@ body.yvStandalone label, body.yvStandalone .label, body.yvStandalone strong, bod
 .cfSecChip[data-sec="pre-chorus"] { background:#8b5cf6; }
 .cfSecChip[data-sec="interlude"] { background:#64748b; }
 .cfSecChip[data-sec="coda"] { background:#e0653a; }
+
+/* ============================================================
+   v7.9 — HIERARKI TIPOGRAFI (template pengguna)
+   Judul = 500 putih · Subjudul = 400 · Teks = 300 · TikTok Sans only
+   (pratinjau/output lirik tetap memakai font yang dipilih pengguna)
+   ============================================================ */
+body.yvStandalone { font-weight: 300; }
+
+/* JUDUL — 500, putih */
+body.yvStandalone h1, body.yvStandalone h2, body.yvStandalone h3, body.yvStandalone h4,
+body.yvStandalone .projPaneHead h3, body.yvStandalone .cfCellHead, body.yvStandalone .cfLyricTitle,
+body.yvStandalone .yvBarBrand, body.yvStandalone .cfPrevHead .t,
+body.yvStandalone .projActiveBody h3, body.yvStandalone .projActiveBody h4 {
+  font-weight: 500 !important;
+  color: #ffffff;
+}
+
+/* SUBJUDUL / LABEL / TOMBOL — 400 */
+body.yvStandalone .label, body.yvStandalone .projField > .label, body.yvStandalone .projLabel,
+body.yvStandalone .projTabs button, body.yvStandalone .cfViewToggle button,
+body.yvStandalone .yvRailBtn, body.yvStandalone button, body.yvStandalone .cfSecChip {
+  font-weight: 400 !important;
+}
+
+/* TEKS / ISI — 300 */
+body.yvStandalone input, body.yvStandalone select, body.yvStandalone textarea,
+body.yvStandalone .projPlanItem, body.yvStandalone .projCard2, body.yvStandalone .projCatalogCard,
+body.yvStandalone .yvCatalogCard, body.yvStandalone .yvPlanItem, body.yvStandalone .projSlideBody,
+body.yvStandalone p {
+  font-weight: 300 !important;
+}

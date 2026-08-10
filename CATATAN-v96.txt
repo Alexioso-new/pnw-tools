@@ -1,0 +1,23 @@
+============================================================
+PNW TOOLS v96 (label v7.9) — Hierarki Tipografi (panel 1: Font)
+============================================================
+
+ISI RILIS (sesuai template Font yang Anda berikan)
+1. **Hierarki ketebalan font** di seluruh CastFlow:
+   - JUDUL (judul panel, heading)      -> weight **500**, warna **putih**
+   - SUBJUDUL (label, tab, tombol)     -> weight **400**
+   - TEKS biasa (isi, kartu, input)    -> weight **300**
+2. **TikTok Sans only** untuk seluruh antarmuka. Pengecualian: tab *Ganti Font*
+   untuk lirik/lagu tetap memakai font yang Anda pilih (pratinjau & output lirik
+   tidak dipaksa TikTok Sans).
+3. **Warna dasar judul = putih**; teks biasa tetap mengikuti warna yang sudah ada.
+
+CATATAN: ini panel 1 (Font) dari berkas revisi. Panel berikutnya (Top Nav,
+Output, Preview, Lyric/Timeline, Content Library) menyusul satu per satu.
+
+CARA PASANG (urutan WAJIB)
+1. PUBLISH RULES FIREBASE v83 DULU bila belum pernah.
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini.
+3. git add -A && git commit -m "v96" && git push
+4. Ctrl+Shift+R -> menu -> CastFlow -> label v7.9: judul kini putih & tegas (500),
+   label sedang (400), teks isi lebih ringan (300), semuanya TikTok Sans.
