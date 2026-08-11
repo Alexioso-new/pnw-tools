@@ -40,6 +40,13 @@
       });
     }
   }
+
+  function uiEvery(fn, ms, name) {
+    if (window.CastFlowKernel && CastFlowKernel.scheduler)
+      return CastFlowKernel.scheduler.every(fn, ms, { name: name || "castflow-v100-ui" });
+    var id = setInterval(fn, ms);
+    return function () { clearInterval(id); };
+  }
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -482,7 +489,7 @@
       safe("mini", syncMiniPreviews);
       if (tries > 160) clearInterval(iv);
     }, 250);
-    setInterval(function () {
+    uiEvery(function () {
       safe("title", updateFlowHeader);
       safe("brand", buildTopBrand);
       safe("mini", syncMiniPreviews);
@@ -491,11 +498,11 @@
         var h = q(".cfC-design .projPaneHead h3");
         if (h && h.textContent !== "DESIGN PANEL") h.textContent = "DESIGN PANEL";
       });
-    }, 900);
+    }, 900, "flow-design-sync");
   }
 
   window.CastFlowV100 = {
-    version: "v9.3",
+    version: "v9.4",
     setFlowMode: function (mode) { setFlowMode(mode, true); },
     setPreviewMode: setPreviewMode,
     readVisual: readVisual,

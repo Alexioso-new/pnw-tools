@@ -8,7 +8,7 @@
 /* HOSANA YOUTH TOOLS - service worker
    PENTING: naikkan angka versi CACHE setiap deploy index.html baru
    supaya cache lama dibuang dan file terbaru dipakai. */
-const CACHE = "pnw-tools-v103";
+const CACHE = "pnw-tools-v104";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -32,6 +32,7 @@ const APP_SHELL = [
   "./css/cf-tokens.css",
   "./css/cf-v101.css",
   "./css/cf-v103.css",
+  "./css/cf-v104.css",
   "./img/worship.jpg",
   "./img/praise.jpg",
   "./img/google.png",
@@ -54,6 +55,8 @@ const APP_SHELL = [
   "./js/cf-package.js",
   "./js/cf-toast.js",
   "./js/cf-workspace.js",
+  "./js/cf-a11y.js",
+  "./js/cf-reliability.js",
   "./js/cf-diag.js",
   "./js/app.js",
   "./js/guide.js",

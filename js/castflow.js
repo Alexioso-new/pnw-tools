@@ -15,7 +15,7 @@
 (function () {
   "use strict";
 
-  var CF_VERSION = "v9.3";
+  var CF_VERSION = "v9.4";
   var LANG_KEY = "pnwCastflowLang";
   var FONTS_KEY = "pnwCastflowFonts.v1";
   var GRID_KEY = "pnwCastflowGrid.v1";
@@ -40,6 +40,14 @@
           });
       } catch (x) {}
     }
+  }
+
+  /* v104: polling dekoratif berhenti saat tab tersembunyi. */
+  function uiEvery(fn, ms, name) {
+    if (window.CastFlowKernel && CastFlowKernel.scheduler)
+      return CastFlowKernel.scheduler.every(fn, ms, { name: name || "castflow-ui" });
+    var id = setInterval(fn, ms);
+    return function () { clearInterval(id); };
   }
 
   /* ================= 1. i18n ================= */
@@ -273,9 +281,9 @@
       };
     });
     applyLang();
-    setInterval(function () {
+    uiEvery(function () {
       if (lang() === "en") safe("sweep", function () { sweep("en"); });
-    }, 1500);
+    }, 1500, "language-sweep");
   }
 
   /* ================= 2. pratinjau: rasio + resolusi kustom ================= */
@@ -1328,7 +1336,7 @@
       sel.style.display = act && act.getAttribute("data-tab") === "alkitab" ? "" : "none";
     }
     tabs.addEventListener("click", function () { setTimeout(sync, 30); });
-    setInterval(sync, 700);
+    uiEvery(sync, 700, "bible-version-sync");
     sync();
   }
 
@@ -1552,7 +1560,7 @@
     safe("customFont", initCustomFont);
     safe("chips", function () {
       paintSectionChips();
-      setInterval(paintSectionChips, 900);
+      uiEvery(paintSectionChips, 900, "section-chip-sync");
     });
     safe("workspace", buildWorkspace);
     safe("float", initFloat);
@@ -1561,10 +1569,10 @@
     safe("panels", initPanels);
     safe("hotkeys", initHotkeys);
     safe("roadmap", initRoadmap);
-    setInterval(function () {
+    uiEvery(function () {
       safe("net", paintNetStatus);
       safe("viewOnly", applyViewOnly);
-    }, 1200);
+    }, 1200, "network-auth-sync");
   }
   window.CastFlow = {
     version: CF_VERSION,

@@ -178,6 +178,11 @@
   function open() {
     buildUi();
     overlay.classList.add("on");
+    /* v104: fokus awal eksplisit; cf-a11y menjaga Tab tetap di dialog. */
+    setTimeout(function () {
+      var first = overlay && overlay.querySelector("#cfPreflightClose");
+      if (first) first.focus();
+    }, 0);
     run();
   }
   function close() {

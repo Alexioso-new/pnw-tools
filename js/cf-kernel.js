@@ -1,5 +1,5 @@
 /* PNW-FILE-GUIDE
-   js/cf-kernel.js — KERNEL v103 (Sprint 1 + S3-06 storage registry + S4 store).
+   js/cf-kernel.js — KERNEL v104 (Sprint 1 + S3-06 storage registry + S4 store).
    Satu sumber kebenaran untuk arsitektur baru CastFlow:
      • bus      : event bus (on/off/once/emit) — komunikasi antar modul.
      • store    : state global per slice (app/connection/program/diagnostics/workspace).
@@ -16,8 +16,8 @@
   "use strict";
   if (window.CastFlowKernel) return;
 
-  var VERSION = "v103";
-  var LABEL = "v9.3";
+  var VERSION = "v104";
+  var LABEL = "v9.4";
   var NS = "castflow:v101:"; /* namespace skema — JANGAN diganti per rilis */
 
   /* Event catalog (02_TECH_SPEC §8 + tambahan v102/v103) — daftar resmi. */
@@ -43,6 +43,10 @@
     WORKSPACE_LAYOUT_CHANGED: "workspace:layout-changed",
     WORKSPACE_LAYOUT_SAVED: "workspace:layout-saved",
     WORKSPACE_LAYOUT_RESET: "workspace:layout-reset",
+    PERFORMANCE_SAMPLE: "diagnostics:performance-sample",
+    A11Y_AUDIT_FINISHED: "a11y:audit-finished",
+    SOAK_STARTED: "diagnostics:soak-started",
+    SOAK_FINISHED: "diagnostics:soak-finished",
   };
 
   function logWarn(msg, meta) {
@@ -109,7 +113,7 @@
       output: { status: "idle", lastSeen: 0, sig: "", kind: "", slide: -1, mode: "" },
     },
     program: { lastSentSig: "", lastSentAt: 0, lastAckSig: "", ackAt: 0 },
-    diagnostics: { preflight: null, errors: [] },
+    diagnostics: { preflight: null, errors: [], performance: null, a11y: null, soak: null },
     workspace: { preset: "custom", snapshotAt: 0 },
   };
   var subs = []; /* {slice, fn} — slice null = semua perubahan */
@@ -149,6 +153,98 @@
       };
     },
   };
+
+
+  /* ---------------- Lifecycle Scheduler (S5-04) ----------------
+     Timer UI berhenti total saat tab tersembunyi dan dilanjutkan saat tampak.
+     Timer kritis heartbeat/countdown/playback tetap memakai mekanisme sendiri. */
+  function createScheduler() {
+    var jobs = [];
+    var nextId = 1;
+    function drop(job) {
+      var i = jobs.indexOf(job);
+      if (i >= 0) jobs.splice(i, 1);
+    }
+    function arm(job, delay) {
+      if (!job.active || job.timer || (document.hidden && !job.runHidden)) return;
+      job.timer = setTimeout(function () {
+        job.timer = null;
+        if (!job.active) return;
+        if (!document.hidden || job.runHidden) {
+          try {
+            job.fn();
+            job.runs++;
+            job.lastRunAt = Date.now();
+          } catch (e) {
+            logError("scheduler job gagal", { name: job.name, error: String(e) });
+          }
+        }
+        arm(job, job.ms);
+      }, Math.max(0, delay));
+    }
+    function cancel(job) {
+      if (!job || !job.active) return;
+      job.active = false;
+      if (job.timer) clearTimeout(job.timer);
+      job.timer = null;
+      drop(job);
+    }
+    function every(fn, ms, opts) {
+      opts = opts || {};
+      var job = {
+        id: nextId++,
+        name: opts.name || "job",
+        fn: fn,
+        ms: Math.max(50, Number(ms) || 1000),
+        runHidden: !!opts.runHidden,
+        active: true,
+        timer: null,
+        runs: 0,
+        lastRunAt: 0,
+      };
+      jobs.push(job);
+      arm(job, opts.immediate ? 0 : job.ms);
+      return function () {
+        cancel(job);
+      };
+    }
+    function idle(fn, timeout) {
+      var active = true;
+      var id;
+      function run(deadline) {
+        if (!active) return;
+        active = false;
+        fn(deadline || { didTimeout: true, timeRemaining: function () { return 0; } });
+      }
+      if (window.requestIdleCallback) id = requestIdleCallback(run, { timeout: timeout || 1000 });
+      else id = setTimeout(run, Math.min(timeout || 50, 50));
+      return function () {
+        active = false;
+        if (window.cancelIdleCallback && typeof id === "number") cancelIdleCallback(id);
+        else clearTimeout(id);
+      };
+    }
+    function stats() {
+      return {
+        active: jobs.length,
+        hidden: !!document.hidden,
+        jobs: jobs.map(function (j) {
+          return { id: j.id, name: j.name, ms: j.ms, runs: j.runs, runHidden: j.runHidden };
+        }),
+      };
+    }
+    function stopAll() {
+      jobs.slice().forEach(cancel);
+    }
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) jobs.slice().forEach(function (j) { arm(j, 0); });
+    });
+    window.addEventListener("pagehide", function (e) {
+      if (!e.persisted) stopAll();
+    });
+    return { every: every, idle: idle, stats: stats, stopAll: stopAll };
+  }
+  var scheduler = createScheduler();
 
   /* ---------------- Persistence Adapter (S1-04 + S3-06) ---------------- */
   function skey(key) {
@@ -296,6 +392,7 @@
     Events: Events,
     bus: bus,
     store: store,
+    scheduler: scheduler,
     storage: storage,
     flags: flags,
   };

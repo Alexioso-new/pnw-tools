@@ -1,6 +1,6 @@
 # CastFlow v101+ — Arsitektur (kontrak resmi kode baru)
 
-Dokumen ini mendaftarkan kontrak yang diperkenalkan v101–v103. Aturan main ada di
+Dokumen ini mendaftarkan kontrak yang diperkenalkan v101–v104. Aturan main ada di
 `04_AGENT_RULES.md`; dokumen ini adalah registry-nya.
 
 ## Adaptasi dari 02_TECH_SPEC
@@ -21,7 +21,7 @@ store, adapter, events, namespace storage) identik dengan spec.
 | Workspace | `js/cf-workspace.js` | panel registry, preset layout, snapshot, reset |
 | Diagnostics | `js/cf-diag.js` | panel status sistem (baca dari store) |
 | Tokens | `css/cf-tokens.css` | design tokens (satu-satunya sumber warna/spacing baru) |
-| Komponen | `css/cf-v101.css`, `css/cf-v103.css` | style komponen (prefix cf-, tanpa !important) |
+| Komponen | `css/cf-v101.css`, `css/cf-v103.css`, `css/cf-v104.css` | style komponen (prefix cf-, tanpa !important kecuali fallback aksesibilitas OS) |
 
 ## Event registry (format domain:entity:action)
 | Event | Emitter | Payload |
@@ -42,6 +42,9 @@ store, adapter, events, namespace storage) identik dengan spec.
 | `workspace:layout-changed` | workspace | `{preset, grid}` |
 | `workspace:layout-saved` | workspace | `{grid, at}` |
 | `workspace:layout-reset` | workspace | `{}` |
+| `diagnostics:performance-sample` | reliability | sampel DOM/heap/error/output/lag/long-task |
+| `a11y:audit-finished` | a11y | `{status, score, unlabeled[], ...}` |
+| `diagnostics:soak-started` / `-finished` | reliability | state progres / laporan final |
 | `cf:output:rendered` (DOM CustomEvent) | yv-standalone | `{kind, slideIndex, sig, active}` |
 
 ## Storage key registry
@@ -55,6 +58,9 @@ JANGAN diganti per rilis. Key baru:
 | `media:missing` | daftar ref media hilang | media |
 | `project:lastExport` | meta ekspor terakhir | package |
 | `workspace:layout` | preset/snapshot layout aktif | workspace |
+| `diagnostics:lastA11y` | audit aksesibilitas terakhir | a11y |
+| `diagnostics:activeSoak` | checkpoint soak yang sedang berjalan | reliability |
+| `diagnostics:lastSoak` | laporan reliability terakhir | reliability |
 
 ### Migrasi legacy (S3-06)
 `storage.MIGRATIONS` memetakan key baru -> key legacy `pnw*`. Aturan:
@@ -67,7 +73,7 @@ layout v94 `{l, r, t}`).
 `app {version, label, mode, initialized}` ·
 `connection {firebase, output {status, lastSeen, sig, kind, slide, mode}}` ·
 `program {lastSentSig, lastSentAt, lastAckSig, ackAt}` ·
-`diagnostics {preflight, errors[]}` ·
+`diagnostics {preflight, errors[], performance, a11y, soak}` ·
 `workspace {preset, snapshotAt}`
 
 ## Output reliability (v101)
@@ -99,8 +105,24 @@ layout v94 `{l, r, t}`).
 - `K.workspace.applyPreset(id)` menulis format grid legacy `{l, r, t}` lewat
   `legacyWrite` lalu reload — tidak mengarang format baru.
 
+## Runtime hardening (v104)
+- `K.scheduler.every(fn, ms, opts)` memakai recursive timeout dan lifecycle
+  `visibilitychange`: job UI tidak dibangunkan saat tab tersembunyi. `stats()`
+  memberi daftar job/runs untuk Diagnostics/QA; cancel function wajib disimpan
+  untuk job bounded atau soak.
+- Lima polling dekoratif telah dimigrasi: language sweep, Bible version sync,
+  section chips, network/auth paint, dan Flow/Design sync.
+- Timer kritis output heartbeat/watchdog, countdown, playback, recorder, dan
+  metronome tetap independen supaya show-control tidak ikut berhenti.
+- `K.a11y.audit(announce)` memperbaiki semantics progresif lalu menghasilkan
+  skor; MutationObserver hanya node baru/class/hidden dan didebounce via idle.
+- `K.reliability.sample()` membuat telemetry ringan; `startSoak()` default 2 jam;
+  `stopSoak()` menghasilkan `castflow-reliability-report` schemaVersion 1.
+- Ambang soak: new errors 0/1; DOM growth 200/500 node; heap growth 25/50 MB;
+  lag 200/500 ms; long task 250/1000 ms; disconnect 0/2 (pass/warn maksimum).
+
 ## Exit plan legacy (strangler)
-- Polling `setInterval` di `js/castflow.js`/`yv-timeline.js` tetap jalan sampai
-  pemiliknya dimigrasi ke event bus per-sprint berikutnya.
+- Polling bounded yang hanya menunggu DOM masih ada; migrasikan per-owner bila
+  modul tersebut disentuh, tanpa mengubah timer kritis show-control.
 - CSS lama tetap dimuat; komponen baru wajib token + tanpa `!important`.
 - Jangan hapus file legacy sebelum ada task migrasi eksplisit.

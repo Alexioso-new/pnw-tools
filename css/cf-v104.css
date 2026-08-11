@@ -1,0 +1,98 @@
+/* PNW-FILE-GUIDE
+   css/cf-v104.css — ACCESSIBILITY + RELIABILITY UI v104 (Sprint 5).
+   Tidak mengubah layout utama; hanya state keyboard, skip link, kontras sistem,
+   reduced motion, dan responsif panel diagnostics.
+*/
+
+/* Fokus keyboard konsisten — mouse click tetap tanpa ring. */
+body.yvStandalone :where(button, a[href], input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--cf-color-primary-hover);
+  outline-offset: 2px;
+}
+body.yvStandalone :where(button, a[href], input, select, textarea)[aria-invalid="true"] {
+  outline-color: var(--cf-color-danger);
+  border-color: var(--cf-color-danger);
+}
+
+/* Hanya terlihat saat pengguna menekan Tab. */
+.cfSkipLink {
+  position: fixed;
+  top: var(--cf-space-2);
+  left: var(--cf-space-2);
+  z-index: calc(var(--cf-z-toast) + 1);
+  transform: translateY(-160%);
+  padding: 8px 12px;
+  border-radius: var(--cf-radius-sm);
+  background: var(--cf-color-primary);
+  color: var(--cf-color-text);
+  font: 500 11px/1.3 var(--cf-font-ui);
+  text-decoration: none;
+  transition: transform var(--cf-motion-fast) var(--cf-ease-standard);
+}
+.cfSkipLink:focus {
+  transform: translateY(0);
+}
+
+/* Diagnostics: baris tambahan Performance / Accessibility / Reliability. */
+.cfDiagRow .cfDiagBtn + .cfDiagBtn {
+  margin-left: var(--cf-space-1);
+}
+.cfDiagRow[data-status="running"] {
+  border-left-color: var(--cf-color-primary-hover);
+}
+.cfDiagRow[data-status="running"] b::after {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background: var(--cf-color-primary-hover);
+  animation: cfReliabilityPulse 1.2s ease-in-out infinite;
+}
+@keyframes cfReliabilityPulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (max-width: 640px) {
+  .cfDiagPanel {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    padding: var(--cf-space-3);
+  }
+  .cfDiagRow {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .cfDiagErrs {
+    padding-left: var(--cf-space-2);
+  }
+}
+
+/* Aksesibilitas OS tanpa mengubah animasi output/program. */
+@media (prefers-reduced-motion: reduce) {
+  body.yvStandalone:not(.display-mode) .cfSkipLink,
+  body.yvStandalone:not(.display-mode) .cfToast,
+  body.yvStandalone:not(.display-mode) .cfOutputChip,
+  body.yvStandalone:not(.display-mode) .cfDiagRow[data-status="running"] b::after {
+    animation: none;
+    transition: none;
+  }
+}
+@media (prefers-contrast: more) {
+  body.yvStandalone {
+    --cf-color-border: #73737d;
+    --cf-color-text-muted: #d0d0d6;
+  }
+}
+@media (forced-colors: active) {
+  body.yvStandalone :where(button, a[href], input, select, textarea):focus-visible {
+    outline: 2px solid Highlight;
+  }
+  .cfOutputDot,
+  .cfDiagRow[data-status="running"] b::after {
+    forced-color-adjust: none;
+  }
+}
