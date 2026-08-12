@@ -1507,13 +1507,51 @@
     MOTIONS: MOTIONS,
   };
 
-  /* v105: hook remote control (HP/tablet). Dieksekusi js/cf-remote.js.
+  /* v105+v108: hook remote control (HP/tablet). Dieksekusi js/cf-remote.js.
      step() sudah memanggil goLive() di akhir, jadi next/prev dari remote
-     langsung menayangkan ke output. */
+     langsung menayangkan ke output. itemGo/itemStep (v108) mengaktifkan item
+     rundown lalu menayangkannya — HP bisa mengendarai ibadah tanpa laptop. */
+  function itemGo(songId) {
+    safe("remote.itemGo", function () {
+      var song = songById(songId);
+      if (!song) {
+        notify("Lagu tidak ditemukan di library operator.", "info");
+        return;
+      }
+      _deckSong = song;
+      _active = { kind: "song", songId: song.id, slideIndex: 0 };
+      _tab = "lagu";
+      syncTabs();
+      renderCatalog();
+      renderActive();
+      renderPlan();
+      goLive();
+    });
+  }
+  function itemStep(dir) {
+    safe("remote.itemStep", function () {
+      if (!_plan.length) return;
+      var ix = -1;
+      if (_active && _active.kind === "song")
+        ix = _plan.findIndex(function (x) {
+          return x.songId === _active.songId;
+        });
+      var next =
+        ix < 0
+          ? dir > 0
+            ? 0
+            : _plan.length - 1
+          : Math.max(0, Math.min(_plan.length - 1, ix + dir));
+      var it = _plan[next];
+      if (it) itemGo(it.songId);
+    });
+  }
   window.PNWProjector.__remote = {
     step: step,
     goLive: goLive,
     clear: clearScreen,
+    itemGo: itemGo,
+    itemStep: itemStep,
   };
 })();
 

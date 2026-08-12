@@ -1,4 +1,4 @@
-/* PNW-FILE-GUIDE: js/cf-remote.js — CastFlow Remote Control + Stage Message + Timer (v107 / v9.7)
+/* PNW-FILE-GUIDE: js/cf-remote.js — CastFlow Remote Control + Stage Message + Timer + Rundown (v108 / v9.8)
    Tiga peran dalam satu berkas, dipilih dari URL:
    1. ?mode=remote  -> panel Remote Control (HP/tablet): Prev/Next/GoLive/Black/Logo/Clear
       + kirim Stage Message. Menulis perintah ke RTDB pujianYouth/youthviews/remote.
@@ -10,9 +10,10 @@
 (function () {
   "use strict";
 
-  var VERSION = "v9.7-remote";
+  var VERSION = "v9.8-remote";
   var REMOTE_PATH = "pujianYouth/youthviews/remote";
   var MSG_PATH = "pujianYouth/youthviews/stagemsg";
+  var PLAN_PATH = "pujianYouth/projector/plan";
   var LAST_KEY = "pnwCastflowRemoteLast.v1";
   /* v107: preset pesan panggung sekali-tap (bisa diedit di sini). */
   var MSG_PRESETS = [
@@ -91,6 +92,15 @@
         ok = true;
       } else if (c === "golive" && R.goLive) {
         R.goLive();
+        ok = true;
+      } else if (c === "itemnext" && R.itemStep) {
+        R.itemStep(1);
+        ok = true;
+      } else if (c === "itemprev" && R.itemStep) {
+        R.itemStep(-1);
+        ok = true;
+      } else if (c === "item" && R.itemGo && cmd.data && cmd.data.songId) {
+        R.itemGo(String(cmd.data.songId));
         ok = true;
       } else if (c === "clear") {
         if (A.clear) A.clear();
@@ -404,6 +414,16 @@
       '<button id="cfRemTStart" type="button" class="cfRemBtn cfRemPrimary">Mulai Timer</button>' +
       '<button id="cfRemTStop" type="button" class="cfRemBtn">Matikan</button>' +
       "</div></div>" +
+      '<div class="cfRemMsg cfRemPlanBox">' +
+      '<div class="cfRemMsgTitle">RUNDOWN</div>' +
+      '<div class="cfRemPlanNav">' +
+      '<button id="cfRemItemPrev" type="button" class="cfRemBtn">◀ Item</button>' +
+      '<button id="cfRemItemNext" type="button" class="cfRemBtn cfRemPrimary">Item ▶</button>' +
+      "</div>" +
+      '<div id="cfRemPlan" class="cfRemPlan">' +
+      '<p class="cfRemPlanEmpty">Memuat rundown…</p>' +
+      "</div>" +
+      "</div>" +
       '<div id="cfRemNow" class="cfRemNow"></div>' +
       "</div>";
     document.body.appendChild(wrap);
@@ -455,6 +475,20 @@
     el("cfRemTStop").onclick = function () {
       sendTimer("off");
     };
+    el("cfRemItemPrev").onclick = function () {
+      send("itemprev");
+    };
+    el("cfRemItemNext").onclick = function () {
+      send("itemnext");
+    };
+    var planList = el("cfRemPlan");
+    if (planList)
+      planList.addEventListener("click", function (e) {
+        var b = e.target.closest("[data-songid]");
+        if (!b) return;
+        var sid = b.getAttribute("data-songid");
+        if (sid) send("item", { songId: sid });
+      });
     el("cfRemLogin").onclick = function () {
       try {
         firebase
@@ -486,12 +520,60 @@
                     ? "Live: " + (v.songTitle || v.kind || "") +
                       (v.label ? " · " + v.label : "")
                     : "Layar kosong";
+              // v108: tandai item rundown yang sedang live
+              var sid = v && v.active ? String(v.songId || "") : "";
+              if (sid !== _remLiveSong) {
+                _remLiveSong = sid;
+                renderRemPlan(_remPlan);
+              }
+            });
+          // v108: rundown realtime dari laptop operator
+          var planRef = dbRef(PLAN_PATH);
+          if (planRef)
+            planRef.on("value", function (snap) {
+              renderRemPlan(snap.val());
             });
         }
       });
     } catch (e) {
       setStatus("Auth tidak tersedia", false);
     }
+  }
+
+  /* ================= RUNDOWN DI REMOTE (v108) ================= */
+  var _remPlan = [];
+  var _remLiveSong = "";
+  function renderRemPlan(arr) {
+    _remPlan = Array.isArray(arr) ? arr : [];
+    var host = el("cfRemPlan");
+    if (!host) return;
+    if (!_remPlan.length) {
+      host.innerHTML =
+        '<p class="cfRemPlanEmpty">Rundown kosong — isi dari laptop operator.</p>';
+      return;
+    }
+    host.innerHTML = _remPlan
+      .map(function (it, i) {
+        var on = !!(it && it.songId && String(it.songId) === _remLiveSong);
+        return (
+          '<button type="button" class="cfRemPlanItem' +
+          (on ? " on" : "") +
+          '" data-songid="' +
+          esc((it && it.songId) || "") +
+          '">' +
+          '<span class="cfRemPlanNo">' +
+          (i + 1) +
+          "</span>" +
+          '<span class="cfRemPlanTitle">' +
+          esc((it && it.title) || "Tanpa judul") +
+          "</span>" +
+          (it && it.key
+            ? '<span class="cfRemPlanKey">' + esc(it.key) + "</span>"
+            : "") +
+          "</button>"
+        );
+      })
+      .join("");
   }
 
   /* ================= boot ================= */
@@ -511,6 +593,7 @@
     sendTimer: sendTimer,
     _msgPayload: msgPayload,
     _timerPayload: timerPayload,
+    _renderRemPlan: renderRemPlan,
   };
 
   if (document.readyState === "loading")

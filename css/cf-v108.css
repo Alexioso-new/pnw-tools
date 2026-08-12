@@ -1,0 +1,59 @@
+/* PNW-FILE-GUIDE: css/cf-v108.css — Rundown di Remote HP (v108 / v9.8)
+   Dimuat setelah cf-v107.css di castflow.html. Hanya dipakai mode remote. */
+
+.cfRemPlanNav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.cfRemPlanNav .cfRemBtn {
+  flex: 1;
+  padding: 12px;
+}
+.cfRemPlan {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 38vh;
+  overflow-y: auto;
+}
+.cfRemPlanItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: #141414;
+  border: 1px solid #3a3a40;
+  border-radius: 8px;
+  padding: 12px;
+  color: #e8edf7;
+  cursor: pointer;
+  font:
+    400 14px "TikTok Sans",
+    system-ui,
+    sans-serif;
+}
+.cfRemPlanItem:active {
+  background: #323236;
+}
+.cfRemPlanItem.on {
+  border-color: #1282a2;
+  background: rgba(18, 130, 162, 0.18);
+}
+.cfRemPlanNo {
+  color: #6b7c99;
+  font-size: 12px;
+  min-width: 18px;
+}
+.cfRemPlanTitle {
+  flex: 1;
+}
+.cfRemPlanKey {
+  color: #94a3bc;
+  font-size: 12px;
+}
+.cfRemPlanEmpty {
+  color: #6b7c99;
+  font-size: 12px;
+  margin: 4px 0;
+}
