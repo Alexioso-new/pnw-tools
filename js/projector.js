@@ -187,10 +187,97 @@
       return s && String(s.id) === String(id);
     }) || null;
   }
-  function slidesOf(song) {
+  function rawDeckOf(song) {
     var e = engine();
     if (e) return e.buildSlides(song, settings().maxLines);
     return [{ label: "", lines: [(song && song.title) || ""] }];
+  }
+  /* v110: aransemen per lagu — urutan label bagian (mis. Verse, Chorus, Verse,
+     Chorus, Interlude, Chorus), disimpan LOKAL di operator (pnwCastflowArr.v1).
+     slidesOf() menerapkannya sehingga deck, payload, chip bagian, dan
+     navigasi Next/Prev semuanya mengikuti aransemen. */
+  var ARR_KEY = "pnwCastflowArr.v1";
+  function _arrAll() {
+    try {
+      return JSON.parse(localStorage.getItem(ARR_KEY) || "{}") || {};
+    } catch (e) {
+      return {};
+    }
+  }
+  function arrOf(songId) {
+    var a = _arrAll()[songId];
+    return Array.isArray(a) ? a.slice() : [];
+  }
+  function setArr(songId, arr) {
+    var all = _arrAll();
+    if (Array.isArray(arr) && arr.length) all[songId] = arr.slice();
+    else delete all[songId];
+    try {
+      localStorage.setItem(ARR_KEY, JSON.stringify(all));
+    } catch (e) {}
+  }
+  function applyArrangement(song, deck) {
+    var arr = arrOf(song && song.id);
+    if (!arr.length) return deck;
+    var runs = [];
+    deck.forEach(function (s) {
+      var lb = s && s.label ? String(s.label) : "";
+      var last = runs[runs.length - 1];
+      if (last && last.base === lb) {
+        last.slides.push(s);
+        return;
+      }
+      runs.push({ base: lb, slides: [s] });
+    });
+    var head = [];
+    var labeled = [];
+    runs.forEach(function (r) {
+      (r.base === "" ? head : labeled).push(r);
+    });
+    var used = {};
+    var out = [];
+    arr.forEach(function (want) {
+      var w = String(want);
+      used[w] = (used[w] || 0) + 1; // kemunculan ke-k di aransemen
+      var seenN = 0;
+      var match = null;
+      for (var i = 0; i < labeled.length; i++) {
+        if (labeled[i].base !== w) continue;
+        seenN++;
+        if (seenN === used[w]) {
+          match = labeled[i];
+          break;
+        }
+      }
+      if (!match)
+        for (var j = 0; j < labeled.length; j++)
+          if (labeled[j].base === w) {
+            match = labeled[j]; // clamp ke run pertama bila stok habis
+            break;
+          }
+      if (match) out = out.concat(match.slides);
+    });
+    if (!out.length) return deck;
+    return head.concat(out);
+  }
+  function slidesOf(song) {
+    return applyArrangement(song, rawDeckOf(song));
+  }
+  /* label bagian unik dari urutan ASLI lagu (tanpa aransemen) — untuk tombol
+     "+ tambah" di baris aransemen. */
+  function baseSectionsOf(song) {
+    var u = {};
+    var out = [];
+    var prev = null;
+    rawDeckOf(song).forEach(function (s) {
+      var lb = s && s.label ? String(s.label) : "";
+      if (!lb || lb === prev) return;
+      prev = lb;
+      if (u[lb]) return;
+      u[lb] = 1;
+      out.push(lb);
+    });
+    return out;
   }
   /* v109: daftar bagian lagu untuk lompat satu ketuk + chip bagian di
      remote/operator. Slide BERURUTAN berlabel sama digabung jadi SATU bagian;
@@ -240,6 +327,8 @@
         slideIndex: idx,
         slideMax: settings().maxLines,
         sections: sectionsOf(song),
+        nextLines: deck[idx + 1] ? (deck[idx + 1].lines || []).slice(0, 24) : [],
+        nextLabel: deck[idx + 1] ? deck[idx + 1].label || "" : "",
         showChords: false,
       });
     }
@@ -395,6 +484,9 @@
       _secs.forEach(function (sc) {
         if (sc.i <= cur) _curSec = sc.label;
       });
+      /* v110: baris aransemen per lagu */
+      var _arr = arrOf(_deckSong.id);
+      var _arrAvail = baseSectionsOf(_deckSong);
       host.innerHTML =
         '<div class="projDeckHead"><b>' + esc(_deckSong.title || "") + "</b>" +
         '<span>' + deck.length + " slide \u00b7 " + settings().maxLines + " baris/slide</span>" +
@@ -416,6 +508,40 @@
               .join("") +
             "</div>"
           : "") +
+        '<div class="projArrRow">' +
+        '<span class="projArrLabel">ARANSEMEN</span>' +
+        '<span class="projArrChips">' +
+        (_arr.length
+          ? _arr
+              .map(function (a, ai) {
+                return (
+                  '<button type="button" class="projArrChip" data-arrix="' +
+                  ai +
+                  '" title="Ketuk untuk hapus">' +
+                  esc(a) +
+                  " ✕</button>"
+                );
+              })
+              .join("")
+          : '<span class="projArrEmpty">urutan asli lagu</span>') +
+        "</span>" +
+        '<span class="projArrAdd">' +
+        _arrAvail
+          .map(function (b) {
+            return (
+              '<button type="button" class="projArrAddBtn" data-arradd="' +
+              esc(b) +
+              '">+ ' +
+              esc(b) +
+              "</button>"
+            );
+          })
+          .join("") +
+        "</span>" +
+        (_arr.length
+          ? '<button type="button" class="projArrReset" data-op="arr-reset">Reset</button>'
+          : "") +
+        "</div>" +
         '<div class="projDeckGrid">' +
         deck
           .map(function (s, i) {
@@ -451,6 +577,28 @@
           goLive();
         };
       });
+      host.querySelectorAll(".projArrChip").forEach(function (b) {
+        b.onclick = function () {
+          var a = arrOf(_deckSong.id);
+          a.splice(parseInt(b.getAttribute("data-arrix"), 10) || 0, 1);
+          setArr(_deckSong.id, a);
+          renderDeck();
+        };
+      });
+      host.querySelectorAll(".projArrAddBtn").forEach(function (b) {
+        b.onclick = function () {
+          var a = arrOf(_deckSong.id);
+          a.push(b.getAttribute("data-arradd"));
+          setArr(_deckSong.id, a);
+          renderDeck();
+        };
+      });
+      var arrRst = host.querySelector('[data-op="arr-reset"]');
+      if (arrRst)
+        arrRst.onclick = function () {
+          setArr(_deckSong.id, null);
+          renderDeck();
+        };
     });
   }
   function renderCatalog() {
@@ -1570,6 +1718,8 @@
     settings: settings,
     slidesOf: slidesOf,
     sectionsOf: sectionsOf,
+    arrOf: arrOf,
+    setArr: setArr,
     songById: songById,
     savePlan: savePlan,
     setPlan: setPlan,

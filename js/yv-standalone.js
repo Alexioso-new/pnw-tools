@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v9.9-standalone";
+  var VERSION = "v9.10-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";
@@ -745,14 +745,31 @@
     if (stage) stage.hidden = false;
     if (title) title.textContent = v.songTitle || "";
     var html = "";
-    if (v.kind === "song" && v.songId) {
-      var sg = getSong(v.songId);
-      var deck = sg ? buildSlides(sg, v.slideMax || 4) : [];
-      var ix = Math.max(0, parseInt(v.slideIndex, 10) || 0);
-      var cur = deck[ix];
-      var nx = deck[ix + 1];
-      html += '<div class="smCur">' + (cur ? cur.lines.map(smEsc).join("<br>") : "") + "</div>";
-      html += '<div class="smNext"><span>Next' + (nx && nx.label ? " · " + smEsc(nx.label) : "") + "</span>" + (nx ? smEsc((nx.lines || [])[0] || "") : "—") + "</div>";
+    if (v.kind === "song" && (v.songId || v.lines)) {
+      /* v110: utamakan lirik dari payload (mandiri + konsisten dengan
+         aransemen operator); dek lokal hanya fallback untuk operator lama. */
+      var curLines = Array.isArray(v.lines) && v.lines.length ? v.lines : null;
+      var nxLines = Array.isArray(v.nextLines) && v.nextLines.length ? v.nextLines : null;
+      var nxLabel = v.nextLabel || "";
+      if (!curLines) {
+        var sg = getSong(v.songId);
+        var deck = sg ? buildSlides(sg, v.slideMax || 4) : [];
+        var ix = Math.max(0, parseInt(v.slideIndex, 10) || 0);
+        var cur = deck[ix];
+        var nx = deck[ix + 1];
+        curLines = cur ? cur.lines : [];
+        if (!nxLines) {
+          nxLines = nx ? nx.lines : null;
+          nxLabel = nx && nx.label ? nx.label : "";
+        }
+      }
+      html += '<div class="smCur">' + (curLines || []).map(smEsc).join("<br>") + "</div>";
+      html +=
+        '<div class="smNext"><span>Next' +
+        (nxLabel ? " \u00b7 " + smEsc(nxLabel) : "") +
+        "</span>" +
+        (nxLines && nxLines.length ? smEsc(nxLines[0] || "") : "\u2014") +
+        "</div>";
     } else if (v.kind === "countdown" && v.endsAt) {
       html += '<div class="smCur smCount" id="smCount"></div>';
     } else if (v.text) {

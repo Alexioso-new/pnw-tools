@@ -1,0 +1,70 @@
+/* PNW-FILE-GUIDE: css/cf-v110.css — Aransemen lagu (v110 / v9.10)
+   Dimuat setelah cf-v109.css di castflow.html. Baris aransemen di deck operator. */
+
+.projArrRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-top: 1px dashed #2c2f39;
+}
+.projArrLabel {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: #94a3bc;
+}
+.projArrChips,
+.projArrAdd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.projArrChip {
+  appearance: none;
+  border: 1px solid #1282a2;
+  background: rgba(18, 130, 162, 0.18);
+  color: #fff;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font:
+    500 12px/1 "TikTok Sans",
+    system-ui,
+    sans-serif;
+  cursor: pointer;
+}
+.projArrAddBtn {
+  appearance: none;
+  border: 1px dashed #3a3a40;
+  background: transparent;
+  color: #94a3bc;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font:
+    500 12px/1 "TikTok Sans",
+    system-ui,
+    sans-serif;
+  cursor: pointer;
+}
+.projArrAddBtn:hover {
+  color: #e8edf7;
+  border-color: #1282a2;
+}
+.projArrEmpty {
+  color: #6b7c99;
+  font-size: 12px;
+}
+.projArrReset {
+  appearance: none;
+  border: 1px solid #3a3a40;
+  background: #1e1e21;
+  color: #f87171;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font:
+    500 12px/1 "TikTok Sans",
+    system-ui,
+    sans-serif;
+  cursor: pointer;
+}
