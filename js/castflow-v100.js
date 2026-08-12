@@ -504,6 +504,46 @@
     Object.keys(values).forEach(function (id) { var x = document.getElementById(id); if (x) x.textContent = values[id]; });
     qa(".cfMotionChoice").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-motion") === v.transition); });
   }
+  /* ---- v112: Mask — pengaman proyeksi (bar hitam atas/bawah, %) ---- */
+  var MASK_KEY = "pnwCastflowMask.v1";
+  function maskClamp(v) {
+    v = parseInt(v, 10);
+    if (isNaN(v) || v < 0) return 0;
+    return Math.min(30, v);
+  }
+  function readMask() {
+    try {
+      var m = JSON.parse(localStorage.getItem(MASK_KEY) || "null");
+      if (m && typeof m === "object")
+        return { top: maskClamp(m.top), bottom: maskClamp(m.bottom) };
+    } catch (e) {}
+    return { top: 0, bottom: 0 };
+  }
+  function saveMask(m) {
+    try {
+      localStorage.setItem(MASK_KEY, JSON.stringify(m));
+    } catch (e) {}
+  }
+  function buildMaskRow() {
+    var row = document.getElementById("cfMaskRow");
+    if (!row || row.dataset.built) return;
+    row.dataset.built = "1";
+    var m = readMask();
+    row.innerHTML =
+      '<span class="cfMaskLbl">MASK</span>' +
+      '<label>Atas <input id="cfMaskTop" type="number" min="0" max="30" value="' + m.top + '"></label>' +
+      '<label>Bawah <input id="cfMaskBottom" type="number" min="0" max="30" value="' + m.bottom + '"></label>' +
+      '<span class="cfMaskUnit">%</span>';
+    function onCh() {
+      saveMask({
+        top: maskClamp((document.getElementById("cfMaskTop") || {}).value),
+        bottom: maskClamp((document.getElementById("cfMaskBottom") || {}).value),
+      });
+    }
+    var ins = row.querySelectorAll("input");
+    for (var i = 0; i < ins.length; i++) ins[i].onchange = onCh;
+  }
+
   function enhanceDesignPanel() {
     var pane = q(".projPaneR");
     if (!pane) return false;
@@ -512,6 +552,7 @@
     buildFontPicker();
     buildAdvancedDesign();
     buildThemeRow();
+    buildMaskRow();
     updateFontButton();
     return true;
   }
@@ -589,13 +630,15 @@
   }
 
   window.CastFlowV100 = {
-    version: "v9.11",
+    version: "v9.12",
     setFlowMode: function (mode) { setFlowMode(mode, true); },
     setPreviewMode: setPreviewMode,
     readVisual: readVisual,
     applyTheme: applyTheme,
     buildThemeRow: buildThemeRow,
     THEMES: THEMES,
+    readMask: readMask,
+    buildMaskRow: buildMaskRow,
     applyVisualPreview: applyVisualPreview,
     syncMiniPreviews: syncMiniPreviews,
   };

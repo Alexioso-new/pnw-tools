@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v9.11-standalone";
+  var VERSION = "v9.12-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";
@@ -689,6 +689,25 @@
   /* v84: lapisan overlay (logo / lower-third) dirender TERPISAH dari konten
      supaya ganti slide tidak mengedipkan overlay. */
   var _lastOv = "__none__";
+  var _lastMask = "__none__"; // v112
+  /* v112: Mask — bar hitam atas/bawah di output (pengaman proyeksi fisik). */
+  function renderMask(v) {
+    safe("mask", function () {
+      var host = document.getElementById("dispMask");
+      if (!host) return;
+      var m = v && v.active && v.mask ? v.mask : null;
+      var t = m ? Math.min(30, Math.max(0, parseInt(m.top, 10) || 0)) : 0;
+      var b = m ? Math.min(30, Math.max(0, parseInt(m.bottom, 10) || 0)) : 0;
+      var sig = t + "/" + b;
+      if (sig === _lastMask) return;
+      _lastMask = sig;
+      var bt = host.querySelector(".dispMaskT");
+      var bb = host.querySelector(".dispMaskB");
+      if (bt) bt.style.height = t + "%";
+      if (bb) bb.style.height = b + "%";
+      host.classList.toggle("on", t > 0 || b > 0);
+    });
+  }
   function renderOverlay(v) {
     safe("overlay", function () {
       var host = document.getElementById("dispOverlay");
@@ -789,6 +808,7 @@
     }
   }
   try { window.__renderStage = renderStage; } catch (e) {}
+  try { window.__renderMask = renderMask; } catch (e) {} // v112
 
   function renderDisplay(v) {
     /* v101: pancarkan kontrak render untuk heartbeat + slide ACK (cf-health.js) */
@@ -816,6 +836,7 @@
     }
     _renderMain(v);
     renderOverlay(v);
+    renderMask(v); // v112
   }
 
   function dispStatus(online) {

@@ -1,4 +1,4 @@
-/* PNW-FILE-GUIDE: js/cf-remote.js — CastFlow Remote Control + Stage Message + Timer + Rundown + Bagian (v111 / v9.11)
+/* PNW-FILE-GUIDE: js/cf-remote.js — CastFlow Remote Control + Stage Message + Timer + Rundown + Bagian + Props & Makro (v112 / v9.12)
    Tiga peran dalam satu berkas, dipilih dari URL:
    1. ?mode=remote  -> panel Remote Control (HP/tablet): Prev/Next/GoLive/Black/Logo/Clear
       + kirim Stage Message. Menulis perintah ke RTDB pujianYouth/youthviews/remote.
@@ -10,11 +10,41 @@
 (function () {
   "use strict";
 
-  var VERSION = "v9.11-remote";
+  var VERSION = "v9.12-remote";
   var REMOTE_PATH = "pujianYouth/youthviews/remote";
   var MSG_PATH = "pujianYouth/youthviews/stagemsg";
   var PLAN_PATH = "pujianYouth/projector/plan";
   var LAST_KEY = "pnwCastflowRemoteLast.v1";
+  /* v112: preset makro sekali-tap — rangkaian langkah dieksekusi berurutan
+     di operator. Edit bebas di sini. Bentuk langkah: lihat runSteps(). */
+  var MACRO_PRESETS = [
+    {
+      id: "pembukaan",
+      label: "Pembukaan",
+      steps: [
+        { cmd: "logo" },
+        { timer: { mode: "down", mins: 5 } },
+        { msg: { text: "Ibadah segera dimulai — siapkan hati" } },
+      ],
+    },
+    {
+      id: "doa",
+      label: "Doa",
+      steps: [
+        { cmd: "black" },
+        { msg: { text: "Mari kita berdoa" } },
+      ],
+    },
+    {
+      id: "penutup",
+      label: "Penutup",
+      steps: [
+        { cmd: "clear" },
+        { timer: { mode: "off" } },
+        { msg: { text: "Terima kasih — Tuhan Yesus memberkati", autoSec: 30 } },
+      ],
+    },
+  ];
   /* v107: preset pesan panggung sekali-tap (bisa diedit di sini). */
   var MSG_PRESETS = [
     "Ulangi Chorus",
@@ -115,6 +145,14 @@
       } else if (c === "logo" && A.logo) {
         A.logo();
         ok = true;
+      } else if (c === "prop" && R.propSet) {
+        R.propSet(cmd.data || {});
+        ok = true;
+      } else if (c === "propoff" && R.propOff) {
+        R.propOff();
+        ok = true;
+      } else if (c === "macro" && cmd.data && cmd.data.steps) {
+        ok = runSteps(cmd.data.steps);
       }
     } catch (e) {
       log("remote.exec", String(e));
@@ -131,6 +169,50 @@
       } catch (e) {}
     }
     return ok;
+  }
+
+  /* v112: Makro — satu perintah membawa rangkaian langkah yang dieksekusi
+     berurutan di operator. Bentuk langkah:
+       {cmd:"logo"|"black"|"clear"|...}    -> lewat exec() biasa
+       {prop:{kind:"logo"}}               -> prop lengket via __remote
+       {prop:{kind:"third", text:"..."}}
+       {msg:{text, flash?, autoSec?}}     -> tulis node stagemsg
+       {timer:{mode, mins?}}              -> tulis node stagemsg
+     msg/timer butuh koneksi RTDB; langkah lain tetap jalan bila satu gagal. */
+  function runSteps(steps) {
+    if (!Array.isArray(steps) || !steps.length) return false;
+    var R = (window.PNWProjector && window.PNWProjector.__remote) || {};
+    var n = 0;
+    steps.slice(0, 12).forEach(function (st) {
+      try {
+        if (!st || typeof st !== "object") return;
+        if (st.cmd) {
+          if (st.cmd !== "macro" && exec({ cmd: st.cmd, data: st.data })) n++;
+        } else if (st.prop) {
+          if (R.propSet) {
+            R.propSet(st.prop);
+            n++;
+          }
+        } else if (st.msg) {
+          var rm = dbRef(MSG_PATH);
+          if (rm) {
+            rm.update(msgPayload(st.msg.text || "", st.msg));
+            n++;
+          }
+        } else if (st.timer) {
+          var rt = dbRef(MSG_PATH);
+          if (rt) {
+            rt.update({
+              timer: timerPayload(st.timer.mode, st.timer.mins),
+              t: Date.now(),
+              by: _uid || "anon",
+            });
+            n++;
+          }
+        }
+      } catch (e) {}
+    });
+    return n > 0;
   }
 
   /* ========== OVERLAY STAGE MESSAGE + TIMER (mode=stage & QA) ========== */
@@ -431,6 +513,21 @@
       '<p class="cfRemPlanEmpty">Memuat rundown…</p>' +
       "</div>" +
       "</div>" +
+      '<div class="cfRemMsg cfRemPropBox">' +
+      '<div class="cfRemMsgTitle">PROPS</div>' +
+      '<div class="cfRemMsgOps">' +
+      '<button id="cfRemPropLogo" type="button" class="cfRemBtn">Logo</button>' +
+      '<button id="cfRemPropOff" type="button" class="cfRemBtn">Matikan Prop</button>' +
+      "</div>" +
+      '<div class="cfRemPropRow">' +
+      '<input id="cfRemPropThirdIn" type="text" maxlength="80" placeholder="Teks lower-third…">' +
+      '<button id="cfRemPropThird" type="button" class="cfRemBtn cfRemPrimary">Tampilkan</button>' +
+      "</div>" +
+      "</div>" +
+      '<div class="cfRemMsg cfRemMacroBox">' +
+      '<div class="cfRemMsgTitle">MAKRO</div>' +
+      '<div class="cfRemMacroRow" id="cfRemMacros"></div>' +
+      "</div>" +
       '<div id="cfRemNow" class="cfRemNow"></div>' +
       "</div>";
     document.body.appendChild(wrap);
@@ -452,6 +549,31 @@
       el("cfRemMsgIn").value = "";
       sendMsg("");
     };
+    /* v112: PROPS + MAKRO */
+    el("cfRemPropLogo").onclick = function () {
+      send("prop", { kind: "logo" });
+    };
+    el("cfRemPropThird").onclick = function () {
+      send("prop", {
+        kind: "third",
+        text: (el("cfRemPropThirdIn").value || "").trim(),
+      });
+    };
+    el("cfRemPropOff").onclick = function () {
+      send("propoff");
+    };
+    var macroBox = el("cfRemMacros");
+    if (macroBox)
+      MACRO_PRESETS.forEach(function (m) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "cfRemBtn cfRemMacro";
+        b.textContent = m.label;
+        b.onclick = function () {
+          send("macro", { name: m.id, steps: m.steps });
+        };
+        macroBox.appendChild(b);
+      });
     var chipsBox = el("cfRemChips");
     if (chipsBox)
       MSG_PRESETS.forEach(function (p) {
@@ -641,6 +763,8 @@
     _timerPayload: timerPayload,
     _renderRemPlan: renderRemPlan,
     _renderRemSec: renderRemSec,
+    _runSteps: runSteps,
+    _macroPresets: MACRO_PRESETS,
   };
 
   if (document.readyState === "loading")

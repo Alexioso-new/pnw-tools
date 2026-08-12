@@ -15,7 +15,7 @@
 (function () {
   "use strict";
 
-  var CF_VERSION = "v9.11";
+  var CF_VERSION = "v9.12";
   var LANG_KEY = "pnwCastflowLang";
   var FONTS_KEY = "pnwCastflowFonts.v1";
   var GRID_KEY = "pnwCastflowGrid.v1";

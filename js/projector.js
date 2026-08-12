@@ -88,6 +88,7 @@
   var _watching = false;
   var _text = "";
   var _verse = { ref: "", text: "" };
+  var _prop = null; // v112: prop lengket {kind:"logo"} | {kind:"third", text, sub}
 
   /* ---------------- util ---------------- */
   function el(id) {
@@ -340,6 +341,8 @@
     try { visual = JSON.parse(localStorage.getItem("pnwCastflowVisualStyle.v2") || "{}") || {}; } catch (e) {}
     var style = Object.assign({ font: s.font, size: s.size, align: s.align, shadow: s.shadow }, visual);
     var base = { active: true, style: style, transition: visual.transition || "fade", bg: s.bg, showTitle: s.showTitle, showMeta: s.showMeta };
+    if (_prop) base.overlay = _prop; // v112: prop lengket ikut setiap payload live
+    try { var _mk = JSON.parse(localStorage.getItem("pnwCastflowMask.v1") || "null"); if (_mk && (parseInt(_mk.top, 10) > 0 || parseInt(_mk.bottom, 10) > 0)) base.mask = { top: Math.min(30, Math.max(0, parseInt(_mk.top, 10) || 0)), bottom: Math.min(30, Math.max(0, parseInt(_mk.bottom, 10) || 0)) }; } catch (e) {}
     if (!_active) return null;
     if (_active.kind === "song") {
       var song = songById(_active.songId);
@@ -1811,6 +1814,43 @@
       goLive();
     });
   }
+  /* ---- v112: Props — overlay lengket ala ProPresenter ---- */
+  function propOn() {
+    return _prop;
+  }
+  function propSet(p) {
+    if (!p || !p.kind) {
+      _prop = null;
+    } else if (
+      _prop &&
+      _prop.kind === p.kind &&
+      (p.kind !== "third" || (_prop.text || "") === String(p.text || ""))
+    ) {
+      _prop = null; // ketuk prop yang sama = matikan
+    } else if (p.kind === "third") {
+      _prop = {
+        kind: "third",
+        text: String(p.text || "").slice(0, 80),
+        sub: String(p.sub || "").slice(0, 80),
+      };
+    } else {
+      _prop = { kind: "logo" };
+    }
+    if (_active) {
+      try {
+        goLive();
+      } catch (e) {}
+    }
+    return _prop;
+  }
+  function propOff() {
+    _prop = null;
+    if (_active) {
+      try {
+        goLive();
+      } catch (e) {}
+    }
+  }
   window.PNWProjector.__remote = {
     step: step,
     goLive: goLive,
@@ -1818,6 +1858,9 @@
     itemGo: itemGo,
     itemStep: itemStep,
     goSlide: goSlide,
+    propSet: propSet,
+    propOff: propOff,
+    propOn: propOn,
   };
 })();
 

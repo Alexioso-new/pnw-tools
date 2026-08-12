@@ -52,6 +52,7 @@
     <link rel="stylesheet" href="./css/cf-v109.css" />
     <link rel="stylesheet" href="./css/cf-v110.css" />
     <link rel="stylesheet" href="./css/cf-v111.css" />
+    <link rel="stylesheet" href="./css/cf-v112.css" />
     <link
       rel="stylesheet"
       href="https://cdn-uicons.flaticon.com/uicons-solid-rounded/css/uicons-solid-rounded.css"
@@ -117,6 +118,7 @@
       <canvas class="dispMotion" id="dispMotion" aria-hidden="true"></canvas>
       <div class="dispLottie" id="dispLottie" aria-hidden="true"></div>
       <div class="dispOverlay" id="dispOverlay" aria-hidden="true"></div>
+      <div class="dispMask" id="dispMask" aria-hidden="true"><div class="dispMaskT"></div><div class="dispMaskB"></div></div>
       <div class="dispBar">
         <span class="dispDot off" id="dispDot" title="Menyambung…"></span>
         <span class="dispBrand">CastFlow — Live Output</span>
@@ -236,6 +238,7 @@
           <label class="cfReflowTgl"
             ><input type="checkbox" id="cfReflow" /> Auto-fit teks padat</label
           >
+          <div class="cfMaskRow" id="cfMaskRow"></div>
           <div class="projActiveBody" id="projActiveBody"></div>
           <div class="projRowBtns">
             <button class="projMiniBtn" id="projPrevSlide" type="button" title="Slide sebelumnya (←)">
