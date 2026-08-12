@@ -1,0 +1,162 @@
+/* PNW-FILE-GUIDE: css/cf-v105.css — Remote Control + Stage Message (v105 / v9.5) */
+
+/* ---- mode remote: sembunyikan krom presenter ---- */
+body.remote-mode .yvBar,
+body.remote-mode #projPage,
+body.remote-mode #displayScreen,
+body.remote-mode .tlDrawer {
+  display: none !important;
+}
+body.remote-mode {
+  background: #141414;
+  overflow: auto;
+}
+
+#cfRemote {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: #141414;
+  color: #e8edf7;
+  font-family: "TikTok Sans", system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  gap: 12px;
+  overflow-y: auto;
+}
+.cfRemHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cfRemLogo {
+  height: 24px;
+  width: auto;
+}
+.cfRemTitle {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: #94a3bc;
+  font-weight: 500;
+}
+.cfRemAuth {
+  margin: auto;
+  text-align: center;
+}
+.cfRemHint {
+  color: #6b7c99;
+  font-size: 12px;
+  margin-top: 10px;
+}
+.cfRemPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+.cfRemPanel[hidden] {
+  display: none !important;
+}
+.cfRemStatus {
+  text-align: center;
+  font-size: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #1e1e21;
+  border: 1px solid #2c2f39;
+}
+.cfRemStatus.ok {
+  color: #34d399;
+}
+.cfRemStatus.bad {
+  color: #f87171;
+}
+.cfRemGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.cfRemBtn {
+  appearance: none;
+  border: 1px solid #3a3a40;
+  background: #1e1e21;
+  color: #e8edf7;
+  border-radius: 10px;
+  padding: 18px 10px;
+  font: 500 15px/1 "TikTok Sans", system-ui, sans-serif;
+  cursor: pointer;
+}
+.cfRemBtn:active {
+  background: #323236;
+}
+.cfRemPrimary {
+  background: #1282a2;
+  border-color: #1282a2;
+  color: #fff;
+}
+.cfRemPrimary:active {
+  background: #0e6b86;
+}
+.cfRemMsg {
+  background: #1e1e21;
+  border: 1px solid #2c2f39;
+  border-radius: 10px;
+  padding: 12px;
+}
+.cfRemMsgTitle {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: #94a3bc;
+  margin-bottom: 8px;
+}
+.cfRemMsg input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #141414;
+  border: 1px solid #3a3a40;
+  color: #e8edf7;
+  border-radius: 8px;
+  padding: 12px;
+  font: 400 14px "TikTok Sans", system-ui, sans-serif;
+}
+.cfRemMsgOps {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.cfRemMsgOps .cfRemBtn {
+  flex: 1;
+  padding: 12px;
+}
+.cfRemNow {
+  text-align: center;
+  color: #6b7c99;
+  font-size: 12px;
+  padding-bottom: 8px;
+}
+
+/* ---- overlay stage message (mode=stage) ---- */
+#cfStageMsg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6%;
+  z-index: 40;
+  display: none;
+  justify-content: center;
+  pointer-events: none;
+}
+#cfStageMsg.on {
+  display: flex;
+}
+.cfStageMsgBox {
+  background: rgba(251, 191, 36, 0.95);
+  color: #1a1200;
+  font: 600 clamp(18px, 3.2vw, 34px) / 1.3 "TikTok Sans", system-ui, sans-serif;
+  padding: 14px 28px;
+  border-radius: 12px;
+  max-width: 80%;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}

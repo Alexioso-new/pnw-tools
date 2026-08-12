@@ -32,6 +32,14 @@
           ".read": true,
           ".write": true,
           ".validate": "newData.hasChildren(['ts', 'sig']) && newData.child('ts').isNumber() && newData.child('sig').isString() && newData.child('sig').val().length < 200"
+        },
+        "remote": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "stagemsg": {
+          ".read": true,
+          ".write": "auth != null"
         }
       },
       "projector": {

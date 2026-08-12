@@ -1506,6 +1506,15 @@
     SOLIDS: SOLIDS,
     MOTIONS: MOTIONS,
   };
+
+  /* v105: hook remote control (HP/tablet). Dieksekusi js/cf-remote.js.
+     step() sudah memanggil goLive() di akhir, jadi next/prev dari remote
+     langsung menayangkan ke output. */
+  window.PNWProjector.__remote = {
+    step: step,
+    goLive: goLive,
+    clear: clearScreen,
+  };
 })();
 
 

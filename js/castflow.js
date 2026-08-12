@@ -15,7 +15,7 @@
 (function () {
   "use strict";
 
-  var CF_VERSION = "v9.4";
+  var CF_VERSION = "v9.5";
   var LANG_KEY = "pnwCastflowLang";
   var FONTS_KEY = "pnwCastflowFonts.v1";
   var GRID_KEY = "pnwCastflowGrid.v1";
@@ -1188,6 +1188,8 @@
     if (_cfLogo) { _cfBlack = false; liveBlank({ overlay: { kind: "image", value: "./castflow-logo-light.svg", pos: "center" } }); }
     else cfClearLive();
   }
+  /* v105: aksi yang sama dipakai remote control (js/cf-remote.js). */
+  try { window.__cfRemoteActions = { black: toggleBlack, logo: toggleLogo, clear: cfClearLive }; } catch (e) {}
   function initHotkeys() {
     document.addEventListener("keydown", function (e) {
       var t = e.target;
@@ -1536,6 +1538,18 @@
         menu.hidden = true;
       };
       menu.appendChild(b);
+    }
+    if (!document.getElementById("cfRemoteItem")) {
+      var r = document.createElement("button");
+      r.type = "button";
+      r.className = "cfUserItem";
+      r.id = "cfRemoteItem";
+      r.textContent = "Open Remote Control";
+      r.onclick = function () {
+        window.open("./castflow.html?mode=remote", "_blank", "noopener");
+        menu.hidden = true;
+      };
+      menu.appendChild(r);
     }
   }
 

@@ -1,0 +1,33 @@
+CATATAN v105 — CastFlow Remote Control + Stage Message (label v9.5)
+==================================================================
+
+ISI RILIS
+1. Remote Control: buka castflow.html?mode=remote (atau menu Avatar ->
+   "Open Remote Control"). Login Google akun pengurus, lalu tersedia tombol
+   Prev / Next / Go Live / Clear / Black / Logo + info lagu yang sedang live.
+   Perintah ditulis ke RTDB pujianYouth/youthviews/remote dan dieksekusi
+   halaman operator (dedupe by id + abaikan perintah >30 detik).
+2. Stage Message: dari remote, ketik pesan -> Kirim. Pesan tampil sebagai
+   overlay kuning di Stage Display (castflow.html?mode=stage). Hapus dengan
+   tombol Hapus. Node RTDB: pujianYouth/youthviews/stagemsg.
+3. Hook baru: PNWProjector.__remote {step, goLive, clear} dan
+   window.__cfRemoteActions {black, logo, clear}.
+4. File baru: js/cf-remote.js + css/cf-v105.css (sudah masuk APP_SHELL sw.js).
+
+WAJIB SEBELUM DIPAKAI — PUBLISH RULES BARU
+database.rules.json di paket ini menambah 2 node di bawah youthviews:
+  "remote":   {".read": "auth != null", ".write": "auth != null"},
+  "stagemsg": {".read": true,           ".write": "auth != null"}
+Tanpa publish rules ini, remote akan DITOLAK server (PERMISSION_DENIED).
+Cara: Firebase Console -> Realtime Database -> Rules -> paste isi
+database.rules.json -> Publish.
+
+CARA DEPLOY
+1. Publish rules dulu (di atas).
+2. Timpa isi C:\pnw-tools dengan isi ZIP ini (folder .git jangan dihapus).
+3. git add -A && git commit -m "v105" && git push
+4. Ctrl+Shift+R -> label v9.5, cache pnw-tools-v105.
+5. Uji: menu Avatar -> Open Remote Control (HP) -> login -> tekan Next/Prev
+   saat lagu live; kirim Stage Message dan lihat di Stage Display.
+
+QA: 39/39 PASS (26 halaman operator + 13 mode remote), 0 error JS.
