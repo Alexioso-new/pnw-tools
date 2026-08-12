@@ -1,4 +1,4 @@
-/* PNW-FILE-GUIDE: js/cf-remote.js — CastFlow Remote Control + Stage Message + Timer + Rundown (v108 / v9.8)
+/* PNW-FILE-GUIDE: js/cf-remote.js — CastFlow Remote Control + Stage Message + Timer + Rundown + Bagian (v109 / v9.9)
    Tiga peran dalam satu berkas, dipilih dari URL:
    1. ?mode=remote  -> panel Remote Control (HP/tablet): Prev/Next/GoLive/Black/Logo/Clear
       + kirim Stage Message. Menulis perintah ke RTDB pujianYouth/youthviews/remote.
@@ -10,7 +10,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v9.8-remote";
+  var VERSION = "v9.9-remote";
   var REMOTE_PATH = "pujianYouth/youthviews/remote";
   var MSG_PATH = "pujianYouth/youthviews/stagemsg";
   var PLAN_PATH = "pujianYouth/projector/plan";
@@ -101,6 +101,9 @@
         ok = true;
       } else if (c === "item" && R.itemGo && cmd.data && cmd.data.songId) {
         R.itemGo(String(cmd.data.songId));
+        ok = true;
+      } else if (c === "slide" && R.goSlide && cmd.data && cmd.data.i != null) {
+        R.goSlide(cmd.data.i);
         ok = true;
       } else if (c === "clear") {
         if (A.clear) A.clear();
@@ -382,6 +385,10 @@
       '<button type="button" class="cfRemBtn" data-cmd="black">Black</button>' +
       '<button type="button" class="cfRemBtn" data-cmd="logo">Logo</button>' +
       "</div>" +
+      '<div class="cfRemMsg hide" id="cfRemSecBox">' +
+      '<div class="cfRemMsgTitle">BAGIAN LAGU</div>' +
+      '<div class="cfRemChips" id="cfRemSec"></div>' +
+      "</div>" +
       '<div class="cfRemMsg">' +
       '<div class="cfRemMsgTitle">STAGE MESSAGE</div>' +
       '<div class="cfRemChips" id="cfRemChips"></div>' +
@@ -489,6 +496,13 @@
         var sid = b.getAttribute("data-songid");
         if (sid) send("item", { songId: sid });
       });
+    var secBox = el("cfRemSec");
+    if (secBox)
+      secBox.addEventListener("click", function (e) {
+        var b = e.target.closest("[data-seci]");
+        if (!b) return;
+        send("slide", { i: parseInt(b.getAttribute("data-seci"), 10) || 0 });
+      });
     el("cfRemLogin").onclick = function () {
       try {
         firebase
@@ -526,6 +540,11 @@
                 _remLiveSong = sid;
                 renderRemPlan(_remPlan);
               }
+              // v109: chip bagian dari lagu yang sedang live
+              renderRemSec(
+                v && v.active && v.kind === "song" && v.sections ? v.sections : [],
+                v && typeof v.slideIndex === "number" ? v.slideIndex : -1,
+              );
             });
           // v108: rundown realtime dari laptop operator
           var planRef = dbRef(PLAN_PATH);
@@ -576,6 +595,33 @@
       .join("");
   }
 
+  /* ================= LOMPAT KE BAGIAN (v109) ================= */
+  function renderRemSec(sections, slideIndex) {
+    var box = el("cfRemSecBox");
+    var host = el("cfRemSec");
+    if (!box || !host) return;
+    var list = Array.isArray(sections) ? sections : [];
+    box.classList.toggle("hide", !list.length);
+    var curLabel = "";
+    list.forEach(function (sc) {
+      if (sc && typeof sc.i === "number" && sc.i <= slideIndex)
+        curLabel = sc.label;
+    });
+    host.innerHTML = list
+      .map(function (sc) {
+        return (
+          '<button type="button" class="cfRemChip' +
+          (sc.label === curLabel ? " on" : "") +
+          '" data-seci="' +
+          sc.i +
+          '">' +
+          esc(sc.label) +
+          "</button>"
+        );
+      })
+      .join("");
+  }
+
   /* ================= boot ================= */
   function boot() {
     if (IS_REMOTE) buildRemoteUI();
@@ -594,6 +640,7 @@
     _msgPayload: msgPayload,
     _timerPayload: timerPayload,
     _renderRemPlan: renderRemPlan,
+    _renderRemSec: renderRemSec,
   };
 
   if (document.readyState === "loading")

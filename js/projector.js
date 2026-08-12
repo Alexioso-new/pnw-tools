@@ -192,6 +192,32 @@
     if (e) return e.buildSlides(song, settings().maxLines);
     return [{ label: "", lines: [(song && song.title) || ""] }];
   }
+  /* v109: daftar bagian lagu untuk lompat satu ketuk + chip bagian di
+     remote/operator. Slide BERURUTAN berlabel sama digabung jadi SATU bagian;
+     label yang muncul berkali (mis. Chorus di 3 tempat) diberi nomor urut
+     ("Chorus 1", "Chorus 2") supaya tiap kemunculan bisa dituju langsung. */
+  function sectionsOf(song) {
+    var runs = [];
+    slidesOf(song).forEach(function (s, i) {
+      var lb = s && s.label ? String(s.label) : "";
+      if (!lb) return;
+      var last = runs[runs.length - 1];
+      if (last && last.base === lb) return; // lanjutan bagian yang sama
+      runs.push({ base: lb, i: i });
+    });
+    var total = {};
+    runs.forEach(function (r) {
+      total[r.base] = (total[r.base] || 0) + 1;
+    });
+    var seen = {};
+    return runs.map(function (r) {
+      seen[r.base] = (seen[r.base] || 0) + 1;
+      return {
+        label: total[r.base] > 1 ? r.base + " " + seen[r.base] : r.base,
+        i: r.i,
+      };
+    });
+  }
 
   /* ---------------- tayang ---------------- */
   function payload() {
@@ -213,6 +239,7 @@
         key: song.originalKey || "",
         slideIndex: idx,
         slideMax: settings().maxLines,
+        sections: sectionsOf(song),
         showChords: false,
       });
     }
@@ -256,7 +283,18 @@
       if (!song) return;
       var deck = slidesOf(song);
       var next = Math.max(0, Math.min(deck.length - 1, (_active.slideIndex || 0) + dir));
-      if (next === _active.slideIndex) return;
+      if (next === _active.slideIndex) {
+        /* v109: di batas slide, lanjut ke item rundown berikutnya/sebelumnya
+           bila lagu ini ada di rundown (alur ProPresenter). */
+        var ix = _plan.findIndex(function (x) {
+          return x.songId === _active.songId;
+        });
+        if (ix >= 0) {
+          var j = ix + (dir > 0 ? 1 : -1);
+          if (j >= 0 && j < _plan.length) itemStep(dir);
+        }
+        return;
+      }
       _active.slideIndex = next;
       renderActive();
       renderDeck();
@@ -351,10 +389,33 @@
       host.hidden = false;
       var deck = slidesOf(_deckSong);
       var cur = _active && _active.kind === "song" ? _active.slideIndex || 0 : -1;
+      /* v109: chip bagian lagu untuk lompat satu ketuk */
+      var _secs = sectionsOf(_deckSong);
+      var _curSec = "";
+      _secs.forEach(function (sc) {
+        if (sc.i <= cur) _curSec = sc.label;
+      });
       host.innerHTML =
         '<div class="projDeckHead"><b>' + esc(_deckSong.title || "") + "</b>" +
         '<span>' + deck.length + " slide \u00b7 " + settings().maxLines + " baris/slide</span>" +
         '<button class="projMiniBtn" data-op="back" type="button">\u2190 Library</button></div>' +
+        (_secs.length
+          ? '<div class="projSecChips">' +
+            _secs
+              .map(function (sc) {
+                return (
+                  '<button type="button" class="projSecChip' +
+                  (sc.label === _curSec ? " on" : "") +
+                  '" data-seci="' +
+                  sc.i +
+                  '">' +
+                  esc(sc.label) +
+                  "</button>"
+                );
+              })
+              .join("") +
+            "</div>"
+          : "") +
         '<div class="projDeckGrid">' +
         deck
           .map(function (s, i) {
@@ -378,6 +439,16 @@
           renderDeck();
           renderActive();
           renderPreview();
+        };
+      });
+      host.querySelectorAll(".projSecChip").forEach(function (b) {
+        b.onclick = function () {
+          if (!_active || _active.kind !== "song") return;
+          _active.slideIndex = parseInt(b.getAttribute("data-seci"), 10) || 0;
+          renderDeck();
+          renderActive();
+          renderPreview();
+          goLive();
         };
       });
     });
@@ -1498,6 +1569,7 @@
     },
     settings: settings,
     slidesOf: slidesOf,
+    sectionsOf: sectionsOf,
     songById: songById,
     savePlan: savePlan,
     setPlan: setPlan,
@@ -1546,12 +1618,28 @@
       if (it) itemGo(it.songId);
     });
   }
+  /* v109: lompat absolut ke slide tertentu (dipakai chip bagian). */
+  function goSlide(i) {
+    safe("remote.goSlide", function () {
+      if (!_active || _active.kind !== "song") return;
+      var song = songById(_active.songId);
+      if (!song) return;
+      var deck = slidesOf(song);
+      var next = Math.max(0, Math.min(deck.length - 1, parseInt(i, 10) || 0));
+      if (next === _active.slideIndex) return;
+      _active.slideIndex = next;
+      renderActive();
+      renderDeck();
+      goLive();
+    });
+  }
   window.PNWProjector.__remote = {
     step: step,
     goLive: goLive,
     clear: clearScreen,
     itemGo: itemGo,
     itemStep: itemStep,
+    goSlide: goSlide,
   };
 })();
 

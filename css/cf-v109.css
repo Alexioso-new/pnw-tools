@@ -1,0 +1,42 @@
+/* PNW-FILE-GUIDE: css/cf-v109.css — Lompat ke Bagian + navigasi lintas lagu (v109 / v9.9)
+   Dimuat setelah cf-v108.css di castflow.html. */
+
+/* chip bagian yang sedang live (remote HP) */
+.cfRemChip.on {
+  border-color: #1282a2;
+  background: rgba(18, 130, 162, 0.18);
+  color: #fff;
+}
+/* kotak BAGIAN LAGU disembunyikan sampai ada lagu live ber-bagian */
+#cfRemSecBox.hide {
+  display: none;
+}
+
+/* operator: baris chip bagian di atas grid slide */
+.projSecChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px;
+}
+.projSecChip {
+  appearance: none;
+  border: 1px solid #3a3a40;
+  background: #141414;
+  color: #c8d3e8;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font:
+    500 12px/1 "TikTok Sans",
+    system-ui,
+    sans-serif;
+  cursor: pointer;
+}
+.projSecChip:hover {
+  background: #1e1e21;
+}
+.projSecChip.on {
+  border-color: #1282a2;
+  background: rgba(18, 130, 162, 0.18);
+  color: #fff;
+}
