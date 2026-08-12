@@ -502,7 +502,7 @@
   }
 
   window.CastFlowV100 = {
-    version: "v9.6",
+    version: "v9.7",
     setFlowMode: function (mode) { setFlowMode(mode, true); },
     setPreviewMode: setPreviewMode,
     readVisual: readVisual,

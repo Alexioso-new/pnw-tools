@@ -1,18 +1,30 @@
-/* PNW-FILE-GUIDE: js/cf-remote.js — CastFlow Remote Control + Stage Message (v106 / v9.6)
+/* PNW-FILE-GUIDE: js/cf-remote.js — CastFlow Remote Control + Stage Message + Timer (v107 / v9.7)
    Tiga peran dalam satu berkas, dipilih dari URL:
    1. ?mode=remote  -> panel Remote Control (HP/tablet): Prev/Next/GoLive/Black/Logo/Clear
       + kirim Stage Message. Menulis perintah ke RTDB pujianYouth/youthviews/remote.
    2. Halaman operator (castflow.html biasa) -> mendengar kanal remote, mengeksekusi
       perintah lewat PNWProjector.__remote + window.__cfRemoteActions, dedupe by id.
    3. ?mode=stage -> mendengar pujianYouth/youthviews/stagemsg dan menampilkan
-      overlay pesan panggung (tanpa login, .read: true di rules v105). */
+      overlay pesan panggung + timer panggung (tanpa login, .read: true di
+      rules v105). Pesan & timer berbagi node stagemsg via update(). */
 (function () {
   "use strict";
 
-  var VERSION = "v9.6-remote";
+  var VERSION = "v9.7-remote";
   var REMOTE_PATH = "pujianYouth/youthviews/remote";
   var MSG_PATH = "pujianYouth/youthviews/stagemsg";
   var LAST_KEY = "pnwCastflowRemoteLast.v1";
+  /* v107: preset pesan panggung sekali-tap (bisa diedit di sini). */
+  var MSG_PRESETS = [
+    "Ulangi Chorus",
+    "Ulangi Verse",
+    "Naik 1 Nada",
+    "Turun 1 Nada",
+    "Acapella",
+    "Instrumen Saja",
+    "Sekali Lagi",
+    "Bersiap Closing",
+  ];
 
   var IS_REMOTE = /[?&]mode=remote/.test(location.search);
   var IS_STAGE = /[?&]mode=stage/.test(location.search);
@@ -108,21 +120,90 @@
     return ok;
   }
 
-  /* ================= OVERLAY STAGE MESSAGE (mode=stage & QA) ================= */
+  /* ========== OVERLAY STAGE MESSAGE + TIMER (mode=stage & QA) ========== */
+  var _msgHideAt = null; // timeout auto-hide pesan (field until)
+  var _stageTimer = null; // payload timer terakhir
+  var _tickTimer = null; // interval 500 mdtk penggerak timer
+
+  function _fmtClock(d) {
+    return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+  }
+  function _fmtDur(sec) {
+    var neg = sec < 0;
+    var a = Math.abs(Math.round(sec));
+    return (
+      (neg ? "-" : "") +
+      ("0" + Math.floor(a / 60)).slice(-2) +
+      ":" +
+      ("0" + (a % 60)).slice(-2)
+    );
+  }
+  function _tickStageTimer() {
+    var pill = el("cfStageTimer");
+    var t = _stageTimer;
+    if (!pill || !t) return;
+    var now = Date.now();
+    var over = false;
+    var txt = "";
+    if (t.mode === "clock") txt = _fmtClock(new Date(now));
+    else if (t.mode === "down" && t.endsAt) {
+      var rem = Math.round((t.endsAt - now) / 1000);
+      over = rem < 0; // lewat nol: lanjut menghitung naik sebagai overrun (merah)
+      txt = (over ? "▲ " : "▼ ") + _fmtDur(rem);
+    } else if (t.mode === "up" && t.startedAt)
+      txt = "▲ " + _fmtDur((now - t.startedAt) / 1000);
+    pill.textContent = txt;
+    pill.classList.toggle("over", over);
+  }
+  function _paintStageTimer(t) {
+    _stageTimer = t && t.mode && t.mode !== "off" ? t : null;
+    var pill = el("cfStageTimer");
+    if (!_stageTimer) {
+      if (pill) pill.classList.remove("on");
+      if (_tickTimer) {
+        clearInterval(_tickTimer);
+        _tickTimer = null;
+      }
+      return;
+    }
+    var host = el("displayScreen") || document.body;
+    if (!pill) {
+      pill = document.createElement("div");
+      pill.id = "cfStageTimer";
+      host.appendChild(pill);
+    }
+    pill.classList.add("on");
+    _tickStageTimer();
+    if (!_tickTimer) _tickTimer = setInterval(_tickStageTimer, 500);
+  }
   function renderStageMsg(m) {
     var host = el("displayScreen") || document.body;
     var ov = el("cfStageMsg");
-    if (!m || !m.active || !m.text) {
+    var expired = !!(m && m.until && Date.now() > m.until);
+    var showMsg = !!(m && m.active && m.text && !expired);
+    if (!showMsg) {
       if (ov) ov.classList.remove("on");
-      return;
+    } else {
+      if (!ov) {
+        ov = document.createElement("div");
+        ov.id = "cfStageMsg";
+        host.appendChild(ov);
+      }
+      ov.innerHTML =
+        '<div class="cfStageMsgBox' +
+        (m.flash ? " flash" : "") +
+        '">' +
+        esc(m.text) +
+        "</div>";
+      ov.classList.add("on");
+      if (m.until) {
+        if (_msgHideAt) clearTimeout(_msgHideAt);
+        _msgHideAt = setTimeout(function () {
+          renderStageMsg(m);
+        }, Math.max(250, m.until - Date.now()));
+      }
     }
-    if (!ov) {
-      ov = document.createElement("div");
-      ov.id = "cfStageMsg";
-      host.appendChild(ov);
-    }
-    ov.innerHTML = '<div class="cfStageMsgBox">' + esc(m.text) + "</div>";
-    ov.classList.add("on");
+    _paintStageTimer(m && m.timer);
   }
 
   /* ================= MODE STAGE: dengarkan stagemsg ================= */
@@ -195,17 +276,68 @@
     }
   }
 
-  function sendMsg(text) {
+  /* v107: payload pesan & timer dibangun murni (diekspor untuk QA), lalu
+     ditulis via update() supaya pesan dan timer TIDAK saling menimpa. */
+  function msgPayload(text, opts) {
+    opts = opts || {};
+    return {
+      active: !!text,
+      text: text || "",
+      flash: !!(text && opts.flash),
+      until: text && opts.autoSec ? Date.now() + opts.autoSec * 1000 : null,
+      t: Date.now(),
+      by: _uid || "anon",
+    };
+  }
+  function timerPayload(mode, mins) {
+    var now = Date.now();
+    if (mode === "down") {
+      mins = Math.max(1, parseInt(mins, 10) || 5);
+      return { mode: "down", endsAt: now + mins * 60000 };
+    }
+    if (mode === "up") return { mode: "up", startedAt: now };
+    if (mode === "clock") return { mode: "clock" };
+    return { mode: "off" };
+  }
+  function sendMsg(text, opts) {
     var ref = dbRef(MSG_PATH);
     if (!ref) {
       setStatus("Belum terhubung", false);
       return;
     }
     try {
-      ref.set({ active: !!text, text: text || "", t: Date.now(), by: _uid });
+      var w = ref.update(msgPayload(text, opts));
+      if (w && w.catch)
+        w.catch(function (err) {
+          setStatus("Ditolak: " + String((err && err.code) || err), false);
+        });
       setStatus(text ? "Pesan panggung terkirim" : "Pesan panggung dihapus", true);
     } catch (e) {
       setStatus("Gagal kirim pesan", false);
+    }
+  }
+  function sendTimer(mode, mins) {
+    var ref = dbRef(MSG_PATH);
+    if (!ref) {
+      setStatus("Belum terhubung", false);
+      return;
+    }
+    try {
+      var w = ref.update({
+        timer: timerPayload(mode, mins),
+        t: Date.now(),
+        by: _uid || "anon",
+      });
+      if (w && w.catch)
+        w.catch(function (err) {
+          setStatus("Ditolak: " + String((err && err.code) || err), false);
+        });
+      setStatus(
+        mode === "off" ? "Timer panggung dimatikan" : "Timer panggung jalan",
+        true,
+      );
+    } catch (e) {
+      setStatus("Gagal kirim timer", false);
     }
   }
 
@@ -242,10 +374,35 @@
       "</div>" +
       '<div class="cfRemMsg">' +
       '<div class="cfRemMsgTitle">STAGE MESSAGE</div>' +
+      '<div class="cfRemChips" id="cfRemChips"></div>' +
       '<input id="cfRemMsgIn" type="text" maxlength="120" placeholder="Pesan ke panggung…">' +
+      '<div class="cfRemMsgOpts">' +
+      '<label class="cfRemTgl"><input type="checkbox" id="cfRemFlash"> Kedip</label>' +
+      '<select id="cfRemAuto" class="cfRemSel">' +
+      '<option value="0">Tetap tampil</option>' +
+      '<option value="10">Hilang 10 dtk</option>' +
+      '<option value="20">Hilang 20 dtk</option>' +
+      '<option value="30">Hilang 30 dtk</option>' +
+      "</select>" +
+      "</div>" +
       '<div class="cfRemMsgOps">' +
       '<button id="cfRemMsgSend" type="button" class="cfRemBtn cfRemPrimary">Kirim</button>' +
       '<button id="cfRemMsgClear" type="button" class="cfRemBtn">Hapus</button>' +
+      "</div></div>" +
+      '<div class="cfRemMsg cfRemTimerBox">' +
+      '<div class="cfRemMsgTitle">TIMER PANGGUNG</div>' +
+      '<div class="cfRemTMode" id="cfRemTMode">' +
+      '<button type="button" class="cfRemBtn" data-tmode="clock">Jam</button>' +
+      '<button type="button" class="cfRemBtn on" data-tmode="down">Mundur</button>' +
+      '<button type="button" class="cfRemBtn" data-tmode="up">Jalan</button>' +
+      "</div>" +
+      '<div class="cfRemTRow">' +
+      '<input id="cfRemTMins" type="number" min="1" max="180" value="30" inputmode="numeric">' +
+      '<span class="cfRemTUnit">menit (khusus Mundur)</span>' +
+      "</div>" +
+      '<div class="cfRemMsgOps">' +
+      '<button id="cfRemTStart" type="button" class="cfRemBtn cfRemPrimary">Mulai Timer</button>' +
+      '<button id="cfRemTStop" type="button" class="cfRemBtn">Matikan</button>' +
       "</div></div>" +
       '<div id="cfRemNow" class="cfRemNow"></div>' +
       "</div>";
@@ -255,12 +412,48 @@
       var b = e.target.closest("[data-cmd]");
       if (b) send(b.getAttribute("data-cmd"));
     });
+    function _msgOpts() {
+      return {
+        flash: !!(el("cfRemFlash") && el("cfRemFlash").checked),
+        autoSec: parseInt((el("cfRemAuto") || {}).value || "0", 10) || 0,
+      };
+    }
     el("cfRemMsgSend").onclick = function () {
-      sendMsg((el("cfRemMsgIn").value || "").trim());
+      sendMsg((el("cfRemMsgIn").value || "").trim(), _msgOpts());
     };
     el("cfRemMsgClear").onclick = function () {
       el("cfRemMsgIn").value = "";
       sendMsg("");
+    };
+    var chipsBox = el("cfRemChips");
+    if (chipsBox)
+      MSG_PRESETS.forEach(function (p) {
+        var c = document.createElement("button");
+        c.type = "button";
+        c.className = "cfRemChip";
+        c.textContent = p;
+        c.onclick = function () {
+          el("cfRemMsgIn").value = p;
+          sendMsg(p, _msgOpts());
+        };
+        chipsBox.appendChild(c);
+      });
+    var _tMode = "down";
+    var tModeBox = el("cfRemTMode");
+    if (tModeBox)
+      tModeBox.addEventListener("click", function (e) {
+        var b = e.target.closest("[data-tmode]");
+        if (!b) return;
+        _tMode = b.getAttribute("data-tmode");
+        var bs = tModeBox.querySelectorAll("[data-tmode]");
+        for (var i = 0; i < bs.length; i++)
+          bs[i].classList.toggle("on", bs[i] === b);
+      });
+    el("cfRemTStart").onclick = function () {
+      sendTimer(_tMode, (el("cfRemTMins") || {}).value);
+    };
+    el("cfRemTStop").onclick = function () {
+      sendTimer("off");
     };
     el("cfRemLogin").onclick = function () {
       try {
@@ -314,6 +507,10 @@
     exec: exec,
     _exec: exec,
     _renderStageMsg: renderStageMsg,
+    sendMsg: sendMsg,
+    sendTimer: sendTimer,
+    _msgPayload: msgPayload,
+    _timerPayload: timerPayload,
   };
 
   if (document.readyState === "loading")

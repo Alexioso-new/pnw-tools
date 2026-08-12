@@ -1,0 +1,126 @@
+/* PNW-FILE-GUIDE: css/cf-v107.css — Timer panggung + Stage Message lanjutan (v107 / v9.7)
+   Dimuat setelah cf-v105.css di castflow.html. Hanya dipakai mode remote & stage. */
+
+/* ---- timer panggung (mode=stage) ---- */
+#cfStageTimer {
+  position: absolute;
+  top: 4.5%;
+  right: 4%;
+  z-index: 40;
+  display: none;
+  pointer-events: none;
+  background: rgba(10, 12, 18, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e8edf7;
+  font:
+    600 clamp(22px, 4.5vw, 54px) / 1 "TikTok Sans",
+    system-ui,
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  padding: 10px 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+#cfStageTimer.on {
+  display: block;
+}
+#cfStageTimer.over {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.55);
+}
+
+/* ---- pesan berkedip ---- */
+.cfStageMsgBox.flash {
+  animation: cfMsgFlash 0.9s ease-in-out infinite;
+}
+@keyframes cfMsgFlash {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(1.03);
+  }
+}
+
+/* ---- remote: preset chips + opsi pesan ---- */
+.cfRemChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.cfRemChip {
+  appearance: none;
+  border: 1px solid #3a3a40;
+  background: #141414;
+  color: #c8d3e8;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font: 500 12px/1 "TikTok Sans", system-ui, sans-serif;
+  cursor: pointer;
+}
+.cfRemChip:active {
+  background: #323236;
+}
+.cfRemMsgOpts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.cfRemTgl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3bc;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.cfRemTgl input {
+  width: auto !important;
+  padding: 0 !important;
+}
+.cfRemSel {
+  flex: 1;
+  background: #141414;
+  border: 1px solid #3a3a40;
+  color: #e8edf7;
+  border-radius: 8px;
+  padding: 8px;
+  font: 400 13px "TikTok Sans", system-ui, sans-serif;
+}
+
+/* ---- remote: timer ---- */
+.cfRemTMode {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.cfRemTMode .cfRemBtn {
+  padding: 12px 6px;
+}
+.cfRemTMode .cfRemBtn.on {
+  background: #1282a2;
+  border-color: #1282a2;
+  color: #fff;
+}
+.cfRemTRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.cfRemTRow input {
+  width: 84px !important;
+  padding: 10px !important;
+  font-weight: 500;
+  font-size: 15px;
+}
+.cfRemTUnit {
+  color: #6b7c99;
+  font-size: 12px;
+}
