@@ -306,6 +306,33 @@
     });
   }
 
+  /* v111: reflow — perkecil font otomatis untuk slide padat (opt-in,
+     tersimpan di pnwCastflowReflow.v1; toggle-nya di Design Panel). Dihitung
+     di operator saat payload dibangun, jadi output cukup merender. */
+  function reflowOn() {
+    try {
+      return localStorage.getItem("pnwCastflowReflow.v1") === "1";
+    } catch (e) {
+      return false;
+    }
+  }
+  function reflowStyle(style, slide) {
+    var ls = (slide && slide.lines) || [];
+    var longest = 0;
+    ls.forEach(function (l) {
+      longest = Math.max(longest, String(l == null ? "" : l).length);
+    });
+    var factor =
+      longest >= 52 || ls.length >= 6
+        ? 0.8
+        : longest >= 40 || ls.length === 5
+          ? 0.9
+          : 1;
+    if (factor === 1) return style;
+    var baseSize = parseInt(style && style.size, 10) || 56;
+    return Object.assign({}, style, { size: Math.round(baseSize * factor) });
+  }
+
   /* ---------------- tayang ---------------- */
   function payload() {
     var s = settings();
@@ -319,6 +346,7 @@
       if (!song) return null;
       var deck = slidesOf(song);
       var idx = Math.max(0, Math.min(deck.length - 1, _active.slideIndex || 0));
+      if (reflowOn()) base.style = reflowStyle(base.style, deck[idx]);
       return Object.assign(base, {
         kind: "song",
         songId: song.id,

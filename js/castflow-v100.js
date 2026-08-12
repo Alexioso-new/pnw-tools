@@ -23,6 +23,92 @@
     { id: "typewriter", label: "Type" },
   ];
 
+  /* v111: TEMA — preset gaya lirik sekali-tap. Hanya menyentuh kunci visual
+     v2 (bukan font/ukuran — itu tetap milik kontrol sesi). */
+  var THEMES = [
+    {
+      id: "standar",
+      label: "Standar",
+      set: { weight: 500, transform: "none", lineHeight: 1.2, spacing: 0, opacity: 1, pos: "middle", transition: "fade", duration: 0.55, color: "#ffffff" },
+    },
+    {
+      id: "megah",
+      label: "Megah",
+      set: { weight: 800, transform: "uppercase", lineHeight: 1.15, spacing: 0.5, transition: "rise", duration: 0.5, color: "#ffffff" },
+    },
+    {
+      id: "lembut",
+      label: "Lembut Doa",
+      set: { weight: 300, lineHeight: 1.55, transition: "fade", duration: 0.9, opacity: 0.92, transform: "none", pos: "middle", color: "#e8edf7" },
+    },
+    {
+      id: "pengumuman",
+      label: "Pengumuman",
+      set: { weight: 600, pos: "bottom", transition: "slide-left", duration: 0.45, transform: "none", lineHeight: 1.3, color: "#dbeafe", opacity: 1, spacing: 0 },
+    },
+  ];
+  var THEME_INPUT = {
+    color: "cfTextColor",
+    weight: "cfTextWeight",
+    spacing: "cfTextSpacing",
+    lineHeight: "cfTextLine",
+    opacity: "cfTextOpacity",
+    transform: "cfTextTransform",
+    pos: "cfTextPosition",
+    duration: "cfMotionDuration",
+  };
+  var _themeId = "";
+  function markThemeRow() {
+    qa(".cfThemeChip").forEach(function (b) {
+      b.classList.toggle("on", b.getAttribute("data-theme") === _themeId);
+    });
+  }
+  function applyTheme(id) {
+    var t = null;
+    THEMES.forEach(function (x) {
+      if (x.id === id) t = x;
+    });
+    if (!t) return;
+    var v = readVisual();
+    Object.keys(t.set).forEach(function (k) {
+      v[k] = t.set[k];
+      var inp = document.getElementById(THEME_INPUT[k]);
+      if (inp) inp.value = v[k];
+    });
+    _themeId = id;
+    saveVisual(v);
+    syncDesignValues(v);
+    markThemeRow();
+  }
+  function buildThemeRow() {
+    var host = document.getElementById("cfThemeRow");
+    if (host && !host.childElementCount) {
+      THEMES.forEach(function (t) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "cfThemeChip";
+        b.textContent = t.label;
+        b.setAttribute("data-theme", t.id);
+        b.onclick = function () {
+          applyTheme(t.id);
+        };
+        host.appendChild(b);
+      });
+    }
+    var rf = document.getElementById("cfReflow");
+    if (rf && !rf.__cfBound) {
+      rf.__cfBound = 1;
+      try {
+        rf.checked = localStorage.getItem("pnwCastflowReflow.v1") === "1";
+      } catch (e) {}
+      rf.onchange = function () {
+        try {
+          localStorage.setItem("pnwCastflowReflow.v1", rf.checked ? "1" : "0");
+        } catch (e) {}
+      };
+    }
+  }
+
   function q(sel, root) {
     return (root || document).querySelector(sel);
   }
@@ -425,6 +511,7 @@
     if (h3) h3.textContent = "DESIGN PANEL";
     buildFontPicker();
     buildAdvancedDesign();
+    buildThemeRow();
     updateFontButton();
     return true;
   }
@@ -502,10 +589,13 @@
   }
 
   window.CastFlowV100 = {
-    version: "v9.10",
+    version: "v9.11",
     setFlowMode: function (mode) { setFlowMode(mode, true); },
     setPreviewMode: setPreviewMode,
     readVisual: readVisual,
+    applyTheme: applyTheme,
+    buildThemeRow: buildThemeRow,
+    THEMES: THEMES,
     applyVisualPreview: applyVisualPreview,
     syncMiniPreviews: syncMiniPreviews,
   };

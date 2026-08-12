@@ -1,0 +1,34 @@
+CATATAN v111 (label v9.11) — Themes & Reflow
+=============================================
+Melanjutkan roadmap ProPresenter: Themes/Reflow.
+
+Yang baru:
+1. TEMA sekali-tap di Design Panel (baris TEMA): Standar / Megah /
+   Lembut Doa / Pengumuman. Sekali klik: weight, kapitalisasi, line-height,
+   posisi, warna, dan transisi lirik langsung berubah (tersimpan, ikut
+   siaran saat Go Live berikutnya). Font & ukuran dasar TIDAK diubah tema —
+   tetap milik kontrol sesi.
+2. REFLOW / Auto-fit teks padat (checkbox di bawah baris TEMA): bila
+   aktif, slide yang padat (baris panjang >= 52 karakter, atau >= 40, atau
+   5+ baris) otomatis dikecilkan satu/dua tingkat (x0.9 / x0.8) supaya muat
+   di layar. Dihitung di operator saat payload dibangun — output cukup
+   merender, kontrak data tidak berubah.
+
+Teknis:
+- Tema menulis kunci visual v2 lewat kontrak readVisual/saveVisual yang
+  sudah ada + sinkron kontrol panel. Diekspor: CastFlowV100.applyTheme /
+  THEMES / buildThemeRow.
+- Reflow: reflowOn() + reflowStyle() di projector.js payload(); toggle
+  tersimpan di pnwCastflowReflow.v1.
+- TIDAK perlu publish rules baru.
+
+Deploy:
+1. Timpa isi C:\pnw-tools (jaga .git).
+2. git add -A && git commit -m "v111" && git push
+3. Ctrl+Shift+R -> label v9.11.
+
+Uji singkat:
+- Operator -> Design Panel -> klik "Megah" -> Go Live -> lirik jemaat
+  berubah gaya (kapital tebal, transisi rise).
+- Centang "Auto-fit teks padat" -> live-kan lagu dengan baris panjang ->
+  ukuran lirik mengecil otomatis pada slide padat saja.
