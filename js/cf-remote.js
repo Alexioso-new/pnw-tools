@@ -1,4 +1,4 @@
-/* PNW-FILE-GUIDE: js/cf-remote.js — CastFlow Remote Control + Stage Message (v105 / v9.5)
+/* PNW-FILE-GUIDE: js/cf-remote.js — CastFlow Remote Control + Stage Message (v106 / v9.6)
    Tiga peran dalam satu berkas, dipilih dari URL:
    1. ?mode=remote  -> panel Remote Control (HP/tablet): Prev/Next/GoLive/Black/Logo/Clear
       + kirim Stage Message. Menulis perintah ke RTDB pujianYouth/youthviews/remote.
@@ -9,7 +9,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v9.5-remote";
+  var VERSION = "v9.6-remote";
   var REMOTE_PATH = "pujianYouth/youthviews/remote";
   var MSG_PATH = "pujianYouth/youthviews/stagemsg";
   var LAST_KEY = "pnwCastflowRemoteLast.v1";
@@ -154,8 +154,8 @@
   function bootOperator() {
     var ref = dbRef(REMOTE_PATH);
     if (!ref) return;
-    ref.limitToLast(1).on(
-      "child_added",
+    ref.on(
+      "value",
       function (snap) {
         var v = snap.val();
         if (!v || !v.cmd || !v.id) return;
