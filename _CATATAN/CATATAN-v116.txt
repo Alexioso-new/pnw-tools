@@ -1,0 +1,25 @@
+PNW TOOLS v116 (label v9.16) — DUAL FREE CANVAS
+================================================
+Preview Dual diubah dari split 50/50 menjadi free canvas ala Figma.
+
+Fitur:
+- Pan: drag area kosong atau Space+drag.
+- Zoom: Ctrl/Cmd/Alt+wheel, tombol +/-/100%, Fit All.
+- Grid bergerak, minimap, Reset, dan Maximize.
+- Frame: Edit Preview, Live Output, Stage Display, Remote Control,
+  serta Browser/URL custom.
+- Tambah, keluarkan, duplicate, rename, lock, bring-to-front, pop-out.
+- Drag frame, resize bebas atau rasio 16:9; Alt melepas rasio sementara.
+- Arrow nudge 1 px; Shift+Arrow 10 px; Ctrl/Cmd+D duplicate; Delete remove.
+- Layout, daftar frame, pan/zoom, dan grid tersimpan di
+  localStorage pnwCastflowDualCanvas.v1.
+- Edit/Live biasa tidak berubah.
+- Guard anti-rekursi pada mode display/stage/remote.
+
+Berkas baru:
+- js/cf-dual-canvas.js
+- css/cf-v116.css
+- CATATAN-v116.txt
+
+Deploy: timpa C:\pnw-tools (jaga .git), git add -A,
+git commit -m v116, git push, Ctrl+Shift+R, pastikan label v9.16.

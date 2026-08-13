@@ -567,6 +567,11 @@
       b.classList.toggle("on", b.getAttribute("data-preview-mode") === mode);
     });
     try { localStorage.setItem(PREVIEW_MODE_KEY, mode); } catch (e) {}
+    /* v116: Dual sekarang dikelola Free Canvas, bukan split 50/50. */
+    try {
+      if (window.CastFlowDualCanvas && typeof window.CastFlowDualCanvas.setActive === "function")
+        window.CastFlowDualCanvas.setActive(mode === "dual");
+    } catch (e) {}
   }
   function buildPreviewModes() {
     var head = q(".cfC-preview .cfPrevHead");
@@ -630,7 +635,7 @@
   }
 
   window.CastFlowV100 = {
-    version: "v9.15",
+    version: "v9.16",
     setFlowMode: function (mode) { setFlowMode(mode, true); },
     setPreviewMode: setPreviewMode,
     readVisual: readVisual,
