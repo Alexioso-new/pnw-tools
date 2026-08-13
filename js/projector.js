@@ -1030,6 +1030,33 @@
   var LOCAL_STUDIO = "pnwYouthViewsStudio.v1";
   var _studioInst = null;
   var _studioP = null;
+  /* v117: renderer terpisah untuk Studio pada Preview Edit. */
+  var _previewMotionInst = null;
+  var _previewMotionCanvas = null;
+  var _previewMotionHooks = false;
+  var _previewMotionRO = null;
+  function previewMotionEngine(){ return window.PNWYVMotion || window.PNWMotion || null; }
+  function previewMotionShouldRun(host){
+    if(!host || document.hidden || !host.isConnected) return false;
+    var st=el("cfPrevStage"),pm=st?st.getAttribute("data-preview-mode"):"edit";
+    if(pm==="live") return false;
+    var frame=host.closest?host.closest(".cfDcFrame"):null;
+    if(frame&&frame.classList.contains("is-offscreen")) return false;
+    return host.getClientRects().length>0;
+  }
+  function ensurePreviewMotion(host){
+    var eng=previewMotionEngine();if(!host||!eng||!eng.create)return null;
+    if(!_previewMotionCanvas||!_previewMotionCanvas.isConnected){
+      _previewMotionCanvas=document.createElement("canvas");_previewMotionCanvas.className="projPreviewMotion";_previewMotionCanvas.setAttribute("aria-hidden","true");host.insertBefore(_previewMotionCanvas,host.firstChild);_previewMotionInst=eng.create(_previewMotionCanvas);
+      if(window.ResizeObserver){if(_previewMotionRO)_previewMotionRO.disconnect();_previewMotionRO=new ResizeObserver(function(){if(_previewMotionInst&&_previewMotionInst.resize)_previewMotionInst.resize();});_previewMotionRO.observe(host);}
+    }
+    if(!_previewMotionHooks){_previewMotionHooks=true;document.addEventListener("visibilitychange",function(){renderPreview();});document.addEventListener("cf:dualFrameVisibility",function(e){if(!e.detail||e.detail.type==="edit")renderPreview();});var st=el("cfPrevStage");if(st&&window.MutationObserver)new MutationObserver(function(){renderPreview();}).observe(st,{attributes:true,attributeFilter:["data-preview-mode"]});}
+    return _previewMotionInst;
+  }
+  function syncPreviewMotion(host,bg){
+    var on=!!(bg&&bg.kind==="studio");if(!on){if(_previewMotionCanvas)_previewMotionCanvas.classList.remove("on");if(_previewMotionInst&&_previewMotionInst.stop)_previewMotionInst.stop();return;}
+    var inst=ensurePreviewMotion(host);if(!inst||!_previewMotionCanvas)return;_previewMotionCanvas.classList.add("on");var eng=previewMotionEngine(),params=bg.params||(eng&&eng.preset?eng.preset(bg.value||"aurora"):{});if(inst.apply)inst.apply(params||{});if(inst.resize)inst.resize();if(previewMotionShouldRun(host)){if(inst.start)inst.start();}else if(inst.stop)inst.stop();
+  }
 
   function ensureBgTabs() {
     var tabs = el("projBgTabs");
@@ -1443,6 +1470,7 @@
       p.style.background = "";
       p.style.backgroundImage = "";
       var b = s.bg || {};
+      syncPreviewMotion(p, b);
       if (b.kind === "color") p.style.background = b.value;
       else if (b.kind === "motion") p.setAttribute("data-bg", b.value);
       else if (b.kind === "none") p.setAttribute("data-bg", "none");

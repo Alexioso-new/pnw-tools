@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v9.16-standalone";
+  var VERSION = "v9.17-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";

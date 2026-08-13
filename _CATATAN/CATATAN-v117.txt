@@ -1,0 +1,32 @@
+PNW TOOLS v117 (label v9.17) — PERFORMANCE + STUDIO EDIT + CAPCUT TIMELINE
+============================================================================
+PERFORMA
+- Pan/zoom/drag/resize Dual dibatch satu requestAnimationFrame.
+- World memakai translate3d/GPU; minimap dibatasi sekitar 15 FPS.
+- Frame di luar viewport tidak dipaint dan video/motion iframe dipause.
+- Live resume hanya pada mode Live; Studio Edit hanya berjalan saat terlihat.
+- Modul operator tidak berjalan di Display/Stage/Remote/youthviews lama.
+- CSS containment/content-visibility, FPS/long-task meter, observer otomatis berhenti.
+- Output aktual tetap kualitas penuh; tidak ada grafik atau fitur yang dicopot.
+
+BUG STUDIO PREVIEW EDIT
+- #projPreview kini mempunyai canvas PNWMotion tersendiri.
+- Parameter Studio benar-benar apply/start/resize pada Edit dan Dual.
+- Pause pada Live/offscreen/document hidden, resume saat terlihat kembali.
+
+TIMELINE ALA CAPCUT
+- Toolbar ikon satu baris, ruler, track header, clip filmstrip/waveform, playhead baru.
+- Drag/trim/split/snap/ripple/undo/redo lama dipertahankan.
+- Duplicate, Copy/Paste, context menu klik kanan, collapse track.
+- Ctrl+C/V/D, Ctrl+wheel zoom pada pointer, smooth playhead dan auto-follow.
+- Responsive desktop dan HP; lock/visibility/project/cloud tetap berfungsi.
+
+BERKAS BARU
+- js/cf-performance-v117.js
+- js/cf-timeline-v117.js
+- css/cf-v117.css
+- CATATAN-v117.txt
+
+QA FINAL — 33/33 PASS
+- Browser desktop + mobile, Studio pixel animation, pause/resume iframe,
+  output recursion guards, Timeline operations, syntax JS, CSS, dan APP_SHELL.

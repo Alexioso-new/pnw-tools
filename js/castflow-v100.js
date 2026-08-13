@@ -2,6 +2,8 @@
    Features-first navigation · dynamic Flow · Design Panel · Edit/Live/Dual preview */
 (function () {
   "use strict";
+  var runMode="";try{runMode=new URLSearchParams(location.search).get("mode")||"";}catch(e){}
+  if(/^(display|stage|remote|youthviews)$/i.test(runMode)) return;
 
   var VISUAL_KEY = "pnwCastflowVisualStyle.v2";
   var PREVIEW_MODE_KEY = "pnwCastflowPreviewMode.v2";
@@ -604,9 +606,12 @@
       liveLabel.textContent = "LIVE";
       stage.appendChild(liveLabel);
     }
-    var saved = "edit";
-    try { saved = localStorage.getItem(PREVIEW_MODE_KEY) || "edit"; } catch (e) {}
-    setPreviewMode(saved);
+    /* v117: restore sekali saja; jangan reset mode tiap polling 250 ms. */
+    if (!stage.hasAttribute("data-preview-mode")) {
+      var saved = "edit";
+      try { saved = localStorage.getItem(PREVIEW_MODE_KEY) || "edit"; } catch (e) {}
+      setPreviewMode(saved);
+    }
     return true;
   }
 
@@ -635,7 +640,7 @@
   }
 
   window.CastFlowV100 = {
-    version: "v9.16",
+    version: "v9.17",
     setFlowMode: function (mode) { setFlowMode(mode, true); },
     setPreviewMode: setPreviewMode,
     readVisual: readVisual,

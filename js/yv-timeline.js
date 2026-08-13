@@ -14,7 +14,9 @@
 (function () {
   "use strict";
 
-  var VERSION = "v7.0-timeline";
+  var VERSION = "v9.17-timeline";
+  var runMode="";try{runMode=new URLSearchParams(location.search).get("mode")||"";}catch(e){}
+  if(/^(display|stage|remote|youthviews)$/i.test(runMode)) return;
   var TL_REF = "pujianYouth/projector/timelines";
   var LOCAL_TL = "pnwYvTimelines.v1";
 
