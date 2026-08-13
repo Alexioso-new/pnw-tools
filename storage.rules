@@ -1,0 +1,27 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Rekaman latihan: siapa pun boleh dengar; hanya pengurus (login) yang
+    // boleh unggah/hapus. Maks 80 MB, hanya audio/video.
+    match /recordings/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.resource.size < 80 * 1024 * 1024
+        && request.resource.contentType.matches('audio/.*|video/.*');
+      allow delete: if request.auth != null;
+    }
+    // Buku Panduan: semua boleh baca; hanya OWNER yang boleh unggah/hapus.
+    // Maks 50 MB, hanya PDF.
+    match /guide/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == 'l9U1ktYog2X3vSA81JdsjHln5qu1'
+        && request.resource.size < 50 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf';
+    }
+    // Selain dua folder di atas: tutup total.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

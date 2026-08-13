@@ -670,24 +670,9 @@
   var reqRef = null,
     pendingApproval = false,
     _reqInit = false;
-  // ==== AKUN PENGURUS (login username & password) ====
-  // Tambah / ubah akun di sini lalu bagikan ke pengurus.
-  // Catatan: ini keamanan tingkat kenyamanan (client-side), bukan enkripsi.
-  var LOCAL_ACCOUNTS = [
-    { u: "admin", p: "hosana2026", name: "Admin Utama" },
-    { u: "pengurus", p: "pnw2026", name: "Pengurus" },
-  ];
-  function findLocalAccount(u, p) {
-    var uu = (u || "").trim().toLowerCase();
-    for (var i = 0; i < LOCAL_ACCOUNTS.length; i++) {
-      if (
-        (LOCAL_ACCOUNTS[i].u || "").toLowerCase() === uu &&
-        String(LOCAL_ACCOUNTS[i].p) === String(p)
-      )
-        return LOCAL_ACCOUNTS[i];
-    }
-    return null;
-  }
+  // v113: akun lokal hardcoded DICOPOT demi keamanan (kredensial terbaca
+  // publik lewat view-source). Login admin kini HANYA lewat Firebase:
+  // email/password atau tombol Google di modal login.
   function recomputeAdmin() {
     isAdmin = localAdmin || fbAdmin;
     try {
@@ -723,17 +708,8 @@
   }
   function initAuthLock() {
     try {
-      var savedU = localStorage.getItem("ptAdminUser") || "";
-      if (savedU) {
-        var accOk = false;
-        for (var i = 0; i < LOCAL_ACCOUNTS.length; i++)
-          if (
-            (LOCAL_ACCOUNTS[i].u || "").toLowerCase() === savedU.toLowerCase()
-          )
-            accOk = true;
-        if (accOk) localAdmin = true;
-        else localStorage.removeItem("ptAdminUser");
-      }
+      // v113: sesi akun lokal lama tidak berlaku lagi — selalu dibersihkan.
+      localStorage.removeItem("ptAdminUser");
     } catch (e) {}
     recomputeAdmin();
     try {
@@ -1133,32 +1109,11 @@
     var p = document.getElementById("loginPass").value;
     var msg = document.getElementById("loginMsg");
     if (!e || !p) {
-      if (msg) msg.textContent = "Isi username & password.";
-      return;
-    }
-    var acc = findLocalAccount(e, p);
-    if (acc) {
-      if (msg) msg.textContent = "";
-      document.getElementById("loginPass").value = "";
-      showLoading("Masuk sebagai " + (acc.name || acc.u) + "...");
-      setTimeout(function () {
-        localAdmin = true;
-        try {
-          localStorage.setItem("ptAdminUser", acc.u);
-        } catch (x) {}
-        closeLogin();
-        recomputeAdmin();
-        loadingSuccess("Berhasil masuk!", function () {
-          toast(
-            "Login berhasil. Masuk sebagai " + (acc.name || acc.u) + ".",
-            "success",
-          );
-        });
-      }, 900);
+      if (msg) msg.textContent = "Isi email & password.";
       return;
     }
     if (!authRef || e.indexOf("@") < 0) {
-      if (msg) msg.textContent = "Username atau password salah.";
+      if (msg) msg.textContent = "Email atau password salah.";
       toast("Login gagal. Periksa username/password.", "error");
       return;
     }
@@ -1394,13 +1349,8 @@
       if (msg) msg.textContent = "Gagal: " + ((err && err.message) || "");
     });
   }
-  // v5.8: CastFlow punya kanal siaran SENDIRI, terpisah dari spectate.
-  var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var spectateOn = false,
     liveRef = null,
-    yvLiveRef = null,
-    _yvLive = null,
-    _yvLiveActive = false,
     applyingLive = false,
     liveThrottle = 0,
     liveShowChords = false,
@@ -1412,7 +1362,8 @@
   // v81: pemisahan kanal TEGAS. mode=stage mengikuti Spectate (pemusik, butuh
   // chord). mode=display/youthviews/views HANYA mengikuti kanal CastFlow.
   // Tidak ada lagi percampuran antar kanal.
-  var YV_OUTPUT_MODE = DISPLAY_MODE && !STAGE_MODE;
+  // v113: watcher kanal CastFlow di app.js dicopot — output sudah pindah total
+  // ke castflow.html sejak v83; ?mode=display di sini langsung dialihkan.
   function initSpectate() {
     try {
       liveRef = firebase.database().ref("pujianYouth/live");
@@ -1422,21 +1373,6 @@
         applyLive(v);
         // v81: HANYA mode=stage yang menayangkan siaran Spectate.
         if (STAGE_MODE) renderDisplay(v);
-      });
-    } catch (e) {}
-    // Kanal CastFlow: isinya TIDAK PERNAH dikirim ke applyLive(), jadi
-    // menyalakan output CastFlow tidak lagi menarik layar anggota masuk
-    // ke mode spectate.
-    try {
-      yvLiveRef = firebase.database().ref(YV_LIVE_PATH);
-      yvLiveRef.on("value", function (s) {
-        var v = s.val();
-        _yvLive = v;
-        _yvLiveActive = !!(v && v.active);
-        // v81: TIDAK ADA fallback ke _lastLive. Dulu output jatuh ke payload
-        // Spectate saat kanal ini kosong -> latar muncul sesaat lalu hilang
-        // begitu Spectate berubah jadi {active:false}.
-        if (YV_OUTPUT_MODE) renderDisplay(v);
       });
     } catch (e) {}
   }
@@ -1621,23 +1557,6 @@
     flush();
     if (!out.length) out.push({ label: "", lines: [(song && song.title) || ""] });
     return out;
-  }
-  function yvSongSlides(song) {
-    return yvBuildSlides(song, 4);
-  }
-  function yvReadStyle() {
-    var font = (document.getElementById("projFont") || {}).value || "Inter";
-    var size = parseInt(((document.getElementById("projSize") || {}).value || "56"), 10) || 56;
-    var sh = (document.getElementById("projShadow") || {}).value || "strong";
-    var on = document.querySelector("#projAlign button.on");
-    var align = (on && on.dataset.align) || "center";
-    return { font: font, size: size, align: align, shadow: sh };
-  }
-  function yvReadBg() {
-    var active = document.querySelector("#projPresets .projBgPreset.on, #projSolids .projBgPreset.on");
-    var bgUrlEl = document.getElementById("projBgUrl");
-    var url = bgUrlEl ? (bgUrlEl.value || "").trim() : "";
-    return { url: url, preset: active ? active.getAttribute("data-bg") || "" : "" };
   }
   function applyViewStyle(style) {
     var screen = document.getElementById("displayScreen");
@@ -2066,28 +1985,6 @@
       });
     container.appendChild(wrap);
   }
-  function broadcastText() {
-    if (!isAdmin || !(yvLiveRef || liveRef)) return;
-    var ta = document.getElementById("liveTextInput");
-    var txt = ta ? (ta.value || "").trim() : "";
-    if (!txt) {
-      if (typeof toast === "function") toast("Teks masih kosong.", "info");
-      return;
-    }
-    try {
-      var bg = yvReadBg();
-      (yvLiveRef || liveRef).set({ active: true, src: "youthviews", kind: "text", text: txt, style: yvReadStyle(), bg: bg.url, bgPreset: bg.preset, t: Date.now() });
-      if (typeof toast === "function")
-        toast("Teks ditampilkan di proyektor.", "success");
-    } catch (e) {}
-  }
-  function clearText() {
-    if (!isAdmin || !(yvLiveRef || liveRef)) return;
-    try {
-      (yvLiveRef || liveRef).set({ active: false, src: "youthviews", t: Date.now() });
-      if (typeof toast === "function") toast("Teks disembunyikan.", "info");
-    } catch (e) {}
-  }
   function renderDispVerse(container, text, ref) {
     if (!container) return;
     container.innerHTML = "";
@@ -2112,23 +2009,6 @@
       wrap.appendChild(r);
     }
     container.appendChild(wrap);
-  }
-  function broadcastVerse() {
-    if (!isAdmin || !(yvLiveRef || liveRef)) return;
-    var ta = document.getElementById("liveVerseInput");
-    var rf = document.getElementById("liveVerseRef");
-    var txt = ta ? (ta.value || "").trim() : "";
-    var ref = rf ? (rf.value || "").trim() : "";
-    if (!txt) {
-      if (typeof toast === "function") toast("Teks ayat masih kosong.", "info");
-      return;
-    }
-    try {
-      var bg = yvReadBg();
-      (yvLiveRef || liveRef).set({ active: true, src: "youthviews", kind: "verse", text: txt, ref: ref, style: yvReadStyle(), bg: bg.url, bgPreset: bg.preset, t: Date.now() });
-      if (typeof toast === "function")
-        toast("Ayat ditampilkan di proyektor.", "success");
-    } catch (e) {}
   }
   function initDisplayMode() {
     if (!DISPLAY_MODE) return;
@@ -9747,46 +9627,17 @@
       return !!isAdmin;
     },
     canBroadcast: function () {
-      return !!(isAdmin && (yvLiveRef || liveRef));
+      // v113: kanal CastFlow tidak lagi dikelola app.js (output pindah total
+      // ke castflow.html sejak v83) — halaman utama tidak menyiarkan ke sana.
+      return false;
     },
-    broadcast: function (payload) {
-      var ref = yvLiveRef || liveRef;
-      if (!isAdmin || !ref) return false;
-      try {
-        // src "youthviews" -> aplikasi utama TIDAK ikut spectate.
-        var p = Object.assign({ t: Date.now(), src: "youthviews" }, payload || {});
-        // v81: sertakan lirik yang sudah dirender supaya perangkat output tidak
-        // perlu membaca pujianYouth/songs (tidak wajib login).
-        if (p.active && p.songId && !p.lines) {
-          var sg = (Array.isArray(songs) ? songs : []).find(function (s) {
-            return s && String(s.id) === String(p.songId);
-          });
-          if (sg) {
-            var dk = yvBuildSlides(sg, p.slideMax || 4);
-            var ix = Math.max(0, Math.min(dk.length - 1, parseInt(p.slideIndex, 10) || 0));
-            var sl = dk[ix] || dk[0] || { lines: [], label: "" };
-            p.lines = (sl.lines || []).slice(0, 24);
-            p.label = sl.label || "";
-            p.slideTotal = dk.length;
-            if (!p.songTitle) p.songTitle = sg.title || "";
-          }
-        }
-        ref.set(p);
-        return true;
-      } catch (e) {
-        window.PNWDiag.push({ feature: "youthviews.broadcast", error: String((e && e.message) || e), at: Date.now() });
-        return false;
-      }
+    broadcast: function () {
+      // v113: lihat canBroadcast — menyiarkan hanya bisa dari castflow.html.
+      return false;
     },
     clear: function () {
-      var ref = yvLiveRef || liveRef;
-      if (!isAdmin || !ref) return false;
-      try {
-        ref.set({ active: false, src: "youthviews", t: Date.now() });
-        return true;
-      } catch (e) {
-        return false;
-      }
+      // v113: lihat canBroadcast.
+      return false;
     },
     selectedKey: function () {
       return selectedKey;
@@ -9901,12 +9752,6 @@
           "_blank",
         );
       };
-    var stb = document.getElementById("showTextBtn");
-    if (stb) stb.onclick = broadcastText;
-    var ctb = document.getElementById("clearTextBtn");
-    if (ctb) ctb.onclick = clearText;
-    var svb = document.getElementById("showVerseBtn");
-    if (svb) svb.onclick = broadcastVerse;
     var pbb = document.getElementById("prevBaitBtn");
     if (pbb)
       pbb.onclick = function () {

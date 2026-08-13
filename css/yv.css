@@ -1,0 +1,851 @@
+/* PNW-FILE-GUIDE: css/yv.css — lembar gaya KHUSUS CastFlow (v114 / v9.14).
+   Berisi seluruh aturan ber-selektor proj* yang diekstrak dari design.css
+   (pemisahan tahap 2). Dimuat HANYA oleh castflow.html, tepat setelah
+   design.css dan sebelum castflow.css/cf-*.css. JANGAN dimuat index.html:
+   isolasi ini menjamin bug CSS aplikasi utama tidak bisa menyentuh layar
+   ibadah. Blok campuran (selektor gabungan proj + non-proj) sengaja tetap
+   di design.css/styles.css karena castflow.html memuat keduanya. */
+
+
+/* =========================================================================
+   3E - PROYEKTOR, MODE PERSIAPAN: tata letak 3 panel ala presenter
+   ========================================================================= */
+.projPage {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: var(--d-canvas);
+  display: none;
+  flex-direction: column;
+}
+.projPage.open {
+  display: flex;
+}
+body.projOpen {
+  overflow: hidden;
+}
+.projTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--d-line);
+  background: var(--d-s2);
+  flex: 0 0 auto;
+}
+.projTopL {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.projBrand {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--d-ink);
+}
+.projBadge {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: var(--d-r-pill);
+  background: var(--d-accent-wash);
+  color: var(--d-accent);
+  border: 1px solid rgba(59, 158, 255, 0.34);
+}
+.projDev {
+  font-size: 11px;
+  color: var(--d-ink-3);
+}
+
+/* grid 3 panel */
+.projGrid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(320px, 1fr) minmax(
+      260px,
+      330px
+    );
+  gap: 1px;
+  background: var(--d-line);
+}
+.projPane {
+  background: var(--d-canvas);
+  padding: 14px;
+  overflow: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.projPaneHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.projPaneHead h3 {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--d-ink-2);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.projPaneOps {
+  display: flex;
+  gap: 8px;
+}
+.projMiniBtn {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: var(--d-r-sm);
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line-strong);
+  cursor: pointer;
+}
+.projMiniBtn:hover {
+  border-color: var(--d-accent);
+}
+.projMiniBtn.primary {
+  background: var(--d-accent);
+  color: var(--d-accent-ink);
+  border-color: var(--d-accent);
+}
+.projRowBtns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.projEmpty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--d-ink-3);
+  padding: 14px;
+  border: 1px dashed var(--d-line-strong);
+  border-radius: var(--d-r-md);
+}
+
+/* panel kiri: rencana ibadah */
+.projPlanList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.projPlanItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+  cursor: pointer;
+  transition: border-color var(--dur-quick) var(--ease-out);
+}
+.projPlanItem:hover {
+  border-color: var(--d-line-strong);
+}
+.projPlanItem.isActive {
+  border-color: var(--d-accent);
+  background: var(--d-accent-wash);
+}
+.projPlanNo {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--d-ink-3);
+  min-width: 18px;
+}
+.projPlanBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.projPlanTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--d-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.projPlanKind {
+  font-size: 11px;
+  color: var(--d-ink-2);
+}
+.projPlanOps {
+  display: flex;
+  gap: 2px;
+}
+.projIconBtn {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  border-radius: var(--d-r-sm);
+  background: transparent;
+  color: var(--d-ink-3);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.projIconBtn:hover {
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border-color: var(--d-line);
+}
+
+/* panel tengah: katalog bertab */
+.projTabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--d-line);
+  flex-wrap: wrap;
+}
+.projTab {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--d-ink-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.projTab:hover {
+  color: var(--d-ink);
+}
+.projTab.on {
+  color: var(--d-accent);
+  border-bottom-color: var(--d-accent);
+}
+.projSearchRow input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  background: var(--d-s3);
+  color: var(--d-ink);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-r-md);
+}
+.projFilters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.projChip {
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--d-r-pill);
+  background: var(--d-s2);
+  color: var(--d-ink-2);
+  border: 1px solid var(--d-line);
+  cursor: pointer;
+}
+.projChip.on {
+  background: var(--d-accent-wash);
+  color: var(--d-accent);
+  border-color: rgba(59, 158, 255, 0.34);
+}
+.projCatalogList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  align-content: start;
+}
+.projCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  text-align: left;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+  cursor: pointer;
+  transition: border-color var(--dur-quick) var(--ease-out);
+}
+.projCard:hover {
+  border-color: var(--d-accent);
+}
+.projCardTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--d-ink);
+}
+.projCardMeta {
+  font-size: 11.5px;
+  color: var(--d-ink-2);
+}
+.projSoon {
+  padding: 22px 16px;
+  border: 1px dashed var(--d-line-strong);
+  border-radius: var(--d-r-md);
+  background: var(--d-s1);
+}
+.projSoonTitle {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: var(--d-ink);
+}
+.projSoonNote {
+  margin: 0;
+  font-size: 13px;
+  color: var(--d-ink-2);
+}
+
+/* panel kanan: item aktif + pengaturan */
+.projLive {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 3px 7px;
+  border-radius: var(--d-r-sm);
+  background: var(--d-danger-wash);
+  color: var(--d-danger);
+  border: 1px solid rgba(248, 113, 113, 0.38);
+}
+.projActiveBody {
+  padding: 12px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+}
+.projActiveTitle {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: var(--d-ink);
+}
+.projActiveKind {
+  margin: 0;
+  font-size: 12px;
+  color: var(--d-ink-2);
+}
+.projField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.projField > label {
+  font-size: 12px;
+  color: var(--d-ink-2);
+}
+.projField select {
+  min-height: 38px;
+}
+.projField input[type="range"] {
+  width: 100%;
+  accent-color: var(--d-accent);
+}
+.projSeg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--d-r-sm);
+  background: var(--d-s2);
+  border: 1px solid var(--d-line);
+}
+.projSeg button {
+  flex: 1;
+  min-height: 32px;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--d-ink-3);
+  border: 0;
+  border-radius: var(--d-r-sm);
+  cursor: pointer;
+}
+.projSeg button.on {
+  background: var(--d-accent);
+  color: var(--d-accent-ink);
+}
+.projSub {
+  margin: 0;
+  font-size: 11px;
+  color: var(--d-ink-3);
+}
+.projSolids {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+.projSwatch {
+  aspect-ratio: 1;
+  border-radius: var(--d-r-sm);
+  border: 1px solid var(--d-line-strong);
+  cursor: pointer;
+}
+.projSwatch.on {
+  outline: 2px solid var(--d-accent);
+  outline-offset: 1px;
+}
+.projPresets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.projPreset {
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+  background: var(--d-s1);
+  cursor: pointer;
+}
+.projPreset.on {
+  border-color: var(--d-accent);
+}
+.projPreset img {
+  display: block;
+  width: 100%;
+  height: 54px;
+  object-fit: cover;
+}
+.projPreset span {
+  display: block;
+  padding: 5px 7px;
+  font-size: 11px;
+  color: var(--d-ink-2);
+}
+.projPreview {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  min-height: 96px;
+  border-radius: var(--d-r-md);
+  border: 1px solid var(--d-line);
+}
+.projPreview span {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* responsif: panel menumpuk di layar kecil */
+@media (max-width: 1024px) {
+  .projGrid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(200px, auto);
+    overflow: auto;
+  }
+  .projPane {
+    overflow: visible;
+  }
+}
+
+
+/* === CastFlow Beta v75 === */
+.youthViewsPage .projBrand{font-family:var(--font-judul,"Satoshi",Inter,sans-serif);font-size:22px;letter-spacing:.02em;background:linear-gradient(90deg,#7fe0ff,#b08cff,#ffb86b);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.youthViewsPage .projDev{border-color:rgba(127,224,255,.28);color:#7fe0ff;background:rgba(127,224,255,.08);}
+.projBgPreset.on{background:#0A1128;color:#fff;border-color:#7fe0ff;}
+@media (max-width:900px) {
+.youthViewsPage .projGrid{grid-template-columns:1fr!important}.youthViewsPage .projPane{min-height:auto!important}}
+
+
+/* ===================== panel CastFlow ===================== */
+.projCard2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  margin-bottom: 8px;
+}
+.projCard2:hover { border-color: rgba(124, 140, 255, 0.45); background: rgba(124, 140, 255, 0.07); }
+.projCard2Main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.projCard2Main b { font-size: 13.5px; font-weight: 700; }
+.projCard2Main small { font-size: 11.5px; opacity: 0.6; }
+.projCard2Ops { display: flex; gap: 6px; flex: 0 0 auto; }
+
+.projSlideGrid { display: block; }
+.projDeckHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 4px 2px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 10px;
+}
+.projDeckHead b { font-size: 14px; }
+.projDeckHead span { font-size: 11.5px; opacity: 0.6; }
+.projDeckGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.projSlideCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 92px;
+  padding: 22px 10px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(12, 16, 28, 0.95), rgba(8, 10, 18, 0.95));
+  color: #eaf1ff;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.projSlideCard:hover { transform: translateY(-2px); border-color: rgba(124, 140, 255, 0.6); }
+.projSlideCard.on { border-color: #7c8cff; box-shadow: 0 0 0 2px rgba(124, 140, 255, 0.35); }
+.projSlideNo {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+.projSlideBody { font-size: 11.5px; line-height: 1.45; font-weight: 600; }
+
+.projBgTabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.projBgTab {
+  padding: 5px 10px;
+  font-size: 11.5px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.projBgTab.on { background: #7c8cff; border-color: #7c8cff; color: #060913; font-weight: 700; }
+.projMotion {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 10.5px;
+}
+.projMotion span:last-child { padding: 0 6px 6px; opacity: 0.75; }
+.projMotion.on { border-color: #7c8cff; box-shadow: 0 0 0 2px rgba(124, 140, 255, 0.3); }
+.projMotionThumb { display: block; height: 44px; background: #0b0e14; }
+#projPresets { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+
+.projBgApi { display: flex; flex-direction: column; gap: 8px; }
+.projBgApiRow { display: flex; gap: 6px; }
+.projBgApiRow > select,
+.projBgApiRow > input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 9px;
+  font-size: 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+}
+.projBgApiRow > button { flex: 0 0 auto; }
+.projBgChips { display: flex; flex-wrap: wrap; gap: 5px; }
+.projBgChips .projChip { font-size: 10.5px; padding: 4px 8px; }
+.projBgResults {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 6px;
+}
+.projBgThumb {
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0b0e14;
+  cursor: pointer;
+  aspect-ratio: 16 / 9;
+}
+.projBgThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.projComposer { display: flex; flex-direction: column; gap: 10px; }
+.projComposer h3 { margin: 0; font-size: 15px; }
+.projComposer p, .projComposer li { font-size: 12.5px; opacity: 0.72; line-height: 1.55; margin: 0; }
+.projComposer ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.projComposer textarea,
+.projComposer input {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  resize: vertical;
+}
+.projComposerOps { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.projAuditOut { display: flex; flex-direction: column; gap: 8px; }
+.projAuditList { display: flex; flex-direction: column; gap: 6px; }
+.projAuditRow {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 12.5px;
+}
+.projAuditRow > span { font-weight: 800; text-align: center; }
+.projAuditRow.ok > span { color: #4ade80; }
+.projAuditRow.bad > span { color: #fbbf24; }
+.projAuditRow.bad { border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.07); }
+.projAuditRow small { opacity: 0.6; font-size: 11.5px; }
+.projAuditLog {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  line-height: 1.6;
+  opacity: 0.7;
+  max-height: 120px;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.projActiveTitle { margin: 0; font-size: 14px; font-weight: 700; }
+.projActiveKind { margin: 2px 0 8px; font-size: 11.5px; opacity: 0.6; }
+.projActiveLines {
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(124, 140, 255, 0.28);
+  background: rgba(124, 140, 255, 0.08);
+}
+.projNextLbl {
+  margin: 10px 0 4px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+.projNextLines {
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.62;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+}
+.projPlanItem.isActive { border-color: #7c8cff; background: rgba(124, 140, 255, 0.12); }
+
+.projStudio{display:flex;flex-direction:column;gap:10px;padding:4px 0}
+.projStudioCv{width:100%;height:132px;border-radius:12px;display:block;background:#04060f;border:1px solid rgba(255,255,255,.08)}
+.projChips{display:flex;flex-wrap:wrap;gap:6px}
+.projChipWrap{display:inline-flex;align-items:center;gap:2px}
+.projChipX{border:none;background:transparent;color:var(--d-ink-3);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;border-radius:6px}
+.projChipX:hover{background:rgba(255,80,80,.14);color:var(--d-danger)}
+.projField{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--d-ink-3)}
+.projField>span{display:flex;justify-content:space-between;align-items:center}
+.projField b{color:var(--d-ink-2);font-weight:600}
+.projField input[type=range]{width:100%}
+.projField input[type=color]{width:100%;height:30px;padding:0;border:1px solid rgba(0,0,0,.12);border-radius:8px;background:none;cursor:pointer}
+.projColors{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.projStudioOps{display:flex;gap:8px}
+.projStudioOps .projBtn{flex:1}
+
+.projMediaLib{display:flex;flex-direction:column;gap:10px;padding:4px 0}
+.projMediaLib input[type=file]{font-size:11.5px;color:var(--d-ink-3)}
+.projMediaGrid{display:flex;flex-direction:column;gap:8px}
+.projMediaItem{border:1px solid rgba(0,0,0,.1);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.projMediaItem b{font-size:12px;color:var(--d-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.projMediaItem span{font-size:11px;color:var(--d-ink-3)}
+.projMediaOps{display:flex;gap:6px;margin-top:2px}
+.projMediaOps .projBtn{flex:1;padding:5px 8px;font-size:11.5px}
+
+/* 2. tinggi layar penuh yang benar di iOS (bar URL Safari bikin teks meleset) */
+.projPage { height: 100vh; height: 100dvh; }
+
+/* 3. hormati poni / sudut melengkung iPhone */
+.projTop { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); padding-top: max(10px, env(safe-area-inset-top)); }
+
+/* 4. panel CastFlow: pane tidak boleh saling menumpuk */
+.projGrid > * { min-width: 0; min-height: 0; }
+.projPane { overscroll-behavior: contain; }
+
+/* 5. TABLET / PC kecil & jendela di-minimize */
+@media (max-width: 1200px) and (min-width: 901px) {
+  .youthViewsPage .projGrid { grid-template-columns: 240px 1fr 300px !important; }
+  .projPane { padding: 11px; }
+}
+@media (max-width: 900px) {
+
+  .youthViewsPage .projGrid {
+    display: flex !important;
+    flex-direction: column;
+    grid-template-columns: none !important;
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+  .youthViewsPage .projPane {
+    overflow: visible;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    border-left: 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.09);
+  }
+  .youthViewsPage .projPaneHead { position: sticky; top: 0; z-index: 3; background: var(--d-canvas); }
+  #projCatalogList { grid-template-columns: 1fr !important; }
+  .projCard2 { flex-direction: column; align-items: stretch; }
+  .projCard2Ops .projBtn { flex: 1; }
+  .projTabs, .projBgTabs, .projChips { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .projTabs::-webkit-scrollbar, .projBgTabs::-webkit-scrollbar { display: none; }
+  .projTabs > *, .projBgTabs > * { flex: 0 0 auto; }
+  .projColors { grid-template-columns: 1fr 1fr 1fr; }
+  .projStudioCv { height: 108px; }
+  .projBtn, .projTab, .projBgTab { min-height: 38px; }
+  .projGoLiveRow, .projStudioOps, .projMediaOps { flex-wrap: wrap; }}
+
+
+/* 7. HP kecil (<=380px) */
+@media (max-width: 380px) {
+  .projPane { padding: 10px; }
+  .projBrand { font-size: 17px; }
+  .projColors { grid-template-columns: 1fr 1fr; }
+}
+
+
+/* ================= v5.7 - kartu terbaca + navigasi per kolom ================= */
+/* A. hanya anak langsung grid yang boleh menyusut (bukan semua turunan) */
+.projGrid > * { min-width: 0; min-height: 0; }
+.projPlanItem, .projActiveTitle { overflow-wrap: break-word; }
+
+/* B. KARTU LAGU - judul wajib mendatar & terbaca */
+#projCatalogList { display: block; }
+#projCatalogList .projCard2 {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 8px;
+  width: auto;
+  min-width: 0;
+  padding: 11px 13px;
+  margin-bottom: 8px;
+}
+#projCatalogList .projCard2Main { display: block; min-width: 0; }
+#projCatalogList .projCard2Main b {
+  display: block;
+  font-size: 13.5px;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+}
+#projCatalogList .projCard2Main small { display: block; margin-top: 3px; }
+#projCatalogList .projCard2Ops { display: flex; flex-wrap: wrap; gap: 6px; }
+#projCatalogList .projCard2Ops .projMiniBtn { flex: 0 0 auto; }
+
+/* C. hasil pencarian latar: video tidak boleh dimuat sebagai gambar */
+.projBgThumb { position: relative; overflow: hidden; }
+.projBgThumb.noThumb {
+  background: linear-gradient(135deg, #14204a, #2b1840);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.projBgThumb.noThumb::after {
+  content: "\25B6";
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 15px;
+}
+.projBgVid {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 8.5px;
+  letter-spacing: 0.07em;
+  padding: 2px 5px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+.projPvVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.projPreview { position: relative; overflow: hidden; }
+
+/* D. RAIL - satu kolom navigasi, tiap fitur punya tempatnya sendiri */
+.projRail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 8px;
+  background: var(--d-canvas);
+  border-right: 1px solid rgba(0, 0, 0, 0.09);
+  overflow: auto;
+}
+.projRailTitle {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  padding: 8px 8px 3px;
+}
+.projRailBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  min-height: 38px;
+}
+.projRailBtn span.ic { font-size: 14px; width: 17px; text-align: center; flex: 0 0 auto; }
+.projRailBtn:hover { background: rgba(124, 140, 255, 0.1); }
+.projRailBtn.on {
+  background: rgba(20, 130, 160, 0.14);
+  border-color: rgba(20, 130, 160, 0.5);
+  font-weight: 700;
+}
+
+/* E. empat kolom di layar lebar (selector disamakan agar menang cascade) */
+.youthViewsPage .projGrid { grid-template-columns: 148px 224px minmax(0, 1fr) 336px !important; }
+@media (max-width: 1200px) and (min-width: 901px) {
+  .youthViewsPage .projGrid { grid-template-columns: 124px 186px minmax(0, 1fr) 296px !important; }
+}
+@media (max-width: 900px) {
+  .youthViewsPage .projRail { display: none; }
+}
