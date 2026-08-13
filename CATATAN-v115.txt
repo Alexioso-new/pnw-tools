@@ -1,0 +1,41 @@
+PNW TOOLS v115 (label v9.15) — HOTFIX NAVIGASI & KARTU SLIDE
+================================================================
+Pemicu: laporan pengguna + screenshot 13 Agustus 2026.
+
+BUG 1 — Space/Arrow melompat dua slide (1 langsung ke 3)
+Akar masalah:
+- projector.js punya listener Space/Arrow -> step().
+- castflow.js juga punya listener yang mengklik tombol Next/Prev.
+- Satu keydown dieksekusi dua kali.
+
+Perbaikan:
+- projector.js menjadi SATU-SATUNYA pemilik hotkey navigasi slide.
+- Cabang Space/Arrow/PageUp/PageDown dicopot dari castflow.js.
+- Tambah ArrowUp/ArrowDown ke listener canonical.
+- stopImmediatePropagation setelah hotkey diproses sebagai pertahanan.
+- Saat Timeline terbuka, hotkey slide berhenti agar tidak konflik dengan
+  hotkey seek/play milik timeline.
+
+BUG 2 — kartu lirik langsung gepeng setelah Next/Prev
+Akar masalah:
+- step()/goSlide()/klik kartu memanggil renderDeck() penuh (innerHTML ulang).
+- CSS v100 menyembunyikan .projSlideBody dan mengandalkan .cfMiniPreview.
+- Node .cfMiniPreview hilang saat rebuild dan baru dipasang scheduler
+  250/900 ms kemudian; kartu tinggal label tipis.
+
+Perbaikan:
+- Navigasi hanya memanggil syncDeckSelection(): toggle kelas .on pada kartu
+  dan chip bagian TANPA membangun ulang grid.
+- Node kartu dan .cfMiniPreview dipertahankan (tidak berkedip/gepeng).
+- Full rebuild tetap dipakai bila benar-benar perlu (buka lagu/ubah
+  aransemen), tetapi syncMiniPreviews() dipanggil sinkron pada tick yang sama.
+
+Deploy:
+Timpa C:\pnw-tools (jaga .git) -> git add -A -> git commit -m v115 ->
+git push -> Ctrl+Shift+R -> label v9.15.
+
+Uji:
+1. Buka lagu dengan minimal 4 slide.
+2. Dari slide 1 tekan Space satu kali -> HARUS slide 2 (bukan 3).
+3. Arrow kanan/kiri dan tombol Next/Prev -> selalu maju/mundur tepat 1.
+4. Semua kartu mini-preview harus tetap tinggi/utuh tanpa menjadi gepeng.

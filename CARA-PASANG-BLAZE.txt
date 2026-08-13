@@ -1,0 +1,35 @@
+CARA PASANG BLAZE + CLOUD STORAGE (sekali saja, ±10 menit)
+==========================================================
+Tujuan: mengaktifkan REKAMAN LATIHAN ONLINE dan BUKU PANDUAN PDF.
+Kode aplikasi sudah siap — yang kurang hanya langkah di Firebase Console.
+
+A. Upgrade paket Spark -> Blaze (bayar sesuai pemakaian; pemakaian kita
+   kecil, biasanya tetap Rp0 — tapi tetap pasang budget alert di langkah D):
+   1. Buka https://console.firebase.google.com -> pilih project
+      "chord-youth-hosana".
+   2. Kiri bawah: klik "Spark" -> "Upgrade" -> pilih Blaze -> hubungkan
+      akun penagihan Google.
+
+B. Aktifkan Cloud Storage:
+   1. Menu kiri: Build -> Storage -> "Get Started".
+   2. Lokasi bucket: biarkan bawaan (bucket: chord-youth-hosana.firebasestorage.app).
+   3. Saat ditanya rules awal, pilih mode apa pun — akan kita timpa di langkah C.
+
+C. Pasang Storage Rules:
+   1. Di Storage -> tab "Rules".
+   2. Hapus seluruh isi editor, lalu tempel SELURUH isi berkas
+      "storage.rules" dari paket ini.
+   3. Klik "Publish".
+
+D. Budget alert (sangat dianjurkan):
+   1. https://console.cloud.google.com/billing -> pilih akun penagihan ->
+      "Budgets & alerts" -> "Create budget".
+   2. Contoh aman: Rp50.000/bulan, email notifikasi ke diri sendiri.
+
+E. Uji:
+   1. Web -> login admin -> putar lagu -> rekam latihan beberapa detik ->
+      berhenti -> status rekaman harus "online" (bukan "lokal").
+   2. Menu -> Buku Panduan -> unggah satu PDF -> anggota lain bisa membaca.
+
+Kalau unggahan masih ditolak: pastikan rules sudah "Publish" dan pengguna
+sudah login (bukan sekadar membuka web).

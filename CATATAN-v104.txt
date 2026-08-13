@@ -1,0 +1,86 @@
+CASTFLOW v104 (label v9.4) — SPRINT 5: RELIABILITY + ACCESSIBILITY + PERFORMANCE
+================================================================================
+
+Melanjutkan v103 — Sprint 5 dari master plan v101. Fokus rilis ini adalah
+hardening runtime untuk penggunaan panggung panjang, akses keyboard/screen
+reader, dan alat diagnosis yang bisa memberi bukti, bukan tebakan.
+
+YANG BARU
+---------
+1. LIFECYCLE SCHEDULER
+   - Kernel sekarang dimuat sebelum UI legacy.
+   - Lima polling dekoratif permanen (bahasa, Bible version, section chip,
+     network/auth paint, Flow/Design sync) pindah ke scheduler sadar-visibilitas.
+   - Saat tab tersembunyi job UI berhenti total dan resume saat terlihat.
+   - Timer kritis heartbeat output, countdown, playback/timeline, recorder,
+     dan metronome TIDAK diubah.
+
+2. ACCESSIBILITY GUARD
+   - Nama aksesibel untuk tombol ikon dan field dinamis.
+   - Landmark main, skip link, semantics menu/tab/toggle, html lang.
+   - Focus trap dialog, fokus awal eksplisit, dan restore focus saat tutup.
+   - Audit Accessibility di Diagnostics dengan skor + jumlah kontrol tanpa label.
+   - CSS focus-visible, reduced motion, higher contrast, dan forced-colors.
+
+3. PERFORMANCE + RELIABILITY MONITOR
+   - Sampel ringan tiap 15 detik: DOM nodes, resources, JS heap (jika browser
+     mendukung), error count, status output, event-loop lag, dan Long Tasks.
+   - Diagnostics memiliki tombol Sample, Run Accessibility, Start 2h, Stop,
+     dan Export laporan JSON.
+   - Soak test menilai error baru, pertumbuhan DOM/heap, lag, long task,
+     dan disconnect output. State aktif dapat pulih setelah reload.
+
+4. DIAGNOSTICS v104
+   - Panel lama tetap ada: App, Output/ACK, Preflight, Media, Errors, Storage.
+   - Ditambah tiga baris: Performance, Accessibility, Reliability.
+
+QA / VERIFIKASI
+---------------
+- Node syntax check: semua JavaScript yang disentuh PASS.
+- 1440x900: 131/131 PASS, 0 error JS.
+- 1024x720: 131/131 PASS, 0 error JS.
+- Total: 262/262 PASS.
+- Accelerated soak controller tervalidasi: start -> running -> auto-finish ->
+  enam checks -> event -> storage report -> cleanup active state.
+- Full soak 2 jam WAJIB dijalankan setelah deploy pada perangkat panggung asli;
+  sandbox hanya memvalidasi controller dipercepat, bukan perilaku perangkat 2 jam.
+
+BERKAS BARU
+-----------
+- js/cf-a11y.js
+- js/cf-reliability.js
+- css/cf-v104.css
+
+BERKAS DIPATCH
+--------------
+- js/cf-kernel.js (v104/v9.4, event/state Sprint 5, scheduler)
+- js/castflow.js + js/castflow-v100.js (5 polling UI -> scheduler)
+- js/cf-diag.js + js/cf-preflight.js (panel baru + fokus modal)
+- castflow.html (urutan kernel + asset Sprint 5)
+- sw.js (cache pnw-tools-v104 + APP_SHELL)
+- index.html, js/yv-standalone.js, js/logger.js (label v9.4)
+- docs/v101-architecture.md
+
+CATATAN KEMASAN
+---------------
+- ZIP tetap format lama seperti v102 ke belakang: file langsung di root,
+  TANPA wrapper folder pnw-tools-v104/.
+- BERSIHKAN-CATATAN.bat tetap tersedia. Setelah menimpa C:\pnw-tools,
+  dobel-klik untuk memindahkan CATATAN versi lama ke _CATATAN\.
+- Namespace storage tetap castflow:v101: karena itu versi skema, bukan rilis.
+
+URUTAN DEPLOY
+-------------
+1. Ekstrak ZIP -> salin SEMUA isinya -> timpa ke C:\pnw-tools (.git jangan dihapus).
+2. Opsional: dobel-klik BERSIHKAN-CATATAN.bat untuk merapikan catatan lama.
+3. Buka terminal di C:\pnw-tools:
+   git add -A
+   git commit -m "v104"
+   git push
+4. Buka situs -> Ctrl+Shift+R -> pastikan label v9.4.
+5. Buka CastFlow -> Avatar -> Diagnostics:
+   - Accessibility minimal 95/100.
+   - Performance tidak FAIL.
+   - Output connected bila jendela output aktif.
+6. Pada perangkat panggung: Diagnostics -> Start 2h. Biarkan CastFlow dipakai
+   normal selama dua jam, lalu Export laporan JSON dan simpan untuk audit.

@@ -417,7 +417,7 @@
       }
       _active.slideIndex = next;
       renderActive();
-      renderDeck();
+      syncDeckSelection(); // v115: jangan rebuild kartu saat navigasi
       goLive();
     });
   }
@@ -496,6 +496,40 @@
     syncTabs();
     renderCatalog();
     renderActive();
+  }
+  /* v115: navigasi slide hanya mengubah status visual. Sebelumnya setiap
+     Next/Prev memanggil renderDeck() (innerHTML penuh), sehingga elemen
+     .cfMiniPreview hilang dan kartu gepeng sampai scheduler membangunnya lagi. */
+  function syncDeckSelection() {
+    safe("syncDeckSelection", function () {
+      var host = el("projSlideGrid");
+      if (!host) return;
+      var cur = -1;
+      if (
+        _deckSong &&
+        _active &&
+        _active.kind === "song" &&
+        String(_active.songId) === String(_deckSong.id)
+      )
+        cur = parseInt(_active.slideIndex, 10) || 0;
+      host.querySelectorAll(".projSlideCard").forEach(function (b) {
+        b.classList.toggle(
+          "on",
+          parseInt(b.getAttribute("data-i"), 10) === cur,
+        );
+      });
+      var sec = -1;
+      host.querySelectorAll(".projSecChip").forEach(function (b) {
+        var i = parseInt(b.getAttribute("data-seci"), 10);
+        if (!isNaN(i) && i <= cur && i > sec) sec = i;
+      });
+      host.querySelectorAll(".projSecChip").forEach(function (b) {
+        b.classList.toggle(
+          "on",
+          parseInt(b.getAttribute("data-seci"), 10) === sec,
+        );
+      });
+    });
   }
   function renderDeck() {
     safe("renderDeck", function () {
@@ -584,6 +618,16 @@
           })
           .join("") +
         "</div>";
+      /* v115: bila full rebuild memang perlu (buka lagu/ubah aransemen),
+         pasang mini-preview secara sinkron — tidak ada satu frame gepeng. */
+      try {
+        if (
+          window.CastFlowV100 &&
+          typeof window.CastFlowV100.syncMiniPreviews === "function"
+        )
+          window.CastFlowV100.syncMiniPreviews();
+      } catch (e) {}
+      syncDeckSelection();
       var back = host.querySelector('[data-op="back"]');
       if (back)
         back.onclick = function () {
@@ -593,7 +637,7 @@
       host.querySelectorAll(".projSlideCard").forEach(function (b) {
         b.onclick = function () {
           _active = { kind: "song", songId: _deckSong.id, slideIndex: parseInt(b.getAttribute("data-i"), 10) || 0 };
-          renderDeck();
+          syncDeckSelection();
           renderActive();
           renderPreview();
         };
@@ -602,7 +646,7 @@
         b.onclick = function () {
           if (!_active || _active.kind !== "song") return;
           _active.slideIndex = parseInt(b.getAttribute("data-seci"), 10) || 0;
-          renderDeck();
+          syncDeckSelection();
           renderActive();
           renderPreview();
           goLive();
@@ -1716,16 +1760,29 @@
           setBg({ kind: /\.(mp4|webm|mov)(\?|$)/i.test(v) ? "video" : "image", value: v });
         };
 
-      // keyboard ala presenter
+      // v115: SATU-SATUNYA pemilik hotkey navigasi slide.
       document.addEventListener("keydown", function (ev) {
         if (!isOpen()) return;
         var t = ev.target && ev.target.tagName;
         if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT") return;
-        if (ev.key === "ArrowRight" || ev.key === " " || ev.key === "PageDown") {
+        var tld = el("tlDrawer");
+        if (tld && tld.classList.contains("on")) return;
+        if (
+          ev.key === "ArrowRight" ||
+          ev.key === "ArrowDown" ||
+          ev.key === " " ||
+          ev.key === "PageDown"
+        ) {
           ev.preventDefault();
+          ev.stopImmediatePropagation();
           step(1);
-        } else if (ev.key === "ArrowLeft" || ev.key === "PageUp") {
+        } else if (
+          ev.key === "ArrowLeft" ||
+          ev.key === "ArrowUp" ||
+          ev.key === "PageUp"
+        ) {
           ev.preventDefault();
+          ev.stopImmediatePropagation();
           step(-1);
         } else if (ev.key === "Escape") {
           close();
@@ -1810,7 +1867,7 @@
       if (next === _active.slideIndex) return;
       _active.slideIndex = next;
       renderActive();
-      renderDeck();
+      syncDeckSelection(); // v115: pertahankan node mini-preview
       goLive();
     });
   }

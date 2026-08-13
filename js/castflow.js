@@ -15,7 +15,7 @@
 (function () {
   "use strict";
 
-  var CF_VERSION = "v9.14";
+  var CF_VERSION = "v9.15";
   var LANG_KEY = "pnwCastflowLang";
   var FONTS_KEY = "pnwCastflowFonts.v1";
   var GRID_KEY = "pnwCastflowGrid.v1";
@@ -1195,16 +1195,14 @@
       var t = e.target;
       var tag = ((t && t.tagName) || "").toLowerCase();
       if (tag === "input" || tag === "textarea" || tag === "select" || (t && t.isContentEditable)) return;
-      var tld = document.getElementById("tlDrawer");
-      var tlOpen = !!(tld && tld.classList.contains("on"));
       function click(id) { var b = document.getElementById(id); if (b) b.click(); }
       var k = e.key;
       if (k === "b" || k === "B") { toggleBlack(); e.preventDefault(); }
       else if (k === "l" || k === "L") { toggleLogo(); e.preventDefault(); }
       else if (k === "Enter") { click("projGoLive"); e.preventDefault(); }
       else if (k === "Escape") { click("projClear"); e.preventDefault(); }
-      else if (!tlOpen && (k === " " || k === "ArrowRight" || k === "ArrowDown" || k === "PageDown")) { click("projNextSlide"); e.preventDefault(); }
-      else if (!tlOpen && (k === "ArrowLeft" || k === "ArrowUp" || k === "PageUp")) { click("projPrevSlide"); e.preventDefault(); }
+      /* v115: Space/Arrow/PageUp/PageDown hanya ditangani projector.js.
+         Dulu cabang kedua di sini membuat satu keypress melompat dua slide. */
     });
   }
 

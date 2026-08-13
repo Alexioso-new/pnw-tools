@@ -1,0 +1,30 @@
+CATATAN v107 (label v9.7) — Timer Panggung & Stage Message Lanjutan
+====================================================================
+Yang baru:
+1. TIMER PANGGUNG di Stage Display (?mode=stage): pil waktu di kanan atas.
+   - Jam     : jam berjalan HH:MM
+   - Mundur  : hitung mundur N menit (lewat nol -> angka merah, lanjut
+               menghitung naik sebagai overrun)
+   - Jalan   : stopwatch menghitung naik
+   Dikendalikan dari Remote HP (?mode=remote), bagian TIMER PANGGUNG.
+2. Stage Message lanjutan di Remote HP:
+   - 8 preset sekali-tap: Ulangi Chorus, Ulangi Verse, Naik 1 Nada,
+     Turun 1 Nada, Acapella, Instrumen Saja, Sekali Lagi, Bersiap Closing
+   - centang "Kedip" = pesan berkedip di layar panggung
+   - pilihan otomatis hilang 10/20/30 detik (bawaan: tetap tampil)
+
+Teknis:
+- Pesan & timer berbagi node youthviews/stagemsg via update() sehingga
+  tidak saling menimpa.
+- TIDAK perlu publish rules baru — rules v105 sudah mencakup node ini.
+
+Deploy:
+1. Timpa isi C:\pnw-tools dengan isi ZIP (jaga folder .git).
+2. git add -A && git commit -m "v107" && git push
+3. Ctrl+Shift+R -> cek label v9.7.
+
+Uji singkat:
+- HP remote -> TIMER PANGGUNG: pilih Mundur, isi 1 menit, Mulai Timer ->
+  pil muncul di Stage Display dan berdetak; Matikan -> hilang.
+- Kirim preset dengan "Kedip" dicentang -> pesan berkedip di panggung.
+- Pilih "Hilang 10 dtk" -> pesan menghilang sendiri.
