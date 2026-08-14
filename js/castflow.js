@@ -15,7 +15,7 @@
 (function () {
   "use strict";
 
-  var CF_VERSION = "v9.17";
+  var CF_VERSION = "v9.18";
   var LANG_KEY = "pnwCastflowLang";
   var FONTS_KEY = "pnwCastflowFonts.v1";
   var GRID_KEY = "pnwCastflowGrid.v1";
@@ -1355,75 +1355,250 @@
   }
 
   /* ================= 8. ROADMAP LANJUTAN (v8.1) ================= */
-  /* ---- 1. Auto-Format Lyrics ---- */
+  /* ---- 1. Auto-Format Lyrics v118 ----
+     Parser bekerja sepenuhnya lokal: header eksplisit, baris chord, bait
+     berulang (calon Chorus), Pre-Chorus berulang, dan lirik tanpa paragraf. */
   var CF_SEC_RX = [
-    [/^(pre[- ]?chorus|prechorus)/i, "Pre-Chorus"],
-    [/^(chorus|reff?|refrain)/i, "Chorus"],
-    [/^(bridge)/i, "Interlude"],
-    [/^(interlude|interlud|instrumental|solo|intro)/i, "Interlude"],
-    [/^(coda|ending|outro|akhir)/i, "Coda"],
-    [/^(verse|bait|stanza|v\s*\d+)/i, "Verse"],
+    { re: /^(?:pre[\s_-]*(?:chorus|reff?|refrein)|pc)\s*(\d+|[ivx]+)?$/i, base: "Pre-Chorus" },
+    { re: /^(?:chorus|reff?|refrein|korus|hook|c)\s*(\d+|[ivx]+)?$/i, base: "Chorus" },
+    { re: /^(?:verse|bait|stanza|v)\s*(\d+|[ivx]+)?$/i, base: "Verse" },
+    { re: /^(?:bridge|jembatan|middle[\s_-]*8|br)\s*(\d+|[ivx]+)?$/i, base: "Bridge" },
+    { re: /^(?:intro|opening|pembuka)\s*(\d+|[ivx]+)?$/i, base: "Intro" },
+    { re: /^(?:interlude|instrumental|musik|solo)\s*(\d+|[ivx]+)?$/i, base: "Interlude" },
+    { re: /^(?:outro|ending|penutup)\s*(\d+|[ivx]+)?$/i, base: "Outro" },
+    { re: /^(?:coda|tag)\s*(\d+|[ivx]+)?$/i, base: "Coda" },
   ];
+  var CF_ROMAN = { i: 1, ii: 2, iii: 3, iv: 4, v: 5, vi: 6, vii: 7, viii: 8, ix: 9, x: 10 };
+  function cfEsc(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function cfHeader(raw) {
+    var t = String(raw || "").trim();
+    if (!t || t.length > 52) return null;
+    t = t.replace(/^#{1,4}\s*/, "").replace(/^[>•*]+\s*/, "");
+    t = t.replace(/^\[\s*|\s*\]$/g, "").replace(/^\(\s*|\s*\)$/g, "");
+    t = t.replace(/\s*[:：\-–—]\s*$/, "").trim();
+    for (var i = 0; i < CF_SEC_RX.length; i++) {
+      var m = t.match(CF_SEC_RX[i].re);
+      if (!m) continue;
+      var n = m[1] || "";
+      if (n && !/^\d+$/.test(n)) n = CF_ROMAN[String(n).toLowerCase()] || "";
+      return {
+        base: CF_SEC_RX[i].base,
+        label: CF_SEC_RX[i].base + (n ? " " + n : ""),
+        numbered: !!n,
+      };
+    }
+    return null;
+  }
+  function cfChordToken(token) {
+    var t = String(token || "").trim().replace(/^[|:]+|[|:]+$/g, "");
+    if (!t) return true;
+    if (/^(?:N\.?C\.?|x\d+)$/i.test(t)) return true;
+    return /^[A-G](?:#|b)?(?:maj|min|m|sus|dim|aug|add)?\d*(?:\([^)]*\))?(?:\/[A-G](?:#|b)?)?$/i.test(t);
+  }
+  function cfChordOnly(line) {
+    var t = String(line || "").trim();
+    if (!t) return false;
+    var parts = t.split(/\s+/).filter(function (x) { return x && x !== "|" && x !== "/"; });
+    return !!parts.length && parts.length <= 16 && parts.every(cfChordToken);
+  }
+  function cfStripInlineChords(line) {
+    return String(line || "")
+      .replace(/\[([^\]]{1,16})\]/g, function (all, inner) { return cfChordToken(inner) ? "" : all; })
+      .replace(/[ \t]{2,}/g, " ")
+      .trim();
+  }
+  function cfNormBlock(lines) {
+    return (lines || []).join(" ").toLowerCase()
+      .normalize ? (lines || []).join(" ").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim()
+      : (lines || []).join(" ").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  }
+  function cfSimilarity(a, b) {
+    if (!a || !b) return 0;
+    if (a === b) return 1;
+    if (Math.min(a.length, b.length) < 14) return 0;
+    var aa = a.split(/\s+/), bb = b.split(/\s+/), bag = {}, common = 0;
+    aa.forEach(function (x) { bag[x] = (bag[x] || 0) + 1; });
+    bb.forEach(function (x) { if (bag[x]) { common++; bag[x]--; } });
+    var dice = (2 * common) / Math.max(1, aa.length + bb.length);
+    var ratio = Math.min(a.length, b.length) / Math.max(a.length, b.length);
+    return dice * 0.82 + ratio * 0.18;
+  }
+  function cfChunkLongBlock(block) {
+    if (block.explicit || block.lines.length <= 6) return [block];
+    var size = block.lines.length <= 9 ? 3 : 4;
+    var chunks = [];
+    for (var i = 0; i < block.lines.length; i += size) {
+      chunks.push({ explicit: false, base: "", label: "", lines: block.lines.slice(i, i + size) });
+    }
+    if (chunks.length > 1 && chunks[chunks.length - 1].lines.length === 1) {
+      chunks[chunks.length - 1].lines.unshift(chunks[chunks.length - 2].lines.pop());
+    }
+    return chunks;
+  }
   function cfAutoFormat(raw) {
-    var lines = String(raw || "").replace(/\r\n?/g, "\n").split("\n");
-    var blocks = [];
-    var cur = [];
-    lines.forEach(function (ln) {
-      if (ln.trim() === "") { if (cur.length) { blocks.push(cur); cur = []; } }
-      else cur.push(ln.trim());
-    });
-    if (cur.length) blocks.push(cur);
-    var out = [];
-    var vCount = 0;
-    blocks.forEach(function (blk) {
-      var label = null;
-      var body = blk;
-      var first = (blk[0] || "").trim();
-      if (first && first.length <= 24) {
-        for (var i = 0; i < CF_SEC_RX.length; i++) {
-          if (CF_SEC_RX[i][0].test(first)) { label = CF_SEC_RX[i][1]; break; }
-        }
+    var text = String(raw || "")
+      .replace(/<br\s*\/?\s*>/gi, "\n")
+      .replace(/<\/p\s*>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/\r/g, "")
+      .replace(/\u00a0/g, " ");
+    var lines = text.split("\n"), blocks = [], cur = null, explicitCount = 0, removedChords = 0;
+    function flush() {
+      if (cur && cur.lines.length) blocks.push(cur);
+      cur = null;
+    }
+    lines.forEach(function (source) {
+      var line = String(source || "").replace(/^\s*\d+[.)]\s+(?=\D)/, "").trim();
+      var header = cfHeader(line);
+      if (header) {
+        flush();
+        cur = { explicit: true, base: header.base, label: header.label, numbered: header.numbered, lines: [] };
+        explicitCount++;
+        return;
       }
-      if (label) body = blk.slice(1);
-      if (!label || label === "Verse") { vCount++; label = "Verse " + vCount; }
-      if (!body.length) body = [first];
-      out.push({ label: label, lines: body });
+      if (!line) { flush(); return; }
+      if (cfChordOnly(line)) { removedChords++; return; }
+      line = cfStripInlineChords(line);
+      if (!line || cfChordOnly(line)) { removedChords++; return; }
+      if (!cur) cur = { explicit: false, base: "", label: "", numbered: false, lines: [] };
+      cur.lines.push(line);
     });
+    flush();
+    if (!blocks.length) {
+      var empty = [];
+      empty.stats = { explicit: 0, inferred: 0, removedChords: removedChords, chorus: 0 };
+      return empty;
+    }
+    if (blocks.length === 1) blocks = cfChunkLongBlock(blocks[0]);
+
+    var groups = [];
+    blocks.forEach(function (block, index) {
+      var norm = cfNormBlock(block.lines), group = null;
+      for (var i = 0; i < groups.length; i++) {
+        if (cfSimilarity(norm, groups[i].norm) >= 0.84) { group = groups[i]; break; }
+      }
+      if (!group) { group = { norm: norm, indexes: [], lines: block.lines.length }; groups.push(group); }
+      group.indexes.push(index);
+      block.group = group;
+    });
+    var repeats = groups.filter(function (g) { return g.indexes.length > 1; });
+    repeats.sort(function (a, b) {
+      var sa = a.indexes.length * 12 + Math.min(8, a.lines) + a.indexes[0] * 0.05;
+      var sb = b.indexes.length * 12 + Math.min(8, b.lines) + b.indexes[0] * 0.05;
+      return sb - sa;
+    });
+    var chorusGroup = repeats[0] || null;
+    var chorusIdx = chorusGroup ? chorusGroup.indexes.slice() : [];
+    var preGroup = null;
+    repeats.slice(1).some(function (g) {
+      var matches = chorusIdx.filter(function (idx) { return idx > 0 && blocks[idx - 1].group === g; }).length;
+      if (matches >= Math.min(2, chorusIdx.length)) { preGroup = g; return true; }
+      return false;
+    });
+
+    var verseNo = 0, inferred = 0, chorusCount = 0;
+    var out = blocks.map(function (block, index) {
+      var label = block.label, method = block.explicit ? "header" : "structure";
+      if (!block.explicit) {
+        inferred++;
+        if (chorusGroup && block.group === chorusGroup) {
+          label = "Chorus"; method = "repeat"; chorusCount++;
+        } else if (preGroup && block.group === preGroup) {
+          label = "Pre-Chorus"; method = "repeat";
+        } else if (chorusIdx.length && index > chorusIdx[chorusIdx.length - 1] && block.lines.length <= 2) {
+          label = "Coda"; method = "ending";
+        } else {
+          verseNo++;
+          label = "Verse " + verseNo;
+        }
+      } else {
+        if (block.base === "Verse" && !block.numbered) { verseNo++; label = "Verse " + verseNo; }
+        else if (block.base === "Verse") {
+          var vm = label.match(/\d+/); if (vm) verseNo = Math.max(verseNo, parseInt(vm[0], 10) || verseNo);
+        }
+        if (block.base === "Chorus") chorusCount++;
+      }
+      return { label: label || "Verse " + (++verseNo), lines: block.lines, detected: method, confidence: method === "header" ? 1 : method === "repeat" ? 0.9 : 0.68 };
+    });
+    out.stats = { explicit: explicitCount, inferred: inferred, removedChords: removedChords, chorus: chorusCount, sections: out.length };
     return out;
   }
+  function ensureAutoFormatSurface() {
+    var modal = document.getElementById("cfAutoFormatModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "cfAutoFormatModal";
+      modal.className = "cfAfModal";
+      modal.hidden = true;
+      modal.innerHTML = '<div class="cfAfModalCard" role="dialog" aria-modal="true" aria-labelledby="cfAfModalTitle"><header class="cfAfModalHead"><div><b id="cfAfModalTitle">Rapikan Lirik</b><span>Tempel, cek struktur, lalu salin hasilnya.</span></div><button type="button" id="cfAfClose" aria-label="Tutup Auto Format">×</button></header><div id="projAi" class="cfAfModalBody"></div></div>';
+      document.body.appendChild(modal);
+      function closeModal() { modal.hidden = true; document.body.classList.remove("cfModalOpen"); }
+      modal.addEventListener("click", function (e) { if (e.target === modal) closeModal(); });
+      document.getElementById("cfAfClose").onclick = closeModal;
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !modal.hidden) closeModal(); });
+    }
+    var head = document.querySelector(".cfLyricHead");
+    if (head && !document.getElementById("cfAutoFormatOpen")) {
+      var open = document.createElement("button");
+      open.type = "button";
+      open.id = "cfAutoFormatOpen";
+      open.className = "cfAutoFormatLaunch";
+      open.innerHTML = '<span aria-hidden="true">✦</span> Auto Format';
+      var toggle = head.querySelector(".cfViewToggle");
+      head.insertBefore(open, toggle || null);
+      open.onclick = function () {
+        modal.hidden = false;
+        document.body.classList.add("cfModalOpen");
+        setTimeout(function () { var x = document.getElementById("cfAfInput"); if (x) x.focus(); }, 30);
+      };
+    }
+    return document.getElementById("projAi");
+  }
   function buildAutoFormat() {
-    if (document.getElementById("cfAfOverlay")) return;
-    var ov = document.createElement("div");
-    ov.className = "cfAfOverlay"; ov.id = "cfAfOverlay"; ov.hidden = true;
-    ov.innerHTML =
-      '<div class="cfAfModal" role="dialog" aria-modal="true" aria-label="Auto-Format Lyrics">' +
-      '<div class="cfAfHead"><b>Auto-Format Lyrics</b><button type="button" class="cfAfX" id="cfAfX" aria-label="Close">✕</button></div>' +
-      '<textarea id="cfAfIn" placeholder="Tempel lirik mentah dari internet di sini…" rows="8"></textarea>' +
-      '<div class="cfAfOps"><button type="button" class="projMiniBtn primary" id="cfAfGo">Format</button>' +
-      '<button type="button" class="projMiniBtn" id="cfAfCopy">Salin</button>' +
-      '<button type="button" class="projMiniBtn" id="cfAfUse">Pakai di Teks</button></div>' +
-      '<div class="cfAfPreview" id="cfAfPreview"></div>' +
-      "</div>";
-    document.body.appendChild(ov);
-    function closeAf() { ov.hidden = true; }
-    function openAf() { ov.hidden = false; setTimeout(function(){ var ta=document.getElementById("cfAfIn"); if(ta) ta.focus(); }, 30); }
-    window.__openAutoFormat = openAf;
-    ov.querySelector("#cfAfX").onclick = closeAf;
-    ov.addEventListener("click", function (e) { if (e.target === ov) closeAf(); });
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !ov.hidden) closeAf(); });
-    var formatted = [];
-    function toText() { return formatted.map(function (s) { return "[" + s.label + "]\n" + s.lines.join("\n"); }).join("\n\n"); }
-    ov.querySelector("#cfAfGo").onclick = function () {
-      formatted = cfAutoFormat(ov.querySelector("#cfAfIn").value);
-      ov.querySelector("#cfAfPreview").innerHTML = formatted.map(function (s) {
-        return '<div class="cfAfSec"><span class="cfSecChip" data-sec="' + s.label.split(" ")[0].toLowerCase() + '">' + s.label + "</span> " + s.lines.join(" · ") + "</div>";
-      }).join("") || '<div class="cfGSEmpty">Tidak ada isi</div>';
+    var host = ensureAutoFormatSurface();
+    if (!host || document.getElementById("cfAutoFormat")) return;
+    var box = document.createElement("div");
+    box.id = "cfAutoFormat";
+    box.className = "cfToolBox cfAutoFormatV118";
+    box.innerHTML =
+      '<div class="cfToolHead"><div><b>Auto Format Lyrics</b><span>Tempel lirik mentah—Verse, Chorus, Pre-Chorus, chord, dan bait berulang dipisahkan otomatis.</span></div><button type="button" class="projBtn projBtnPrimary" id="cfAfRun">Format ulang</button></div>' +
+      '<textarea id="cfAfInput" rows="11" placeholder="Contoh:\n[Verse 1]\nKasih-Mu tak berkesudahan\n\nC  G  Am  F\nReff:\nBesar setia-Mu..."></textarea>' +
+      '<div class="cfAfAssist"><span>Deteksi lokal • tanpa internet</span><span id="cfAfSummary">Mulai ketik atau tempel lirik.</span></div>' +
+      '<div class="cfToolActions"><button type="button" class="projBtn" id="cfAfCopy">Salin format</button><button type="button" class="projBtn" id="cfAfUse">Pakai sebagai Teks</button></div>' +
+      '<div id="cfAfPreview" class="cfAfPreview"><p class="cfAfEmpty">Hasil struktur akan tampil otomatis di sini.</p></div>';
+    host.insertBefore(box, host.firstChild);
+    var inp = document.getElementById("cfAfInput"), prev = document.getElementById("cfAfPreview"), summary = document.getElementById("cfAfSummary");
+    var last = [], timer = 0;
+    function toText(arr) { return arr.map(function (x) { return x.label + "\n" + x.lines.join("\n"); }).join("\n\n"); }
+    function methodLabel(x) { return x.detected === "header" ? "Header" : x.detected === "repeat" ? "Pola berulang" : x.detected === "ending" ? "Penutup" : "Struktur"; }
+    function run() {
+      last = cfAutoFormat(inp.value);
+      var st = last.stats || {};
+      if (!last.length) {
+        prev.innerHTML = '<p class="cfAfEmpty">Belum ada lirik untuk dianalisis.</p>';
+        summary.textContent = "Mulai ketik atau tempel lirik.";
+        return;
+      }
+      prev.innerHTML = last.map(function (s) {
+        return '<section class="cfAfSection" data-method="' + cfEsc(s.detected) + '"><header><b>' + cfEsc(s.label) + '</b><span>' + cfEsc(methodLabel(s)) + ' · ' + s.lines.length + ' baris</span></header><p>' + s.lines.map(cfEsc).join("<br>") + "</p></section>";
+      }).join("");
+      summary.textContent = (st.sections || last.length) + " bagian · " + (st.chorus || 0) + " Chorus · " + (st.removedChords || 0) + " baris chord dibuang";
+    }
+    function schedule() { clearTimeout(timer); timer = setTimeout(run, 180); }
+    inp.addEventListener("input", schedule);
+    document.getElementById("cfAfRun").onclick = run;
+    document.getElementById("cfAfCopy").onclick = function () {
+      run(); var text = toText(last); if (!text) return toast("Isi lirik dulu");
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { toast("Format lirik disalin"); });
+      else if (window.PNWUI && PNWUI.copy) PNWUI.copy(text);
     };
-    ov.querySelector("#cfAfCopy").onclick = function () { try { navigator.clipboard.writeText(toText()); } catch (e) {} };
-    ov.querySelector("#cfAfUse").onclick = function () {
-      var ti = document.getElementById("projTextInput");
-      if (ti) { ti.value = toText(); ti.dispatchEvent(new Event("input", { bubbles: true })); }
-      closeAf();
+    document.getElementById("cfAfUse").onclick = function () {
+      run(); var t = document.getElementById("projTextInput"); if (!t || !last.length) return toast("Isi lirik dulu");
+      t.value = toText(last); t.dispatchEvent(new Event("input", { bubbles: true })); toast("Format dimasukkan ke Teks");
     };
   }
 

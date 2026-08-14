@@ -1,0 +1,319 @@
+/* PNW-FILE-GUIDE: CastFlow v118 / v9.18 — operator-first story, applied Lyric design, Auto Format, enter/exit motion. */
+
+/* ---------- cerita produk: Pilih -> Desain -> Tayang ---------- */
+.cfLyricHead .cfLyricTitle { white-space: nowrap; }
+.cfOperatorFlow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 2px 4px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 999px;
+  background: rgba(0,0,0,.16);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.cfOperatorFlow > b { color: rgba(255,255,255,.22); font-size: 11px; }
+.cfOperatorFlow button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  padding: 2px 7px 2px 3px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #777e89;
+  font: 700 8px/1 Inter,system-ui,sans-serif;
+  cursor: pointer;
+}
+.cfOperatorFlow button i {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #4a4e57;
+  border-radius: 50%;
+  color: #969ca7;
+  font: 800 8px/1 Inter,system-ui,sans-serif;
+  font-style: normal;
+}
+.cfOperatorFlow button.done { color: #92cbd6; }
+.cfOperatorFlow button.done i { border-color: #1282a2; background: rgba(18,130,162,.16); color: #7fe1f3; }
+.cfOperatorFlow button.on { background: #1282a2; color: #fff; box-shadow: 0 0 0 1px rgba(127,225,243,.18),0 5px 18px rgba(18,130,162,.22); }
+.cfOperatorFlow button.on i { border-color: rgba(255,255,255,.45); color: #fff; }
+
+/* ---------- Design Panel tidak lagi tersangkut saat scroll ---------- */
+.cfC-design .projPaneR {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scroll-padding-top: 12px;
+  overscroll-behavior: contain;
+}
+.cfC-design .projPaneHead {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  z-index: 1 !important;
+  flex: 0 0 auto;
+  background: #232326;
+}
+.cfDesignCommit {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+  padding: 9px;
+  border: 1px solid #373b41;
+  border-radius: 10px;
+  background: linear-gradient(145deg,#1b1e22,#15171a);
+  box-shadow: 0 7px 18px rgba(0,0,0,.16);
+}
+.cfDesignCommit > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.cfDesignCommit b { color: #f1f4f8; font: 800 8px/1.2 Inter,system-ui,sans-serif; letter-spacing: .08em; }
+.cfDesignCommit span { color: #8d949f; font: 500 8px/1.25 Inter,system-ui,sans-serif; }
+.cfDesignCommit button {
+  min-height: 30px;
+  padding: 6px 9px;
+  border: 1px solid #1282a2;
+  border-radius: 7px;
+  background: rgba(18,130,162,.14);
+  color: #8ee9f8;
+  font: 750 8px/1 Inter,system-ui,sans-serif;
+  cursor: pointer;
+}
+.cfDesignCommit button:hover { background: #1282a2; color: #fff; }
+.cfDesignCommit.is-pending { border-color: rgba(255,184,77,.42); }
+.cfDesignCommit.is-pending span { color: #ffc56e; }
+.cfDesignCommit.is-dirty { border-color: rgba(255,184,77,.62); box-shadow: 0 0 0 1px rgba(255,184,77,.08); }
+.cfDesignCommit.is-dirty span { color: #ffc56e; }
+.cfDesignCommit.is-applied { border-color: rgba(80,208,160,.45); }
+.cfDesignCommit.is-applied span { color: #72dcb5; }
+.cfPulseOnce { animation: cf118Pulse .7s ease both; }
+@keyframes cf118Pulse { 45% { box-shadow: 0 0 0 4px rgba(18,130,162,.28),0 0 24px rgba(18,130,162,.32); } }
+
+/* ---------- kotak Lyric: grid kosong sampai desain diterapkan ---------- */
+body.yvStandalone .projSlideCard .cfMiniPreview.pending,
+.cfMiniPreview.pending {
+  background-color: #111417 !important;
+  background-image:
+    linear-gradient(rgba(255,255,255,.055) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px),
+    linear-gradient(rgba(18,130,162,.08) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(18,130,162,.08) 1px,transparent 1px) !important;
+  background-size: 32px 32px,32px 32px,96px 96px,96px 96px !important;
+  background-position: center center !important;
+  border-color: #30363d;
+  box-shadow: inset 0 0 32px rgba(0,0,0,.18);
+}
+.cfMiniPreview.pending::after { display: none !important; }
+.cfMiniPreview.pending .cfMiniPreviewText,
+.cfMiniPreview.pending .cfMiniMotionBadge { display: none !important; }
+.projSlideCard.cfMiniPending { border-style: solid; }
+.cfMiniPreview.applied {
+  isolation: isolate;
+  transition: border-color .18s ease,box-shadow .18s ease;
+}
+.cfMiniPreview.applied::after { background: linear-gradient(rgba(0,0,0,.12),rgba(0,0,0,.28)); }
+.cfMiniPreview.applied[data-preview-kind="color"]::after { background: rgba(0,0,0,.1); }
+.cfMiniPreview.applied[data-preview-kind="video"]::before,
+.cfMiniPreview.applied[data-preview-kind="upload"]::before {
+  content: "▶";
+  position: absolute;
+  z-index: 2;
+  left: 6px;
+  bottom: 5px;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.55);
+  color: rgba(255,255,255,.8);
+  font-size: 6px;
+}
+.cfMiniPreview.has-motion::after { animation: cf118MiniGlow 4s ease-in-out infinite alternate; }
+@keyframes cf118MiniGlow { from { opacity: .75; } to { opacity: .35; } }
+
+/* ---------- panel motion masuk/keluar ---------- */
+.cfMotionGrid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.cfMotionGridOut .cfMotionChoice { background: #19171b; }
+.cfMotionGridOut .cfMotionDemo { background: linear-gradient(90deg,#7a536f,#d09ac4); }
+.cfMotionChoice b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cfMotionDemo-drop { background: linear-gradient(180deg,#78ecff,#1282a2); }
+.cfMotionDemo-slide-right { background: linear-gradient(270deg,#1282a2,#7fd4e8); }
+.cfMotionDemo-zoom-in,.cfMotionDemo-zoom-out,.cfMotionDemo-zoom { border-radius: 50%; width: 20px; margin-inline: auto; }
+.cfMotionDemo-flip { transform: perspective(40px) rotateX(18deg); }
+.cfMotionDemo-wipe { clip-path: inset(0 28% 0 0); }
+.cfMotionDemo-typewriter { background: repeating-linear-gradient(90deg,#7fd4e8 0 2px,transparent 2px 4px); }
+.cfMotionDemo-stagger { background: repeating-linear-gradient(180deg,#7fd4e8 0 3px,transparent 3px 6px); }
+.cfDesignPreviewBtn { min-height: 34px; font-weight: 750; }
+
+/* ---------- Auto Format Lyrics ---------- */
+.cfAutoFormatV118 { display: flex; flex-direction: column; gap: 9px; }
+.cfAutoFormatV118 .cfToolHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.cfAutoFormatV118 .cfToolHead > div { display: flex; flex-direction: column; gap: 4px; }
+.cfAutoFormatV118 .cfToolHead b { color: #f2f5f8; font-size: 13px; }
+.cfAutoFormatV118 .cfToolHead span { max-width: 620px; color: #9097a1; font-size: 10px; line-height: 1.45; }
+.cfAutoFormatV118 textarea { width: 100%; min-height: 178px; resize: vertical; box-sizing: border-box; }
+.cfAfAssist { display: flex; justify-content: space-between; gap: 8px; color: #7d8590; font-size: 9px; }
+.cfAfAssist span:first-child { color: #68cbdc; }
+.cfAfPreview { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 8px; }
+.cfAfEmpty { grid-column: 1/-1; margin: 0; padding: 22px; border: 1px dashed #3a4048; border-radius: 10px; color: #747c87; text-align: center; font-size: 10px; }
+.cfAfSection { min-width: 0; overflow: hidden; border: 1px solid #353b42; border-radius: 9px; background: #181b1f; }
+.cfAfSection header { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 7px 9px; border-bottom: 1px solid #30353b; background: #20242a; }
+.cfAfSection header b { color: #f2f5f7; font-size: 10px; }
+.cfAfSection header span { color: #7dd8e8; font-size: 7px; white-space: nowrap; }
+.cfAfSection[data-method="repeat"] header { background: linear-gradient(90deg,rgba(18,130,162,.22),#20242a); }
+.cfAfSection p { margin: 0; padding: 9px; color: #c5cbd2; font-size: 10px; line-height: 1.5; }
+
+/* ---------- motion engine: preview + live output ---------- */
+#projPreviewText,
+#displayScreen .dispTextBlock { will-change: transform,opacity; backface-visibility: hidden; transform: translateZ(0); }
+.cfTextIn-fade,.tlEnter-fade { animation: cf118InFade var(--cf-motion-duration,var(--yv-motion-duration,.55s)) ease both; }
+.cfTextIn-rise,.tlEnter-rise { animation: cf118InRise var(--cf-motion-duration,var(--yv-motion-duration,.55s)) cubic-bezier(.2,.8,.2,1) both; }
+.cfTextIn-drop,.tlEnter-drop { animation: cf118InDrop var(--cf-motion-duration,var(--yv-motion-duration,.55s)) cubic-bezier(.2,.82,.2,1) both; }
+.cfTextIn-slide-left,.tlEnter-slide-left { animation: cf118InLeft var(--cf-motion-duration,var(--yv-motion-duration,.55s)) cubic-bezier(.2,.8,.2,1) both; }
+.cfTextIn-slide-right,.tlEnter-slide-right { animation: cf118InRight var(--cf-motion-duration,var(--yv-motion-duration,.55s)) cubic-bezier(.2,.8,.2,1) both; }
+.cfTextIn-zoom-in,.tlEnter-zoom-in,.cfTextIn-zoom,.tlEnter-zoom { animation: cf118InZoom var(--cf-motion-duration,var(--yv-motion-duration,.55s)) cubic-bezier(.2,.9,.2,1) both; }
+.cfTextIn-zoom-out,.tlEnter-zoom-out { animation: cf118InZoomOut var(--cf-motion-duration,var(--yv-motion-duration,.55s)) cubic-bezier(.2,.9,.2,1) both; }
+.cfTextIn-blur,.tlEnter-blur { animation: cf118InBlur var(--cf-motion-duration,var(--yv-motion-duration,.55s)) ease both; }
+.cfTextIn-pop,.tlEnter-pop { animation: cf118InPop var(--cf-motion-duration,var(--yv-motion-duration,.55s)) cubic-bezier(.18,1.45,.26,1) both; }
+.cfTextIn-flip,.tlEnter-flip { animation: cf118InFlip var(--cf-motion-duration,var(--yv-motion-duration,.55s)) cubic-bezier(.2,.8,.2,1) both; transform-origin: 50% 100%; }
+.cfTextIn-wipe,.tlEnter-wipe { animation: cf118InWipe var(--cf-motion-duration,var(--yv-motion-duration,.55s)) cubic-bezier(.2,.8,.2,1) both; }
+.cfTextIn-skew,.tlEnter-skew { animation: cf118InSkew var(--cf-motion-duration,var(--yv-motion-duration,.55s)) cubic-bezier(.2,.8,.2,1) both; }
+.cfTextIn-typewriter,.tlEnter-typewriter { animation: cf118InType var(--cf-motion-duration,var(--yv-motion-duration,.55s)) steps(18,end) both; }
+.cfTextIn-stagger,.tlEnter-stagger { animation: cf118InFade calc(var(--cf-motion-duration,var(--yv-motion-duration,.55s))*.35) ease both; }
+.tlEnter-stagger .dispTextLine { animation: cf118InRise var(--yv-motion-duration,.55s) cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--cf-line-index,0)*.075s); }
+
+.cfTextOut-fade,.tlExit-fade { animation: cf118OutFade var(--cf-motion-out-duration,var(--yv-motion-out-duration,.28s)) ease both; }
+.cfTextOut-sink,.tlExit-sink { animation: cf118OutSink var(--cf-motion-out-duration,var(--yv-motion-out-duration,.28s)) ease-in both; }
+.cfTextOut-lift,.tlExit-lift { animation: cf118OutLift var(--cf-motion-out-duration,var(--yv-motion-out-duration,.28s)) ease-in both; }
+.cfTextOut-slide-left,.tlExit-slide-left { animation: cf118OutLeft var(--cf-motion-out-duration,var(--yv-motion-out-duration,.28s)) ease-in both; }
+.cfTextOut-slide-right,.tlExit-slide-right { animation: cf118OutRight var(--cf-motion-out-duration,var(--yv-motion-out-duration,.28s)) ease-in both; }
+.cfTextOut-zoom,.tlExit-zoom { animation: cf118OutZoom var(--cf-motion-out-duration,var(--yv-motion-out-duration,.28s)) ease-in both; }
+.cfTextOut-blur,.tlExit-blur { animation: cf118OutBlur var(--cf-motion-out-duration,var(--yv-motion-out-duration,.28s)) ease-in both; }
+.cfTextOut-flip,.tlExit-flip { animation: cf118OutFlip var(--cf-motion-out-duration,var(--yv-motion-out-duration,.28s)) ease-in both; transform-origin: 50% 0; }
+.cfTextOut-wipe,.tlExit-wipe { animation: cf118OutWipe var(--cf-motion-out-duration,var(--yv-motion-out-duration,.28s)) ease-in both; }
+
+@keyframes cf118InFade { from { opacity: 0; } }
+@keyframes cf118InRise { from { opacity: 0; transform: translate3d(0,34px,0); } }
+@keyframes cf118InDrop { from { opacity: 0; transform: translate3d(0,-38px,0); } }
+@keyframes cf118InLeft { from { opacity: 0; transform: translate3d(-54px,0,0); } }
+@keyframes cf118InRight { from { opacity: 0; transform: translate3d(54px,0,0); } }
+@keyframes cf118InZoom { from { opacity: 0; transform: translateZ(0) scale(.76); } }
+@keyframes cf118InZoomOut { from { opacity: 0; transform: translateZ(0) scale(1.24); } }
+@keyframes cf118InBlur { from { opacity: 0; filter: blur(14px); transform: translate3d(0,8px,0); } }
+@keyframes cf118InPop { from { opacity: 0; transform: translateZ(0) scale(.58); } }
+@keyframes cf118InFlip { from { opacity: 0; transform: perspective(900px) rotateX(72deg) translate3d(0,18px,0); } }
+@keyframes cf118InWipe { from { opacity: .2; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+@keyframes cf118InSkew { from { opacity: 0; transform: translate3d(-35px,0,0) skewX(-13deg); } }
+@keyframes cf118InType { from { opacity: .2; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+@keyframes cf118OutFade { to { opacity: 0; } }
+@keyframes cf118OutSink { to { opacity: 0; transform: translate3d(0,34px,0); } }
+@keyframes cf118OutLift { to { opacity: 0; transform: translate3d(0,-34px,0); } }
+@keyframes cf118OutLeft { to { opacity: 0; transform: translate3d(-54px,0,0); } }
+@keyframes cf118OutRight { to { opacity: 0; transform: translate3d(54px,0,0); } }
+@keyframes cf118OutZoom { to { opacity: 0; transform: translateZ(0) scale(.72); } }
+@keyframes cf118OutBlur { to { opacity: 0; filter: blur(14px); transform: translate3d(0,-8px,0); } }
+@keyframes cf118OutFlip { to { opacity: 0; transform: perspective(900px) rotateX(-72deg); } }
+@keyframes cf118OutWipe { to { opacity: 0; clip-path: inset(0 0 0 100%); } }
+
+@media (max-width: 1280px) {
+  .cfOperatorFlow button { padding-right: 5px; }
+  .cfMotionGrid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 900px) {
+  .cfLyricHead { flex-wrap: wrap; }
+  .cfOperatorFlow { order: 3; width: 100%; justify-content: center; margin: 2px 0 0; }
+  .cfDesignCommit { grid-template-columns: 1fr; }
+  .cfDesignCommit button { width: 100%; }
+  .cfAfAssist { flex-direction: column; }
+  .cfAfPreview { grid-template-columns: 1fr; }
+}
+@media (max-width: 430px) {
+  .cfOperatorFlow button span { display: none; }
+  .cfOperatorFlow button { padding-right: 3px; }
+  .cfAutoFormatV118 .cfToolHead { flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cfMiniPreview.has-motion::after,
+  [class*="cfTextIn-"],[class*="cfTextOut-"],
+  .tlEnter,.tlExit,.tlEnter-stagger .dispTextLine,
+  .cfPulseOnce { animation: none !important; transition: none !important; }
+}
+
+/* ---------- Auto Format selalu satu klik dari Lyric ---------- */
+.cfAutoFormatLaunch {
+  flex: 0 0 auto;
+  min-height: 26px;
+  padding: 4px 8px;
+  border: 1px solid rgba(18,130,162,.62);
+  border-radius: 7px;
+  background: rgba(18,130,162,.12);
+  color: #89e3f2;
+  font: 750 8px/1 Inter,system-ui,sans-serif;
+  cursor: pointer;
+}
+.cfAutoFormatLaunch:hover { background: #1282a2; color: #fff; }
+body.cfModalOpen { overflow: hidden !important; }
+.cfAfModal[hidden] { display: none !important; }
+.cfAfModal {
+  position: fixed;
+  z-index: 4200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(3,5,8,.78);
+  backdrop-filter: blur(10px);
+}
+.cfAfModalCard {
+  width: min(920px,calc(100vw - 32px));
+  max-height: min(820px,calc(100dvh - 32px));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #3b424a;
+  border-radius: 14px;
+  background: #111419;
+  box-shadow: 0 30px 90px rgba(0,0,0,.62);
+}
+.cfAfModalHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #30363e;
+  background: #1c2025;
+}
+.cfAfModalHead > div { display: flex; flex-direction: column; gap: 3px; }
+.cfAfModalHead b { color: #f4f7fa; font-size: 13px; }
+.cfAfModalHead span { color: #858d98; font-size: 9px; }
+.cfAfModalHead button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #3c424a;
+  border-radius: 8px;
+  background: #252a30;
+  color: #cbd1d8;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.cfAfModalHead button:hover { border-color: #1282a2; color: #fff; }
+.cfAfModalBody { min-height: 0; overflow: auto; padding: 14px; }
+@media (max-width: 900px) {
+  .cfAfModal { padding: 8px; }
+  .cfAfModalCard { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
+  .cfAutoFormatLaunch { margin-left: auto; }
+}
+@media (max-width: 430px) {
+  .cfAutoFormatLaunch { font-size: 0; width: 28px; padding: 3px; }
+  .cfAutoFormatLaunch span { font-size: 11px; }
+}

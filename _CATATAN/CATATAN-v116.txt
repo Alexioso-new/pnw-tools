@@ -1,25 +1,42 @@
-PNW TOOLS v116 (label v9.16) — DUAL FREE CANVAS
-================================================
-Preview Dual diubah dari split 50/50 menjadi free canvas ala Figma.
+PNW TOOLS v116 (label v9.16) — DUAL FREE CANVAS ALA FIGMA
+==========================================================
+Permintaan pengguna 13 Agustus 2026: Preview "Dual" jangan split 50/50;
+jadikan free canvas yang bisa digeser dan menampung/mengeluarkan semua output.
 
-Fitur:
-- Pan: drag area kosong atau Space+drag.
-- Zoom: Ctrl/Cmd/Alt+wheel, tombol +/-/100%, Fit All.
-- Grid bergerak, minimap, Reset, dan Maximize.
-- Frame: Edit Preview, Live Output, Stage Display, Remote Control,
-  serta Browser/URL custom.
-- Tambah, keluarkan, duplicate, rename, lock, bring-to-front, pop-out.
-- Drag frame, resize bebas atau rasio 16:9; Alt melepas rasio sementara.
-- Arrow nudge 1 px; Shift+Arrow 10 px; Ctrl/Cmd+D duplicate; Delete remove.
-- Layout, daftar frame, pan/zoom, dan grid tersimpan di
-  localStorage pnwCastflowDualCanvas.v1.
-- Edit/Live biasa tidak berubah.
-- Guard anti-rekursi pada mode display/stage/remote.
+FITUR
+1. Free/infinite canvas khusus mode Dual
+   - Drag area kosong atau Space+drag = pan.
+   - Wheel = pan; Ctrl/Cmd/Alt+wheel = zoom pada posisi pointer.
+   - Toolbar zoom -, 100%, +, Fit all, Grid, Reset, Maximize, Help.
+   - Minimap kanan bawah menunjukkan semua frame + viewport.
 
-Berkas baru:
+2. Frame output fleksibel
+   - Sumber: Edit Preview, Live Output, Stage Display, Remote Control,
+     serta Browser/URL custom.
+   - Tambah/hapus output bebas; Live/Stage/Remote/Browser bisa diduplikasi.
+   - Drag header, resize pojok, kunci rasio 16:9 (Alt sementara melepas),
+     lock posisi/ukuran, bring-to-front, rename (double-click judul), pop-out.
+   - Edit Preview memakai renderer asli (bukan duplikat); Live pertama memakai
+     iframe asli yang sudah ada. Saat keluar Dual keduanya kembali ke rumah.
+
+3. Keyboard ala design canvas
+   - Arrow = nudge frame 1 px; Shift+Arrow = 10 px.
+   - Ctrl/Cmd+D = duplicate; Delete = keluarkan frame.
+   - 0 = Fit all; 1 = 100%; Esc = keluar maximize/tutup panel.
+   - Saat Dual aktif Space menjadi alat pan, BUKAN Next Slide.
+
+4. Persistensi & keamanan arsitektur
+   - Layout node + pan/zoom + grid tersimpan di pnwCastflowDualCanvas.v1.
+   - Mode Edit dan Live lama tidak berubah.
+   - Modul berhenti total pada ?mode=display/stage/remote agar iframe output
+     tidak membuat canvas/iframe rekursif.
+   - Maks 40 frame tersimpan; URL dan ukuran disanitasi.
+
+BERKAS BARU
 - js/cf-dual-canvas.js
 - css/cf-v116.css
 - CATATAN-v116.txt
 
-Deploy: timpa C:\pnw-tools (jaga .git), git add -A,
-git commit -m v116, git push, Ctrl+Shift+R, pastikan label v9.16.
+Deploy:
+Timpa C:\pnw-tools (jaga .git) -> git add -A -> git commit -m v116 ->
+git push -> Ctrl+Shift+R -> label v9.16.

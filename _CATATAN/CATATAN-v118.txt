@@ -1,0 +1,90 @@
+PNW TOOLS v118 (label v9.18) — CASTFLOW OPERATOR-FIRST + SMART LYRIC
+Tanggal: 14 Agustus 2026
+
+ARAH PRODUK
+- CastFlow diposisikan sebagai alternatif web yang efisien untuk EasyWorship / ProPresenter.
+- Alur utama dibuat eksplisit: Pilih konten -> Desain tampilan -> Tayangkan.
+- Fokus awal operator adalah langkah kerja, bukan daftar fitur.
+
+PEMBARUAN UTAMA
+1. STORY & ALUR OPERATOR
+   - Indikator 3 langkah di area Lyric: Pilih, Desain, Tayang.
+   - Status otomatis mengikuti kesiapan konten dan snapshot desain.
+   - Metadata dan pesan produk CastFlow diperbarui untuk presentasi ibadah.
+
+2. KOTAK LYRIC + SNAPSHOT DESAIN
+   - Kondisi awal benar-benar blank dengan grid gelap seperti referensi.
+   - Tombol “Terapkan desain” di Design Panel menyimpan hasil desain final.
+   - Setelah diterapkan, seluruh kotak Lyric menampilkan teks, warna, font,
+     posisi, dan representasi background Color/Image/Studio/Motion/Video.
+   - Perubahan selanjutnya ditandai “belum diterapkan” dan tidak bocor ke
+     kotak Lyric sampai operator menekan Apply lagi.
+   - Storage: pnwCastflowDesignSnapshot.v118.
+   - Navigasi tetap memakai node kartu yang sama; tidak rebuild/gepeng.
+
+3. AUTO FORMAT LYRICS
+   - Akses satu klik dari header Lyric melalui modal “Auto Format”.
+   - Deteksi header: [Verse 1], Verse 1:, V1, Bait, Reff/Chorus,
+     Pre-Chorus, Bridge, Intro, Interlude, Outro, Coda, dan variasinya.
+   - Baris chord dan inline chord dibuang.
+   - Bait berulang diinferensikan sebagai Chorus.
+   - Pola berulang sebelum Chorus diinferensikan sebagai Pre-Chorus.
+   - Lirik panjang tanpa paragraf dipecah aman.
+   - Preview dan ringkasan berjalan otomatis saat mengetik.
+
+4. DESIGN PANEL
+   - Judul tidak lagi sticky/tersangkut ketika panel digulir.
+   - Perilaku sudah diverifikasi di desktop dan HP.
+
+5. ANIMASI TEKS MASUK + KELUAR
+   - 15 animasi masuk: Cut, Fade, Rise, Drop, Slide kiri/kanan,
+     Zoom in/out, Blur, Pop, Flip, Wipe, Skew, Typewriter, Per Baris.
+   - 10 animasi keluar: Cut, Fade, Turun, Naik, kiri/kanan,
+     Zoom, Blur, Flip, Wipe.
+   - Durasi masuk dan keluar dapat diatur terpisah.
+   - Output menjalankan exit lama lalu entry baru dengan race guard.
+   - Navigasi cepat tidak meninggalkan teks lama.
+   - GPU-first (transform/opacity), offline, dan reduced-motion fallback.
+   - Tidak memakai API internet untuk animasi agar stabil saat ibadah.
+
+6. REGRESI
+   - Guard output lengkap untuk display, stage, remote, dan youthviews.
+   - Studio Preview Edit, Dual Free Canvas, performance culling, dan
+     Timeline ala CapCut tetap berfungsi.
+
+QA FINAL
+- QA fitur v118: 37/37 PASS.
+- QA regresi performa/timeline: 35/35 PASS.
+- Total browser QA: 72/72 PASS, 0 FAIL.
+- Seluruh JavaScript lulus node --check.
+- CSS brace balance lulus.
+- APP_SHELL service worker lengkap.
+- Tidak ada page error atau console error internal.
+
+BERKAS UTAMA
+- css/cf-v118.css (baru)
+- js/castflow-v100.js
+- js/castflow.js
+- js/projector.js
+- js/yv-standalone.js
+- js/cf-dual-canvas.js
+- castflow.html
+- sw.js
+- CATATAN-v118.txt
+
+VERSI
+- Service worker cache: pnw-tools-v118
+- CastFlow: v9.18
+- Timeline: v9.18-timeline / v9.18-timeline-ui
+- Standalone output: v9.18-standalone
+
+DEPLOY
+1. Ekstrak ZIP ke folder project/repository.
+2. Timpa seluruh file lama.
+3. Commit dan deploy seperti biasa.
+4. Setelah deploy, buka sekali dengan internet lalu hard refresh.
+5. Pastikan cache aktif adalah pnw-tools-v118.
+
+CATATAN EKSTERNAL
+- Upgrade Firebase ke Blaze dan pasang storage.rules masih dilakukan di
+  Firebase Console (di luar paket kode ini).

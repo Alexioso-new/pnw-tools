@@ -137,6 +137,7 @@
       localStorage.setItem(LOCAL_SET, JSON.stringify(_set));
       var r = ref(SET_REF);
       if (r) r.set(_set);
+      try { document.dispatchEvent(new CustomEvent("cf:designChanged", { detail: { source: "projector-settings" } })); } catch (e) {}
     });
   }
   function apiKeys() {
@@ -340,7 +341,7 @@
     var visual = {};
     try { visual = JSON.parse(localStorage.getItem("pnwCastflowVisualStyle.v2") || "{}") || {}; } catch (e) {}
     var style = Object.assign({ font: s.font, size: s.size, align: s.align, shadow: s.shadow }, visual);
-    var base = { active: true, style: style, transition: visual.transition || "fade", bg: s.bg, showTitle: s.showTitle, showMeta: s.showMeta };
+    var base = { active: true, style: style, transition: visual.transition || "fade", transitionOut: visual.transitionOut || "fade", bg: s.bg, showTitle: s.showTitle, showMeta: s.showMeta };
     if (_prop) base.overlay = _prop; // v112: prop lengket ikut setiap payload live
     try { var _mk = JSON.parse(localStorage.getItem("pnwCastflowMask.v1") || "null"); if (_mk && (parseInt(_mk.top, 10) > 0 || parseInt(_mk.bottom, 10) > 0)) base.mask = { top: Math.min(30, Math.max(0, parseInt(_mk.top, 10) || 0)), bottom: Math.min(30, Math.max(0, parseInt(_mk.bottom, 10) || 0)) }; } catch (e) {}
     if (!_active) return null;
@@ -1030,32 +1031,75 @@
   var LOCAL_STUDIO = "pnwYouthViewsStudio.v1";
   var _studioInst = null;
   var _studioP = null;
-  /* v117: renderer terpisah untuk Studio pada Preview Edit. */
+  /* v117: instance terpisah untuk Preview Edit. Sebelumnya bg.kind=studio
+     hanya diberi warna gelap sehingga canvas animasi tidak pernah dibuat. */
   var _previewMotionInst = null;
   var _previewMotionCanvas = null;
   var _previewMotionHooks = false;
   var _previewMotionRO = null;
-  function previewMotionEngine(){ return window.PNWYVMotion || window.PNWMotion || null; }
-  function previewMotionShouldRun(host){
-    if(!host || document.hidden || !host.isConnected) return false;
-    var st=el("cfPrevStage"),pm=st?st.getAttribute("data-preview-mode"):"edit";
-    if(pm==="live") return false;
-    var frame=host.closest?host.closest(".cfDcFrame"):null;
-    if(frame&&frame.classList.contains("is-offscreen")) return false;
-    return host.getClientRects().length>0;
+
+  function previewMotionEngine() {
+    return window.PNWYVMotion || window.PNWMotion || null;
   }
-  function ensurePreviewMotion(host){
-    var eng=previewMotionEngine();if(!host||!eng||!eng.create)return null;
-    if(!_previewMotionCanvas||!_previewMotionCanvas.isConnected){
-      _previewMotionCanvas=document.createElement("canvas");_previewMotionCanvas.className="projPreviewMotion";_previewMotionCanvas.setAttribute("aria-hidden","true");host.insertBefore(_previewMotionCanvas,host.firstChild);_previewMotionInst=eng.create(_previewMotionCanvas);
-      if(window.ResizeObserver){if(_previewMotionRO)_previewMotionRO.disconnect();_previewMotionRO=new ResizeObserver(function(){if(_previewMotionInst&&_previewMotionInst.resize)_previewMotionInst.resize();});_previewMotionRO.observe(host);}
+  function previewMotionShouldRun(host) {
+    if (!host || document.hidden || !host.isConnected) return false;
+    var stage = el("cfPrevStage");
+    var pmode = stage ? stage.getAttribute("data-preview-mode") : "edit";
+    if (pmode === "live") return false;
+    var frame = host.closest ? host.closest(".cfDcFrame") : null;
+    if (frame && frame.classList.contains("is-offscreen")) return false;
+    return host.getClientRects().length > 0;
+  }
+  function ensurePreviewMotion(host) {
+    var eng = previewMotionEngine();
+    if (!host || !eng || !eng.create) return null;
+    if (!_previewMotionCanvas || !_previewMotionCanvas.isConnected) {
+      _previewMotionCanvas = document.createElement("canvas");
+      _previewMotionCanvas.className = "projPreviewMotion";
+      _previewMotionCanvas.setAttribute("aria-hidden", "true");
+      host.insertBefore(_previewMotionCanvas, host.firstChild);
+      _previewMotionInst = eng.create(_previewMotionCanvas);
+      if (window.ResizeObserver) {
+        if (_previewMotionRO) _previewMotionRO.disconnect();
+        _previewMotionRO = new ResizeObserver(function () {
+          if (_previewMotionInst && _previewMotionInst.resize) _previewMotionInst.resize();
+        });
+        _previewMotionRO.observe(host);
+      }
     }
-    if(!_previewMotionHooks){_previewMotionHooks=true;document.addEventListener("visibilitychange",function(){renderPreview();});document.addEventListener("cf:dualFrameVisibility",function(e){if(!e.detail||e.detail.type==="edit")renderPreview();});var st=el("cfPrevStage");if(st&&window.MutationObserver)new MutationObserver(function(){renderPreview();}).observe(st,{attributes:true,attributeFilter:["data-preview-mode"]});}
+    if (!_previewMotionHooks) {
+      _previewMotionHooks = true;
+      document.addEventListener("visibilitychange", function () { renderPreview(); });
+      document.addEventListener("cf:dualFrameVisibility", function (e) {
+        if (!e.detail || e.detail.type === "edit") renderPreview();
+      });
+      var st = el("cfPrevStage");
+      if (st && window.MutationObserver) {
+        new MutationObserver(function () { renderPreview(); }).observe(st, {
+          attributes: true,
+          attributeFilter: ["data-preview-mode"],
+        });
+      }
+    }
     return _previewMotionInst;
   }
-  function syncPreviewMotion(host,bg){
-    var on=!!(bg&&bg.kind==="studio");if(!on){if(_previewMotionCanvas)_previewMotionCanvas.classList.remove("on");if(_previewMotionInst&&_previewMotionInst.stop)_previewMotionInst.stop();return;}
-    var inst=ensurePreviewMotion(host);if(!inst||!_previewMotionCanvas)return;_previewMotionCanvas.classList.add("on");var eng=previewMotionEngine(),params=bg.params||(eng&&eng.preset?eng.preset(bg.value||"aurora"):{});if(inst.apply)inst.apply(params||{});if(inst.resize)inst.resize();if(previewMotionShouldRun(host)){if(inst.start)inst.start();}else if(inst.stop)inst.stop();
+  function syncPreviewMotion(host, bg) {
+    var on = !!(bg && bg.kind === "studio");
+    if (!on) {
+      if (_previewMotionCanvas) _previewMotionCanvas.classList.remove("on");
+      if (_previewMotionInst && _previewMotionInst.stop) _previewMotionInst.stop();
+      return;
+    }
+    var inst = ensurePreviewMotion(host);
+    if (!inst || !_previewMotionCanvas) return;
+    _previewMotionCanvas.classList.add("on");
+    var eng = previewMotionEngine();
+    var params = bg.params || (eng && eng.preset ? eng.preset(bg.value || "aurora") : {});
+    if (inst.apply) inst.apply(params || {});
+    if (inst.resize) inst.resize();
+    if (previewMotionShouldRun(host)) {
+      if (inst.start) inst.start();
+    } else if (inst.stop) inst.stop();
   }
 
   function ensureBgTabs() {

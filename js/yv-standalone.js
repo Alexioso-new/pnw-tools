@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "v9.17-standalone";
+  var VERSION = "v9.18-standalone";
   var YV_LIVE_PATH = "pujianYouth/youthviews/live";
   var SONGS_PATH = "pujianYouth/songs";
   var BANK_PATH = "pujianYouth/songBank";
@@ -262,9 +262,9 @@
 
   /* ---------------- pembuat slide (lirik saja, tanpa chord) ---------- */
   var sectionWords =
-    /^(Intro|Bait|Verse|Reff|Refrain|Chorus|Pre-?Chorus|Post-?Chorus|Breakdown|Modulation|Overtune|Key ?Change|Bridge|Musik|Instrumen(tal)?|Interlude|Transition|Transisi|Solo|Ending|Outro|Outtro|Coda)(\s|:|$)/i;
+    /^\s*[\[(]?\s*(?:Intro|Pembuka|Bait|Verse|V|Reff?|Refrain|Korus|Chorus|C|Pre[ _-]?(?:Chorus|Reff?)|PC|Post[ _-]?Chorus|Breakdown|Modulation|Overtune|Key ?Change|Bridge|Jembatan|Musik|Instrumen(?:tal)?|Interlude|Transition|Transisi|Solo|Ending|Penutup|Outro|Outtro|Coda|Tag)(?:\s+(?:\d+|[IVX]+))?\s*[\])]?[\s:：\-–—]*$/i;
   var CHORD_RE =
-    /^[A-G](#|b)?(maj|min|m|M|sus|add|dim|aug|\+|°)?\d*(sus\d)?(\/[A-G](#|b)?)?$/;
+    /^(?:N\.?C\.?|[A-G](?:#|b)?(?:maj|min|m|M|sus|add|dim|aug|\+|°)?\d*(?:sus\d)?(?:\([^)]*\))?(?:\/[A-G](?:#|b)?)?)$/i;
 
   function stripChords(line) {
     return String(line || "")
@@ -412,6 +412,7 @@
     screen.style.setProperty("--yv-opacity", String(st.opacity == null ? 1 : st.opacity));
     screen.style.setProperty("--yv-transform", st.transform || "none");
     screen.style.setProperty("--yv-motion-duration", (parseFloat(st.duration) || 0.55) + "s");
+    screen.style.setProperty("--yv-motion-out-duration", (parseFloat(st.durationOut) || 0.28) + "s");
     screen.classList.toggle("yvPosTop", st.pos === "top");
     screen.classList.toggle("yvPosBottom", st.pos === "bottom");
   }
@@ -500,7 +501,7 @@
      menyiarkan tiap detik. */
   function paintCountdown(container, endsAt) {
     if (!container) return;
-    container.innerHTML = "";
+    clearPaint(container);
     var d = document.createElement("div");
     d.className = "dispCountdown";
     d.textContent = "--:--";
@@ -519,23 +520,51 @@
     _cdTimer = setInterval(tickCd, 250);
   }
 
-  function paintLines(container, lines, trans) {
+  var _textSwapSeq = 0;
+  function motionId(id, fallback) {
+    var x = String(id || fallback || "cut").toLowerCase();
+    return /^[a-z0-9-]+$/.test(x) ? x : fallback || "cut";
+  }
+  function clearPaint(container) {
+    _textSwapSeq++;
+    if (container) container.innerHTML = "";
+  }
+  function paintLines(container, lines, transIn, transOut, style) {
     if (!container) return;
-    container.innerHTML = "";
-    var wrap = document.createElement("div");
-    wrap.className =
-      "dispTextBlock" + (trans && trans !== "cut" ? " tlAnim tlAnim-" + trans : "");
-    (lines || []).forEach(function (line) {
-      var d = document.createElement("div");
-      d.className = "dispTextLine";
-      d.textContent = line;
-      wrap.appendChild(d);
-    });
-    container.appendChild(wrap);
-    if (window.PNWMotion && window.PNWMotion.revealLines)
-      safe("reveal", function () {
-        window.PNWMotion.revealLines(container);
+    var seq = ++_textSwapSeq;
+    var st = style || {};
+    var enterId = motionId(transIn, "fade");
+    var exitId = motionId(transOut, "fade");
+    var inDur = Math.max(0.08, Math.min(3, parseFloat(st.duration) || 0.55));
+    var outDur = Math.max(0.06, Math.min(2, parseFloat(st.durationOut) || 0.28));
+    var reduced = false;
+    try { reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+    var old = container.querySelector(".dispTextBlock");
+    function mount() {
+      if (seq !== _textSwapSeq) return;
+      container.innerHTML = "";
+      var wrap = document.createElement("div");
+      wrap.className = "dispTextBlock";
+      wrap.style.setProperty("--yv-motion-duration", inDur + "s");
+      wrap.style.setProperty("--yv-motion-out-duration", outDur + "s");
+      (lines || []).forEach(function (line, index) {
+        var d = document.createElement("div");
+        d.className = "dispTextLine";
+        d.style.setProperty("--cf-line-index", String(index));
+        d.textContent = line;
+        wrap.appendChild(d);
       });
+      container.appendChild(wrap);
+      if (!reduced && enterId !== "cut") {
+        void wrap.offsetWidth;
+        wrap.classList.add("tlEnter", "tlEnter-" + enterId);
+      }
+    }
+    if (old && !reduced && exitId !== "cut") {
+      old.className = "dispTextBlock tlExit tlExit-" + exitId;
+      old.style.setProperty("--yv-motion-out-duration", outDur + "s");
+      setTimeout(mount, Math.round(outDur * 1000));
+    } else mount();
   }
 
   function _renderMain(v) {
@@ -560,7 +589,7 @@
         screen.classList.remove("yvSlideMode");
         screen.classList.remove("dispTextMode");
         screen.classList.remove("hideChords");
-        if (body) body.innerHTML = "";
+        if (body) clearPaint(body);
         if (titleEl) titleEl.textContent = "";
         if (keyEl) keyEl.textContent = "";
         if (stage) stage.hidden = true;
@@ -582,7 +611,7 @@
           _dispSig = "blank";
           if (titleEl) titleEl.textContent = "";
           if (keyEl) keyEl.textContent = "";
-          if (body) body.innerHTML = "";
+          if (body) clearPaint(body);
         }
         return;
       }
@@ -617,7 +646,7 @@
         _dispSig = sigT;
         if (titleEl) titleEl.textContent = "";
         if (keyEl) keyEl.textContent = v.kind === "verse" ? v.ref || "" : "";
-        paintLines(body, String(v.text || "").replace(/\r/g, "").split("\n"), v.transition);
+        paintLines(body, String(v.text || "").replace(/\r/g, "").split("\n"), v.transition, v.transitionOut, v.style);
         cue(v.kind, 1);
         return;
       }
@@ -638,7 +667,7 @@
             v.showMeta === false
               ? ""
               : "Slide " + (pIdx + 1) + " / " + (v.slideTotal || pIdx + 1) + (v.label ? " \u00b7 " + v.label : "");
-        paintLines(body, v.lines, v.transition);
+        paintLines(body, v.lines, v.transition, v.transitionOut, v.style);
         cue(v.label || "", 1);
         return;
       }
@@ -647,7 +676,7 @@
         _dispSig = "";
         applyBackground(null);
         screen.classList.remove("yvSlideMode");
-        if (body) body.innerHTML = "";
+        if (body) clearPaint(body);
         if (titleEl) titleEl.textContent = "";
         if (keyEl) keyEl.textContent = "";
         if (idle) idle.hidden = false;
@@ -681,7 +710,7 @@
               " / " +
               deck.length +
               (slide.label ? " · " + slide.label : "");
-      paintLines(body, slide.lines, v.transition);
+      paintLines(body, slide.lines, v.transition, v.transitionOut, v.style);
       cue(slide.label || "", 1);
     });
   }

@@ -14,9 +14,11 @@
 (function () {
   "use strict";
 
-  var VERSION = "v9.17-timeline";
-  var runMode="";try{runMode=new URLSearchParams(location.search).get("mode")||"";}catch(e){}
-  if(/^(display|stage|remote|youthviews)$/i.test(runMode)) return;
+  var VERSION = "v9.18-timeline";
+  var runMode = "";
+  try { runMode = new URLSearchParams(location.search).get("mode") || ""; } catch (e) {}
+  /* Timeline adalah alat operator; output tidak perlu observer/keyboard editor. */
+  if (/^(display|stage|remote|youthviews)$/i.test(runMode)) return;
   var TL_REF = "pujianYouth/projector/timelines";
   var LOCAL_TL = "pnwYvTimelines.v1";
 
